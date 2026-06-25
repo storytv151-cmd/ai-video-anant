@@ -5,8 +5,8 @@ import providerPricingService from './providerPricingService.js';
 import providerSelectionService from './providerSelectionService.js';
 import { createVideoProvider } from './providerFactory.js';
 
-const assertDurationLimit = ({ template, provider, model }) => {
-  const duration = template?.duration;
+const assertDurationLimit = ({ template, provider, model, executionContext = {} }) => {
+  const duration = executionContext.duration ?? template?.duration;
   if (!Number.isFinite(duration) || duration <= 0) {
     return;
   }
@@ -20,7 +20,13 @@ const assertDurationLimit = ({ template, provider, model }) => {
   }
 };
 
-const planGeneration = async ({ template, providerSlug = null, providerModelSlug = null, strategy = 'priority' } = {}) => {
+const planGeneration = async ({
+  template,
+  providerSlug = null,
+  providerModelSlug = null,
+  strategy = 'priority',
+  executionContext = {},
+} = {}) => {
   if (!template) {
     throw new ApiError(400, 'Template is required.', { code: 'TEMPLATE_REQUIRED' });
   }
@@ -30,15 +36,16 @@ const planGeneration = async ({ template, providerSlug = null, providerModelSlug
     providerSlug,
     providerModelSlug,
     strategy,
+    executionContext,
   });
 
-  assertDurationLimit({ template, provider, model });
+  assertDurationLimit({ template, provider, model, executionContext });
 
   const credits = await providerPricingService.resolveCredits({
     template,
     providerSlug: provider.slug,
     providerModelSlug: model?.slug || null,
-    duration: template.duration,
+    duration: executionContext.duration ?? template.duration,
   });
 
   return {
@@ -54,17 +61,22 @@ const startGeneration = async ({
   providerModelSlug = null,
   strategy = 'priority',
   allowFailover = true,
+  executionContext = {},
 } = {}) => {
   const attemptedProviderIds = [];
 
   const attempt = async ({ pSlug, mSlug }) => {
-    const planned = await planGeneration({ template, providerSlug: pSlug, providerModelSlug: mSlug, strategy });
+    const planned = await planGeneration({ template, providerSlug: pSlug, providerModelSlug: mSlug, strategy, executionContext });
     attemptedProviderIds.push(planned.provider.id);
 
     const provider = await createVideoProvider({ providerSlug: planned.provider.slug });
     const startedAt = Date.now();
     try {
-      const result = await provider.startGeneration({ template, providerModelSlug: planned.model?.slug || null });
+      const result = await provider.startGeneration({
+        template,
+        providerModelSlug: planned.model?.slug || null,
+        executionContext,
+      });
       const rt = Date.now() - startedAt;
       await providerMetricsService.recordProviderRequest({ providerId: planned.provider.id, responseTimeMs: rt, success: true });
       return { plan: planned, result };
@@ -87,6 +99,7 @@ const startGeneration = async ({
       failedProviderId: attemptedProviderIds[attemptedProviderIds.length - 1] || null,
       attemptedProviderIds,
       strategy,
+      executionContext,
     });
 
     return attempt({ pSlug: failover.provider.slug, mSlug: failover.model?.slug || null });

@@ -6,6 +6,7 @@ const selectFailover = async ({
   failedProviderId = null,
   attemptedProviderIds = [],
   strategy = 'priority',
+  executionContext = {},
 } = {}) => {
   const excludedProviderIds = Array.from(
     new Set([...(attemptedProviderIds || []), ...(failedProviderId ? [failedProviderId] : [])]),
@@ -16,6 +17,7 @@ const selectFailover = async ({
       template,
       strategy,
       excludedProviderIds,
+      executionContext,
     });
   } catch (error) {
     throw new ApiError(400, 'Failover provider selection failed.', {

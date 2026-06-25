@@ -3,6 +3,7 @@ import VideoGenerationJobModel from '../../models/VideoGenerationJob.js';
 import VideoTemplateModel from '../../models/VideoTemplate.js';
 import { buildPaginationMeta } from '../../utils/pagination.js';
 import { buildGenerationJobDto } from '../../utils/generation.dto.js';
+import generationAnalyticsService from './generationAnalyticsService.js';
 
 const safeLower = (value) => (value ? String(value).trim().toLowerCase() : null);
 
@@ -71,9 +72,20 @@ const listHistory = async ({ userId, query = {} }) => {
 
   const projection = {
     _id: 1,
+    generationType: 1,
+    outputType: 1,
     status: 1,
     provider: 1,
     template: 1,
+    prompt: 1,
+    negativePrompt: 1,
+    inputImages: 1,
+    inputVideos: 1,
+    inputAudio: 1,
+    referenceImages: 1,
+    maskImages: 1,
+    multipleOutputs: 1,
+    outputAssets: 1,
     progress: 1,
     queuePosition: 1,
     estimatedCompletionTime: 1,
@@ -87,14 +99,16 @@ const listHistory = async ({ userId, query = {} }) => {
     updatedAt: 1,
   };
 
-  const [items, total] = await Promise.all([
+  const [items, total, analytics] = await Promise.all([
     VideoGenerationJobModel.find(filter).sort(sort).skip(skip).limit(limit).select(projection).lean(),
     VideoGenerationJobModel.countDocuments(filter),
+    generationAnalyticsService.summarizeByFilter({ filter }),
   ]);
 
   return {
     items: items.map(buildGenerationJobDto),
     meta: buildPaginationMeta({ page, limit, total }),
+    analytics,
   };
 };
 

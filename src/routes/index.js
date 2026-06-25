@@ -14,8 +14,10 @@ import paymentRouter from './payment.routes.js';
 import providerRouter from './provider.routes.js';
 import providerAdminRouter from './provider.admin.routes.js';
 import rewardRouter from './reward.routes.js';
+import subscriptionRouter from './subscription.routes.js';
 import templateRouter from './template.routes.js';
 import transactionRouter from './transaction.routes.js';
+import uploadRouter from './upload.routes.js';
 import userRouter from './user.routes.js';
 import walletRouter from './wallet.routes.js';
 
@@ -36,7 +38,11 @@ apiRouter.use('/categories', categoryRouter);
 apiRouter.use('/templates', templateRouter);
 apiRouter.use('/generation', generationRouter);
 apiRouter.use('/generations', generationRouter);
+apiRouter.use('/upload', uploadRouter);
+apiRouter.use('/payment', paymentRouter);
 apiRouter.use('/payments', paymentRouter);
+apiRouter.use('/subscription', subscriptionRouter);
+apiRouter.use('/subscriptions', subscriptionRouter);
 apiRouter.use('/notifications', notificationRouter);
 
 const versionedApiPath = `${environment.app.apiBasePath}/${environment.app.apiVersion}`;

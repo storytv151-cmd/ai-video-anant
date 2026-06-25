@@ -10,6 +10,7 @@
 import mongoose from 'mongoose';
 import validator from 'validator';
 import { createBaseSchema } from './base.schema.js';
+import { GENERATION_TYPES, OUTPUT_TYPES } from '../utils/mediaGeneration.js';
 
 const { Schema } = mongoose;
 
@@ -54,6 +55,53 @@ const imageAssetSchema = new Schema(
     isPrimary: {
       type: Boolean,
       default: false,
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false },
+);
+
+const mediaAssetSchema = new Schema(
+  {
+    url: {
+      type: String,
+      required: [true, 'Asset URL is required.'],
+      trim: true,
+      validate: {
+        validator: (value) => validator.isURL(value, { require_protocol: true }),
+        message: 'Asset URL must be valid.',
+      },
+    },
+    storageKey: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+      default: null,
+    },
+    mimeType: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+      default: null,
+    },
+    sizeInBytes: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+    durationSeconds: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+    role: {
+      type: String,
+      trim: true,
+      maxlength: 50,
+      default: null,
     },
     uploadedAt: {
       type: Date,
@@ -162,15 +210,14 @@ const videoGenerationJobSchema = createBaseSchema({
   },
   generationType: {
     type: String,
-    enum: [
-      'image_to_video',
-      'text_to_video',
-      'image_and_prompt',
-      'multi_image',
-      'video_extend',
-      'video_upscale',
-    ],
+    enum: [...GENERATION_TYPES, 'image_and_prompt', 'multi_image', 'video_extend'],
     default: 'image_to_video',
+    index: true,
+  },
+  outputType: {
+    type: String,
+    enum: OUTPUT_TYPES,
+    default: 'video',
     index: true,
   },
   status: {
@@ -208,6 +255,42 @@ const videoGenerationJobSchema = createBaseSchema({
   },
   inputImages: {
     type: [imageAssetSchema],
+    default: [],
+  },
+  inputVideos: {
+    type: [mediaAssetSchema],
+    default: [],
+  },
+  inputAudio: {
+    type: [mediaAssetSchema],
+    default: [],
+  },
+  referenceImages: {
+    type: [imageAssetSchema],
+    default: [],
+  },
+  maskImages: {
+    type: [imageAssetSchema],
+    default: [],
+  },
+  prompt: {
+    type: String,
+    trim: true,
+    maxlength: 10000,
+    default: null,
+  },
+  negativePrompt: {
+    type: String,
+    trim: true,
+    maxlength: 5000,
+    default: null,
+  },
+  multipleOutputs: {
+    type: Boolean,
+    default: false,
+  },
+  outputAssets: {
+    type: [mediaAssetSchema],
     default: [],
   },
   outputVideo: {
@@ -305,6 +388,8 @@ videoGenerationJobSchema.index({ wallet: 1, createdAt: -1 });
 videoGenerationJobSchema.index({ provider: 1, status: 1, createdAt: -1 });
 videoGenerationJobSchema.index({ provider: 1, createdAt: -1 });
 videoGenerationJobSchema.index({ template: 1, status: 1, createdAt: -1 });
+videoGenerationJobSchema.index({ generationType: 1, outputType: 1, createdAt: -1 });
+videoGenerationJobSchema.index({ generationType: 1, status: 1, createdAt: -1 });
 videoGenerationJobSchema.index({ status: 1, progress: 1, createdAt: -1 });
 videoGenerationJobSchema.index({ status: 1, queuePosition: 1, createdAt: -1 });
 videoGenerationJobSchema.index({ queuePosition: 1, createdAt: -1 });

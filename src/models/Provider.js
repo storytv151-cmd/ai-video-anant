@@ -114,6 +114,71 @@ const providerSchema = createBaseSchema({
     type: Boolean,
     default: false,
   },
+  supportsTextToImage: {
+    type: Boolean,
+    default: false,
+  },
+  supportsImageToImage: {
+    type: Boolean,
+    default: false,
+  },
+  supportsTextToVideo: {
+    type: Boolean,
+    default: true,
+  },
+  supportsImageToVideo: {
+    type: Boolean,
+    default: true,
+  },
+  supportsVideoToVideo: {
+    type: Boolean,
+    default: false,
+  },
+  supportsImageUpscale: {
+    type: Boolean,
+    default: true,
+  },
+  supportsVideoUpscale: {
+    type: Boolean,
+    default: false,
+  },
+  supportsImageEditing: {
+    type: Boolean,
+    default: false,
+  },
+  supportsVideoEditing: {
+    type: Boolean,
+    default: false,
+  },
+  supportsBackgroundRemoval: {
+    type: Boolean,
+    default: false,
+  },
+  supportsFaceSwap: {
+    type: Boolean,
+    default: false,
+  },
+  supportsAudioGeneration: {
+    type: Boolean,
+    default: false,
+  },
+  supportsReferenceImages: {
+    type: Boolean,
+    default: false,
+  },
+  supportsNegativePrompt: {
+    type: Boolean,
+    default: false,
+  },
+  supportsMaskImage: {
+    type: Boolean,
+    default: false,
+  },
+  maximumImages: {
+    type: Number,
+    default: 1,
+    min: 0,
+  },
   maximumDuration: {
     type: Number,
     default: 0,
@@ -143,6 +208,11 @@ const providerSchema = createBaseSchema({
     default: 0,
     min: 0,
   },
+  maximumOutputCount: {
+    type: Number,
+    default: 1,
+    min: 1,
+  },
   metadata: {
     type: Map,
     of: Schema.Types.Mixed,
@@ -162,6 +232,7 @@ providerSchema.index({ enabled: 1, priority: 1 });
 providerSchema.index({ enabled: 1, healthStatus: 1, priority: 1 });
 providerSchema.index({ name: 1 });
 providerSchema.index({ supportsVideo: 1, supportsImage: 1, enabled: 1 });
+providerSchema.index({ supportsTextToImage: 1, supportsImageToVideo: 1, supportsAudioGeneration: 1, enabled: 1 });
 providerSchema.index({ lastSuccessAt: -1 });
 providerSchema.index({ lastFailureAt: -1 });
 

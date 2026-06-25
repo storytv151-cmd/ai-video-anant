@@ -2,6 +2,7 @@ import ApiError from '../../utils/ApiError.js';
 import ProviderModel from '../../models/Provider.js';
 import VideoGenerationJobModel from '../../models/VideoGenerationJob.js';
 import ProviderModelModel from '../../models/ProviderModel.js';
+import { buildGenerationJobDto } from '../../utils/generation.dto.js';
 import walletService from '../wallet/walletService.js';
 import generationLifecycleService from './generationLifecycleService.js';
 import generationSettlementService from './generationSettlementService.js';
@@ -122,11 +123,10 @@ const getStatusResponse = async ({ userId, jobId }) => {
 
   const refreshed = await getJobForUser({ userId, jobId });
   const providerInfo = await buildProviderSummary({ job: refreshed });
+  const dto = buildGenerationJobDto(refreshed);
 
   return {
-    jobId: refreshed._id,
-    status: refreshed.status,
-    progress: refreshed.progress,
+    ...dto,
     estimatedCompletionTime: refreshed.estimatedCompletionTime,
     provider: providerInfo.provider,
     providerModel: providerInfo.providerModel,

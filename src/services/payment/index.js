@@ -1,10 +1,23 @@
-/**
- * Payment service placeholder for future billing and gateway integrations.
- * Financial workflows are intentionally deferred to a later phase.
- */
+import googlePurchaseValidator from './googlePurchaseValidator.js';
+import paymentArchitectureService from './paymentArchitectureService.js';
+import paymentAuditService from './paymentAuditService.js';
+import purchaseStateService from './purchaseStateService.js';
+import subscriptionArchitectureService from './subscriptionArchitectureService.js';
+
 const paymentService = Object.freeze({
-  name: 'payment-service-placeholder',
-  status: 'not-implemented',
+  paymentArchitectureService,
+  googlePurchaseValidator,
+  subscriptionArchitectureService,
+  purchaseStateService,
+  paymentAuditService,
 });
 
 export default paymentService;
+
+export {
+  paymentArchitectureService,
+  googlePurchaseValidator,
+  subscriptionArchitectureService,
+  purchaseStateService,
+  paymentAuditService,
+};

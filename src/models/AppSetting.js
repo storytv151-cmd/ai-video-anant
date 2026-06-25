@@ -68,6 +68,92 @@ const creditPackageSchema = new Schema(
       maxlength: 100,
       default: null,
     },
+    googlePlayProductId: {
+      type: String,
+      trim: true,
+      maxlength: 150,
+      default: null,
+    },
+    productType: {
+      type: String,
+      enum: ['inapp', 'subs'],
+      default: 'inapp',
+    },
+    offerToken: {
+      type: String,
+      trim: true,
+      maxlength: 255,
+      default: null,
+    },
+    countries: {
+      type: [String],
+      default: [],
+    },
+    metadata: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
+  },
+  { _id: false },
+);
+
+const subscriptionPlanSchema = new Schema(
+  {
+    name: { type: String, required: true, trim: true, maxlength: 120 },
+    code: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 80,
+      required: true,
+    },
+    googlePlayProductId: {
+      type: String,
+      trim: true,
+      maxlength: 150,
+      required: true,
+    },
+    basePlanId: {
+      type: String,
+      trim: true,
+      maxlength: 120,
+      default: null,
+    },
+    offerId: {
+      type: String,
+      trim: true,
+      maxlength: 120,
+      default: null,
+    },
+    billingCycle: {
+      type: String,
+      enum: ['monthly', 'quarterly', 'yearly', 'custom'],
+      default: 'monthly',
+    },
+    durationDays: { type: Number, default: 30, min: 1 },
+    price: { type: Number, default: 0, min: 0 },
+    currency: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      maxlength: 10,
+      default: 'USD',
+    },
+    enabled: { type: Boolean, default: true },
+    autoRenew: { type: Boolean, default: true },
+    premiumFeatures: { type: [String], default: [] },
+    trialDays: { type: Number, default: 0, min: 0 },
+    offerLabel: {
+      type: String,
+      trim: true,
+      maxlength: 120,
+      default: null,
+    },
+    countries: {
+      type: [String],
+      default: [],
+    },
     metadata: {
       type: Map,
       of: Schema.Types.Mixed,
@@ -158,6 +244,20 @@ const appSettingSchema = createBaseSchema({
     defaultCurrency: { type: String, trim: true, uppercase: true, default: 'USD' },
     minimumAmount: { type: Number, default: 0, min: 0 },
     taxPercentage: { type: Number, default: 0, min: 0 },
+    googlePlay: {
+      enabled: { type: Boolean, default: false },
+      packageName: { type: String, trim: true, default: null },
+      serviceAccountEmail: { type: String, trim: true, default: null },
+      linkedPackageName: { type: String, trim: true, default: null },
+      allowCreditPurchases: { type: Boolean, default: true },
+      allowSubscriptions: { type: Boolean, default: true },
+      requireAcknowledgement: { type: Boolean, default: true },
+      consumeOneTimePurchases: { type: Boolean, default: true },
+      enableFraudSignals: { type: Boolean, default: true },
+      enableRtdnPreparation: { type: Boolean, default: true },
+      rtdnPubSubTopic: { type: String, trim: true, default: null },
+      metadata: { type: Map, of: Schema.Types.Mixed, default: {} },
+    },
     metadata: { type: Map, of: Schema.Types.Mixed, default: {} },
   },
   coupons: {
@@ -181,6 +281,11 @@ const appSettingSchema = createBaseSchema({
     default: true,
     index: true,
   },
+  mediaGenerationEnabled: {
+    type: Boolean,
+    default: true,
+    index: true,
+  },
   providerSettings: {
     type: [providerSettingSchema],
     default: [],
@@ -188,11 +293,41 @@ const appSettingSchema = createBaseSchema({
   uploadLimits: {
     maxImageSizeMB: { type: Number, default: 10, min: 0 },
     maxVideoSizeMB: { type: Number, default: 100, min: 0 },
+    maxAudioSizeMB: { type: Number, default: 25, min: 0 },
     maxImageCount: { type: Number, default: 10, min: 0 },
+    maxVideoCount: { type: Number, default: 5, min: 0 },
+    maxAudioCount: { type: Number, default: 5, min: 0 },
+    maxOutputCount: { type: Number, default: 10, min: 1 },
     allowedMimeTypes: { type: [String], default: [] },
+    allowedVideoMimeTypes: { type: [String], default: [] },
+    allowedAudioMimeTypes: { type: [String], default: [] },
   },
   creditPackages: {
     type: [creditPackageSchema],
+    default: [],
+  },
+  subscriptionPlans: {
+    type: [subscriptionPlanSchema],
+    default: [],
+  },
+  trialSettings: {
+    enabled: { type: Boolean, default: false },
+    defaultDays: { type: Number, default: 0, min: 0 },
+    eligiblePlans: { type: [String], default: [] },
+    metadata: { type: Map, of: Schema.Types.Mixed, default: {} },
+  },
+  offerSettings: {
+    enabled: { type: Boolean, default: false },
+    allowIntroOffers: { type: Boolean, default: false },
+    allowWinbackOffers: { type: Boolean, default: false },
+    metadata: { type: Map, of: Schema.Types.Mixed, default: {} },
+  },
+  countryPricing: {
+    type: [Schema.Types.Mixed],
+    default: [],
+  },
+  futurePricing: {
+    type: [Schema.Types.Mixed],
     default: [],
   },
   featureToggles: {
@@ -341,7 +476,7 @@ appSettingSchema.index(
   },
 );
 appSettingSchema.index({ section: 1, createdAt: -1 });
-appSettingSchema.index({ maintenanceMode: 1, registrationEnabled: 1, videoGenerationEnabled: 1 });
+appSettingSchema.index({ maintenanceMode: 1, registrationEnabled: 1, videoGenerationEnabled: 1, mediaGenerationEnabled: 1 });
 appSettingSchema.index({ createdAt: -1 });
 
 const AppSettingModel = mongoose.models.AppSetting || mongoose.model('AppSetting', appSettingSchema);

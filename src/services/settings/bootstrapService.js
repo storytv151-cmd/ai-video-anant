@@ -27,6 +27,7 @@ import ProviderModelModel from '../../models/ProviderModel.js';
 import ProviderPricingModel from '../../models/ProviderPricing.js';
 import UserModel from '../../models/User.js';
 import WalletModel from '../../models/Wallet.js';
+import { FUTURE_MEDIA_MODULES, GENERATION_TYPES, OUTPUT_TYPES, getSupportedOutputTypes } from '../../utils/mediaGeneration.js';
 import { buildPublicProviderDto } from '../../utils/provider.dto.js';
 import { buildUserDto } from '../../utils/user.dto.js';
 import { buildWalletDto } from '../../utils/wallet.dto.js';
@@ -74,8 +75,25 @@ const buildPublicBootstrap = async () => {
         supportsVideo: 1,
         supportsAudio: 1,
         supportsMultipleImages: 1,
+        supportsTextToImage: 1,
+        supportsImageToImage: 1,
+        supportsTextToVideo: 1,
+        supportsImageToVideo: 1,
+        supportsVideoToVideo: 1,
+        supportsImageUpscale: 1,
+        supportsVideoUpscale: 1,
+        supportsImageEditing: 1,
+        supportsVideoEditing: 1,
+        supportsBackgroundRemoval: 1,
+        supportsFaceSwap: 1,
+        supportsAudioGeneration: 1,
+        supportsReferenceImages: 1,
+        supportsNegativePrompt: 1,
+        supportsMaskImage: 1,
+        maximumImages: 1,
         maximumDuration: 1,
         maximumResolution: 1,
+        maximumOutputCount: 1,
       })
       .sort({ priority: 1 })
       .lean(),
@@ -92,8 +110,25 @@ const buildPublicBootstrap = async () => {
         supportsVideo: 1,
         supportsAudio: 1,
         supportsMultipleImages: 1,
+        supportsTextToImage: 1,
+        supportsImageToImage: 1,
+        supportsTextToVideo: 1,
+        supportsImageToVideo: 1,
+        supportsVideoToVideo: 1,
+        supportsImageUpscale: 1,
+        supportsVideoUpscale: 1,
+        supportsImageEditing: 1,
+        supportsVideoEditing: 1,
+        supportsBackgroundRemoval: 1,
+        supportsFaceSwap: 1,
+        supportsAudioGeneration: 1,
+        supportsReferenceImages: 1,
+        supportsNegativePrompt: 1,
+        supportsMaskImage: 1,
+        maximumImages: 1,
         maximumDuration: 1,
         maximumResolution: 1,
+        maximumOutputCount: 1,
       })
       .sort({ priority: 1 })
       .lean(),
@@ -165,10 +200,32 @@ const buildPublicBootstrap = async () => {
           video: Boolean(m.supportsVideo),
           audio: Boolean(m.supportsAudio),
           multipleImages: Boolean(m.supportsMultipleImages),
+          outputTypes: getSupportedOutputTypes(m),
+        },
+        generationTypes: {
+          textToImage: Boolean(m.supportsTextToImage),
+          imageToImage: Boolean(m.supportsImageToImage),
+          textToVideo: Boolean(m.supportsTextToVideo),
+          imageToVideo: Boolean(m.supportsImageToVideo),
+          videoToVideo: Boolean(m.supportsVideoToVideo),
+          imageUpscale: Boolean(m.supportsImageUpscale),
+          videoUpscale: Boolean(m.supportsVideoUpscale),
+          imageEditing: Boolean(m.supportsImageEditing),
+          videoEditing: Boolean(m.supportsVideoEditing),
+          backgroundRemoval: Boolean(m.supportsBackgroundRemoval),
+          faceSwap: Boolean(m.supportsFaceSwap),
+          audioGeneration: Boolean(m.supportsAudioGeneration),
+        },
+        inputs: {
+          referenceImages: Boolean(m.supportsReferenceImages),
+          negativePrompt: Boolean(m.supportsNegativePrompt),
+          maskImage: Boolean(m.supportsMaskImage),
         },
         limits: {
+          maximumImages: m.maximumImages ?? null,
           maximumDuration: m.maximumDuration ?? null,
           maximumResolution: m.maximumResolution || null,
+          maximumOutputCount: m.maximumOutputCount ?? null,
         },
       };
     })
@@ -209,6 +266,12 @@ const buildPublicBootstrap = async () => {
       registrationEnabled: pick(system?.registrationEnabled),
       googleLoginEnabled: pick(system?.googleLoginEnabled),
       videoGenerationEnabled: pick(system?.videoGenerationEnabled),
+      mediaGenerationEnabled: pick(system?.mediaGenerationEnabled, pick(system?.videoGenerationEnabled)),
+    },
+    mediaPlatform: {
+      generationTypes: GENERATION_TYPES,
+      outputTypes: OUTPUT_TYPES,
+      futureModules: FUTURE_MEDIA_MODULES,
     },
     featureToggles: pick(features?.featureToggles, {}),
     rewards: {

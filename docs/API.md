@@ -64,3 +64,23 @@ Admin (protected, internal metrics):
 - `GET /api/v1/generation/history`
 - `POST /api/v1/generation/cancel/:jobId` (idempotent)
 - `POST /api/v1/generation/retry/:jobId` (idempotent)
+
+### Upload / Storage
+
+- `POST /api/v1/upload/image`
+- `POST /api/v1/upload/video`
+- `POST /api/v1/upload/banner`
+- `POST /api/v1/upload/profile`
+- `DELETE /api/v1/upload/:fileId`
+- `GET /api/v1/upload/signed-url`
+
+### Payments
+
+- `GET /api/v1/payment/packages`
+- `POST /api/v1/payment/google/verify` (idempotent placeholder)
+- `POST /api/v1/payment/restore` (idempotent placeholder)
+- `GET /api/v1/payment/history`
+- `GET /api/v1/subscriptions`
+- `GET /api/v1/subscription/current`
+
+Plural compatibility remains available for payment routes under `/api/v1/payments`.

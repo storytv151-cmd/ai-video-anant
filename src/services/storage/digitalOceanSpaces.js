@@ -1,8 +1,13 @@
-/**
- * DigitalOcean Spaces storage adapter placeholder.
- * S3-compatible storage operations will be implemented in a future phase.
- */
 import crypto from 'node:crypto';
+import {
+  S3Client,
+  CopyObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import environment from '../../config/environment.js';
 
 const normalizeKeyPart = (value) =>
@@ -71,35 +76,133 @@ const parseSpacesPublicUrl = (urlString) => {
   return null;
 };
 
-const signToken = ({ objectKey, expiresAt }) => {
-  const secret = environment.security.cookieSecret || environment.integrations.digitalOceanSpaces.secret || '';
-  const payload = `${String(objectKey)}.${String(expiresAt)}`;
-  const sig = crypto.createHmac('sha256', secret).update(payload).digest('hex');
-  return sig;
+const getClient = () => {
+  const { key, secret, endpoint, region } = environment.integrations.digitalOceanSpaces;
+  const cfg = {
+    region: region || 'us-east-1',
+    endpoint,
+    credentials: {
+      accessKeyId: key,
+      secretAccessKey: secret,
+    },
+    forcePathStyle: true,
+  };
+  return new S3Client(cfg);
 };
 
-const createSignedUrl = ({ objectKey, expiresInSeconds = 900, method = 'GET' } = {}) => {
-  const bucket = environment.integrations.digitalOceanSpaces.bucket;
-  const endpoint = environment.integrations.digitalOceanSpaces.endpoint;
-  if (!bucket || !endpoint) {
-    return null;
+const computePublicUrl = ({ bucket, objectKey }) => {
+  const cdn = environment.integrations.digitalOceanSpaces.cdn;
+  if (cdn) {
+    const base = cdn.endsWith('/') ? cdn.slice(0, -1) : cdn;
+    return `${base}/${String(objectKey).replace(/^\/+/, '')}`;
   }
-  const expiresAt = Math.floor(Date.now() / 1000) + Number(expiresInSeconds);
-  const token = signToken({ objectKey, expiresAt });
-
+  const endpoint = environment.integrations.digitalOceanSpaces.endpoint;
   const base = endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint;
-  const key = String(objectKey || '').replace(/^\/+/, '');
-  const url = `${base}/${bucket}/${key}?x-exp=${expiresAt}&x-token=${token}&x-method=${encodeURIComponent(method)}`;
-  return { url, expiresAt: new Date(expiresAt * 1000) };
+  return `${base}/${bucket}/${String(objectKey).replace(/^\/+/, '')}`;
+};
+
+const uploadFile = async ({ bucket, key, body, contentType, metadata = {}, cacheControl = null } = {}) => {
+  const client = getClient();
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    Body: body,
+    ContentType: contentType || undefined,
+    CacheControl: cacheControl || undefined,
+    ACL: 'private',
+    Metadata: metadata || undefined,
+  });
+  await client.send(command);
+  return { bucket, key, publicUrl: computePublicUrl({ bucket, objectKey: key }) };
+};
+
+const deleteFile = async ({ bucket, key } = {}) => {
+  const client = getClient();
+  await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  return { deleted: true };
+};
+
+const copyFile = async ({ bucket, sourceKey, destinationKey } = {}) => {
+  const client = getClient();
+  const normalized = String(sourceKey).replace(/^\/+/, '');
+  const copyKey = normalized
+    .split('/')
+    .map((p) => encodeURIComponent(p))
+    .join('/');
+  const copySource = `/${bucket}/${copyKey}`;
+  await client.send(
+    new CopyObjectCommand({
+      Bucket: bucket,
+      Key: destinationKey,
+      CopySource: copySource,
+      ACL: 'private',
+      MetadataDirective: 'COPY',
+    }),
+  );
+  return { bucket, key: destinationKey, publicUrl: computePublicUrl({ bucket, objectKey: destinationKey }) };
+};
+
+const moveFile = async ({ bucket, sourceKey, destinationKey } = {}) => {
+  const copied = await copyFile({ bucket, sourceKey, destinationKey });
+  await deleteFile({ bucket, key: sourceKey });
+  return copied;
+};
+
+const fileExists = async ({ bucket, key } = {}) => {
+  const client = getClient();
+  try {
+    await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const getMetadata = async ({ bucket, key } = {}) => {
+  const client = getClient();
+  const res = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+  return {
+    contentType: res.ContentType || null,
+    contentLength: res.ContentLength ?? null,
+    eTag: res.ETag || null,
+    metadata: res.Metadata || {},
+    lastModified: res.LastModified || null,
+  };
+};
+
+const generateSignedUploadUrl = async ({ bucket, key, contentType, expiresInSeconds = 900 } = {}) => {
+  const client = getClient();
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    ContentType: contentType || undefined,
+    ACL: 'private',
+  });
+  const url = await getSignedUrl(client, command, { expiresIn: Number(expiresInSeconds) });
+  return { url, expiresAt: new Date(Date.now() + Number(expiresInSeconds) * 1000) };
+};
+
+const generateSignedDownloadUrl = async ({ bucket, key, expiresInSeconds = 900 } = {}) => {
+  const client = getClient();
+  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+  const url = await getSignedUrl(client, command, { expiresIn: Number(expiresInSeconds) });
+  return { url, expiresAt: new Date(Date.now() + Number(expiresInSeconds) * 1000) };
 };
 
 const digitalOceanSpaces = Object.freeze({
   name: 'digitalocean-spaces',
-  status: 'placeholder',
+  status: 'ready',
   buildObjectKey,
   parseSpacesPublicUrl,
-  createSignedUploadUrl: ({ objectKey, expiresInSeconds = 900 } = {}) => createSignedUrl({ objectKey, expiresInSeconds, method: 'PUT' }),
-  createSignedDownloadUrl: ({ objectKey, expiresInSeconds = 900 } = {}) => createSignedUrl({ objectKey, expiresInSeconds, method: 'GET' }),
+  computePublicUrl,
+  uploadFile,
+  deleteFile,
+  moveFile,
+  copyFile,
+  generateSignedUploadUrl,
+  generateSignedDownloadUrl,
+  fileExists,
+  getMetadata,
 });
 
 export default digitalOceanSpaces;

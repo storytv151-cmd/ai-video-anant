@@ -13,6 +13,12 @@ import templateProviderService from './templateProviderService.js';
 import templateRecommendationService from './templateRecommendationService.js';
 import templateSearchService from './templateSearchService.js';
 import templateValidationService from './templateValidationService.js';
+import {
+  deriveTemplateGenerationType,
+  deriveTemplateOutputType,
+  normalizeGenerationType,
+  normalizeOutputType,
+} from '../../utils/mediaGeneration.js';
 
 const buildAvailabilityWindow = () => {
   const now = new Date();
@@ -39,6 +45,19 @@ const TEMPLATE_LIST_PROJECTION = Object.freeze({
   trending: 1,
   creditsOverride: 1,
   requiredImages: 1,
+  inputType: 1,
+  generationType: 1,
+  minimumImages: 1,
+  maximumImages: 1,
+  allowPrompt: 1,
+  allowNegativePrompt: 1,
+  allowReferenceImage: 1,
+  allowMaskImage: 1,
+  allowInputVideo: 1,
+  allowInputAudio: 1,
+  allowMultipleOutputs: 1,
+  defaultAspectRatio: 1,
+  supportedOutputTypes: 1,
   supportedProviders: 1,
   supportedProviderModels: 1,
   aspectRatio: 1,
@@ -138,6 +157,12 @@ const normalizeTemplateListItem = ({ template, categoryMap, providerMap, provide
     return mapped || (id ? { id } : null);
   }).filter(Boolean);
 
+  const generationType = normalizeGenerationType(template.generationType || deriveTemplateGenerationType(template));
+  const supportedOutputTypes =
+    Array.isArray(template.supportedOutputTypes) && template.supportedOutputTypes.length > 0
+      ? template.supportedOutputTypes.map((value) => normalizeOutputType(value))
+      : [normalizeOutputType(deriveTemplateOutputType(template))];
+
   return {
     id: template._id || template.id,
     title: template.title,
@@ -153,6 +178,19 @@ const normalizeTemplateListItem = ({ template, categoryMap, providerMap, provide
     trending: Boolean(template.trending),
     creditsRequired: template.creditsRequired ?? null,
     requiredImages: template.requiredImages ?? 0,
+    inputType: template.inputType || 'image',
+    generationType,
+    minimumImages: template.minimumImages ?? template.requiredImages ?? 0,
+    maximumImages: template.maximumImages ?? template.requiredImages ?? 0,
+    allowPrompt: Boolean(template.allowPrompt),
+    allowNegativePrompt: Boolean(template.allowNegativePrompt),
+    allowReferenceImage: Boolean(template.allowReferenceImage),
+    allowMaskImage: Boolean(template.allowMaskImage),
+    allowInputVideo: Boolean(template.allowInputVideo),
+    allowInputAudio: Boolean(template.allowInputAudio),
+    allowMultipleOutputs: Boolean(template.allowMultipleOutputs),
+    defaultAspectRatio: template.defaultAspectRatio || template.aspectRatio,
+    supportedOutputTypes,
     supportedProviders,
     supportedProviderModels,
     aspectRatio: template.aspectRatio,
@@ -424,6 +462,22 @@ const getTemplateBySlug = async ({ slug }) => {
     prompt: template.prompt,
     negativePrompt: template.negativePrompt,
     requiredImages: template.requiredImages ?? 0,
+    inputType: template.inputType || 'image',
+    generationType: normalizeGenerationType(template.generationType || deriveTemplateGenerationType(template)),
+    minimumImages: template.minimumImages ?? template.requiredImages ?? 0,
+    maximumImages: template.maximumImages ?? template.requiredImages ?? 0,
+    allowPrompt: Boolean(template.allowPrompt),
+    allowNegativePrompt: Boolean(template.allowNegativePrompt),
+    allowReferenceImage: Boolean(template.allowReferenceImage),
+    allowMaskImage: Boolean(template.allowMaskImage),
+    allowInputVideo: Boolean(template.allowInputVideo),
+    allowInputAudio: Boolean(template.allowInputAudio),
+    allowMultipleOutputs: Boolean(template.allowMultipleOutputs),
+    defaultAspectRatio: template.defaultAspectRatio || template.aspectRatio,
+    supportedOutputTypes:
+      Array.isArray(template.supportedOutputTypes) && template.supportedOutputTypes.length > 0
+        ? template.supportedOutputTypes.map((value) => normalizeOutputType(value))
+        : [normalizeOutputType(deriveTemplateOutputType(template))],
     supportedProviders,
     supportedProviderModels,
     aspectRatio: template.aspectRatio,

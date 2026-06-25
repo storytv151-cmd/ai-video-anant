@@ -39,12 +39,86 @@ const computeEstimatedCompletionTime = ({ estimatedTimeMs }) => {
   return new Date(Date.now() + Number(estimatedTimeMs));
 };
 
+const resolveOptionalImageAssets = ({ assets, uploadLimits, storageSettings, maxCount = null, itemLabel = 'Image' }) =>
+  generationStorageService.validateMediaAssets({
+    assets,
+    requiredCount: null,
+    maxCount,
+    maxSizeBytes:
+      Number.isFinite(Number(uploadLimits?.maxImageSizeMB)) && Number(uploadLimits.maxImageSizeMB) > 0
+        ? Number(uploadLimits.maxImageSizeMB) * 1024 * 1024
+        : null,
+    allowedMimeTypes: Array.isArray(uploadLimits?.allowedMimeTypes) ? uploadLimits.allowedMimeTypes : [],
+    storageSettings,
+    itemLabel,
+  });
+
+const buildExecutionContext = ({ template, payload = {}, settings }) => {
+  const validated = generationValidationService.validateGenerationPayload({ template, payload });
+  const templateConfig = validated.templateConfig || generationValidationService.normalizeTemplateMediaConfig(template);
+
+  const inputImages = generationStorageService.validateInputImages({
+    inputImages: validated.inputImages,
+    requiredImages: template.requiredImages,
+    uploadLimits: settings.uploadLimits,
+    storageSettings: settings.storageSettings,
+    minimumImages: templateConfig.minimumImages,
+    maximumImages: templateConfig.maximumImages,
+  });
+  const inputVideos = generationStorageService.validateInputVideos({
+    inputVideos: validated.inputVideos,
+    uploadLimits: settings.uploadLimits,
+    storageSettings: settings.storageSettings,
+  });
+  const inputAudio = generationStorageService.validateInputAudio({
+    inputAudio: validated.inputAudio,
+    uploadLimits: settings.uploadLimits,
+    storageSettings: settings.storageSettings,
+  });
+  const referenceImages = resolveOptionalImageAssets({
+    assets: validated.referenceImages,
+    uploadLimits: settings.uploadLimits,
+    storageSettings: settings.storageSettings,
+    maxCount: templateConfig.maximumImages || null,
+    itemLabel: 'Reference image',
+  });
+  const maskImages = resolveOptionalImageAssets({
+    assets: validated.maskImages,
+    uploadLimits: settings.uploadLimits,
+    storageSettings: settings.storageSettings,
+    maxCount: templateConfig.maximumImages || null,
+    itemLabel: 'Mask image',
+  });
+
+  return {
+    ...validated,
+    templateConfig,
+    prompt: validated.prompt || template.prompt || null,
+    negativePrompt: validated.negativePrompt || template.negativePrompt || null,
+    inputImages,
+    inputVideos,
+    inputAudio,
+    referenceImages,
+    maskImages,
+    duration: template.duration ?? null,
+  };
+};
+
 const createJob = async ({
   userId,
   walletId,
   providerId,
   templateId,
+  generationType,
+  outputType,
   inputImages,
+  inputVideos,
+  inputAudio,
+  referenceImages,
+  maskImages,
+  prompt,
+  negativePrompt,
+  multipleOutputs,
   credits,
   estimatedTimeMs,
   external,
@@ -58,9 +132,18 @@ const createJob = async ({
         wallet: walletId,
         provider: providerId,
         template: templateId,
+        generationType,
+        outputType,
         status: 'pending',
         progress: 0,
         inputImages,
+        inputVideos,
+        inputAudio,
+        referenceImages,
+        maskImages,
+        prompt,
+        negativePrompt,
+        multipleOutputs,
         costInCredits: credits,
         estimatedCompletionTime: computeEstimatedCompletionTime({ estimatedTimeMs }),
         providerProcessingTimeMs: estimatedTimeMs,
@@ -75,7 +158,7 @@ const createJob = async ({
   return docs[0];
 };
 
-const updateJobAfterStart = async ({ jobId, plan, result }) => {
+const updateJobAfterStart = async ({ jobId, plan, result, executionContext = {} }) => {
   const nextStatus = result?.status === 'processing' ? 'processing' : 'queued';
   const current = await VideoGenerationJobModel.findById(jobId).select({ status: 1 }).lean();
   if (current?.status && current.status !== nextStatus) {
@@ -92,6 +175,9 @@ const updateJobAfterStart = async ({ jobId, plan, result }) => {
           providerSlug: plan.provider.slug,
           providerModelSlug: plan.model?.slug || null,
           plannedCredits: plan.credits?.finalCredits ?? null,
+          generationType: executionContext.generationType || null,
+          outputType: executionContext.outputType || null,
+          multipleOutputs: Boolean(executionContext.multipleOutputs),
         },
         status: nextStatus,
         startedAt: nextStatus === 'processing' ? new Date() : null,
@@ -114,6 +200,8 @@ const startGeneration = async ({ userId, payload, idempotencyKey: requestIdempot
     if (existing) {
       return {
         jobId: existing._id,
+        generationType: existing.generationType || null,
+        outputType: existing.outputType || null,
         status: existing.status,
         estimatedTimeMs: existing.providerProcessingTimeMs ?? null,
         creditsLocked: Number(existing.costInCredits || 0) || null,
@@ -130,12 +218,7 @@ const startGeneration = async ({ userId, payload, idempotencyKey: requestIdempot
     getStringToggle(settings.featureToggles, 'generation_selection_strategy') ||
     'priority';
 
-  const normalizedImages = generationStorageService.validateInputImages({
-    inputImages: payload.inputImages,
-    requiredImages: template.requiredImages,
-    uploadLimits: settings.uploadLimits,
-    storageSettings: settings.storageSettings,
-  });
+  const executionContext = buildExecutionContext({ template, payload, settings });
 
   const maxConcurrentJobs = Number(settings.apiLimits?.maxConcurrentJobs);
   await generationValidationService.assertUserConcurrencyLimits({ userId, maxConcurrentJobs });
@@ -147,6 +230,7 @@ const startGeneration = async ({ userId, payload, idempotencyKey: requestIdempot
     providerSlug: payload.providerSlug || null,
     providerModelSlug: payload.providerModelSlug || null,
     strategy,
+    executionContext,
   });
 
   const creditsToLock = planned.credits?.finalCredits ?? null;
@@ -174,13 +258,24 @@ const startGeneration = async ({ userId, payload, idempotencyKey: requestIdempot
           walletId: wallet._id,
           providerId: planned.provider.id,
           templateId: template._id,
-          inputImages: normalizedImages,
+          generationType: executionContext.generationType,
+          outputType: executionContext.outputType,
+          inputImages: executionContext.inputImages,
+          inputVideos: executionContext.inputVideos,
+          inputAudio: executionContext.inputAudio,
+          referenceImages: executionContext.referenceImages,
+          maskImages: executionContext.maskImages,
+          prompt: executionContext.prompt,
+          negativePrompt: executionContext.negativePrompt,
+          multipleOutputs: executionContext.multipleOutputs,
           credits: Number(creditsToLock),
           estimatedTimeMs,
           external: {
             providerSlug: planned.provider.slug,
             providerModelSlug: planned.model?.slug || null,
             strategy,
+            generationType: executionContext.generationType,
+            outputType: executionContext.outputType,
           },
           clientRequestKey: effectiveIdempotencyKey,
           session,
@@ -205,6 +300,8 @@ const startGeneration = async ({ userId, payload, idempotencyKey: requestIdempot
         if (existing) {
           return {
             jobId: existing._id,
+            generationType: existing.generationType || null,
+            outputType: existing.outputType || null,
             status: existing.status,
             estimatedTimeMs: existing.providerProcessingTimeMs ?? null,
             creditsLocked: Number(existing.costInCredits || 0) || null,
@@ -228,14 +325,17 @@ const startGeneration = async ({ userId, payload, idempotencyKey: requestIdempot
       providerModelSlug: planned.model?.slug || null,
       strategy,
       allowFailover: true,
+      executionContext,
     });
 
     setRequestContextValue('provider', started.plan?.provider?.slug || planned.provider.slug);
 
-    await updateJobAfterStart({ jobId: job._id, plan: started.plan, result: started.result });
+    await updateJobAfterStart({ jobId: job._id, plan: started.plan, result: started.result, executionContext });
 
     return {
       jobId: job._id,
+      generationType: executionContext.generationType,
+      outputType: executionContext.outputType,
       status: started.result?.status === 'processing' ? 'processing' : 'queued',
       estimatedTimeMs: estimatedTimeMs ?? null,
       creditsLocked: Number(creditsToLock),
@@ -288,7 +388,7 @@ const cancelJob = async ({ userId, jobId, idempotencyKey: requestIdempotencyKey 
         userId,
         job,
         reason: 'Credits unlocked due to cancellation.',
-        requestIdempotencyKey,
+        requestIdempotencyKey: requestIdempotencyKey,
         session,
       });
     });
@@ -315,7 +415,7 @@ const cancelJob = async ({ userId, jobId, idempotencyKey: requestIdempotencyKey 
         userId,
         job,
         reason: 'Credits unlocked due to cancellation.',
-        requestIdempotencyKey,
+        requestIdempotencyKey: requestIdempotencyKey,
         session,
       });
     });
@@ -357,11 +457,29 @@ const retryJob = async ({ userId, jobId, payload = {}, idempotencyKey: requestId
     getStringToggle(settings.featureToggles, 'generationSelectionStrategy') ||
     'priority';
 
+  const executionContext = buildExecutionContext({
+    template,
+    payload: {
+      generationType: job.generationType,
+      outputType: job.outputType,
+      prompt: job.prompt,
+      negativePrompt: job.negativePrompt,
+      inputImages: job.inputImages,
+      inputVideos: job.inputVideos,
+      inputAudio: job.inputAudio,
+      referenceImages: job.referenceImages,
+      maskImages: job.maskImages,
+      multipleOutputs: job.multipleOutputs,
+    },
+    settings,
+  });
+
   const planned = await generationProviderService.planExecution({
     template,
     providerSlug: payload.providerSlug || job.externalResponse?.providerSlug || null,
     providerModelSlug: payload.providerModelSlug || job.externalResponse?.providerModelSlug || null,
     strategy,
+    executionContext,
   });
 
   const creditsToLock = planned.credits?.finalCredits ?? null;
@@ -387,14 +505,20 @@ const retryJob = async ({ userId, jobId, payload = {}, idempotencyKey: requestId
             progress: 0,
             failureReason: null,
             outputVideo: {},
+            outputAssets: [],
             externalJobId: null,
             creditsUsed: 0,
+            actualProcessingTimeMs: null,
+            completedAt: null,
+            startedAt: null,
             costInCredits: Number(creditsToLock),
             externalResponse: {
               ...(job.externalResponse || {}),
               providerSlug: planned.provider.slug,
               providerModelSlug: planned.model?.slug || null,
               strategy,
+              generationType: executionContext.generationType,
+              outputType: executionContext.outputType,
             },
           },
           $inc: { retryCount: 1 },
@@ -433,14 +557,17 @@ const retryJob = async ({ userId, jobId, payload = {}, idempotencyKey: requestId
       providerModelSlug: planned.model?.slug || null,
       strategy,
       allowFailover: true,
+      executionContext,
     });
 
     setRequestContextValue('provider', started.plan?.provider?.slug || planned.provider.slug);
 
-    await updateJobAfterStart({ jobId: job._id, plan: started.plan, result: started.result });
+    await updateJobAfterStart({ jobId: job._id, plan: started.plan, result: started.result, executionContext });
 
     return {
       jobId: job._id,
+      generationType: executionContext.generationType,
+      outputType: executionContext.outputType,
       status: started.result?.status === 'processing' ? 'processing' : 'queued',
       creditsLocked: Number(creditsToLock),
       queuePosition,

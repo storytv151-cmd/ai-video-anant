@@ -73,9 +73,74 @@ const providerModelSchema = createBaseSchema({
     type: Boolean,
     default: false,
   },
+  supportsTextToImage: {
+    type: Boolean,
+    default: false,
+  },
+  supportsImageToImage: {
+    type: Boolean,
+    default: false,
+  },
+  supportsTextToVideo: {
+    type: Boolean,
+    default: true,
+  },
+  supportsImageToVideo: {
+    type: Boolean,
+    default: true,
+  },
+  supportsVideoToVideo: {
+    type: Boolean,
+    default: false,
+  },
+  supportsImageUpscale: {
+    type: Boolean,
+    default: true,
+  },
+  supportsVideoUpscale: {
+    type: Boolean,
+    default: false,
+  },
+  supportsImageEditing: {
+    type: Boolean,
+    default: false,
+  },
+  supportsVideoEditing: {
+    type: Boolean,
+    default: false,
+  },
+  supportsBackgroundRemoval: {
+    type: Boolean,
+    default: false,
+  },
+  supportsFaceSwap: {
+    type: Boolean,
+    default: false,
+  },
+  supportsAudioGeneration: {
+    type: Boolean,
+    default: false,
+  },
   supportsMultipleImages: {
     type: Boolean,
     default: false,
+  },
+  supportsReferenceImages: {
+    type: Boolean,
+    default: false,
+  },
+  supportsNegativePrompt: {
+    type: Boolean,
+    default: false,
+  },
+  supportsMaskImage: {
+    type: Boolean,
+    default: false,
+  },
+  maximumImages: {
+    type: Number,
+    default: 1,
+    min: 0,
   },
   maximumDuration: {
     type: Number,
@@ -90,6 +155,11 @@ const providerModelSchema = createBaseSchema({
     type: Map,
     of: Schema.Types.Mixed,
     default: {},
+  },
+  maximumOutputCount: {
+    type: Number,
+    default: 1,
+    min: 1,
   },
 });
 

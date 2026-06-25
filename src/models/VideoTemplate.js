@@ -10,6 +10,7 @@
 import mongoose from 'mongoose';
 import validator from 'validator';
 import { createBaseSchema } from './base.schema.js';
+import { GENERATION_TYPES, OUTPUT_TYPES } from '../utils/mediaGeneration.js';
 
 const { Schema } = mongoose;
 
@@ -118,6 +119,73 @@ const videoTemplateSchema = createBaseSchema({
     min: 0,
     max: 20,
   },
+  inputType: {
+    type: String,
+    enum: ['text', 'image', 'video', 'audio', 'mixed'],
+    default: 'image',
+    index: true,
+  },
+  generationType: {
+    type: String,
+    enum: GENERATION_TYPES,
+    default: 'image_to_video',
+    index: true,
+  },
+  minimumImages: {
+    type: Number,
+    default: 1,
+    min: 0,
+    max: 20,
+  },
+  maximumImages: {
+    type: Number,
+    default: 1,
+    min: 0,
+    max: 20,
+  },
+  allowPrompt: {
+    type: Boolean,
+    default: false,
+  },
+  allowNegativePrompt: {
+    type: Boolean,
+    default: false,
+  },
+  allowReferenceImage: {
+    type: Boolean,
+    default: false,
+  },
+  allowMaskImage: {
+    type: Boolean,
+    default: false,
+  },
+  allowInputVideo: {
+    type: Boolean,
+    default: false,
+  },
+  allowInputAudio: {
+    type: Boolean,
+    default: false,
+  },
+  allowMultipleOutputs: {
+    type: Boolean,
+    default: false,
+  },
+  defaultAspectRatio: {
+    type: String,
+    trim: true,
+    maxlength: 20,
+    default: '16:9',
+  },
+  supportedOutputTypes: {
+    type: [
+      {
+        type: String,
+        enum: OUTPUT_TYPES,
+      },
+    ],
+    default: ['video'],
+  },
   aspectRatio: {
     type: String,
     trim: true,
@@ -210,6 +278,8 @@ videoTemplateSchema.index(
   },
 );
 videoTemplateSchema.index({ category: 1, status: 1, sortOrder: 1 });
+videoTemplateSchema.index({ generationType: 1, status: 1, createdAt: -1 });
+videoTemplateSchema.index({ inputType: 1, status: 1, createdAt: -1 });
 videoTemplateSchema.index({ supportedProviders: 1, status: 1 });
 videoTemplateSchema.index({ supportedProviderModels: 1, status: 1 });
 videoTemplateSchema.index({ tags: 1 });

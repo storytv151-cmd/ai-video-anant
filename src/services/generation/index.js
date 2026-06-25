@@ -1,4 +1,5 @@
 import generationCleanupService from './generationCleanupService.js';
+import generationAnalyticsService from './generationAnalyticsService.js';
 import generationHistoryService from './generationHistoryService.js';
 import generationPollingService from './generationPollingService.js';
 import generationProviderService from './generationProviderService.js';
@@ -18,6 +19,7 @@ export {
   generationStatusService,
   generationStorageService,
   generationHistoryService,
+  generationAnalyticsService,
   generationRefundService,
   generationProviderService,
   generationPollingService,

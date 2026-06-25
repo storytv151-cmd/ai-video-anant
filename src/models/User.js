@@ -23,7 +23,7 @@ const subscriptionSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ['inactive', 'trial', 'active', 'past_due', 'cancelled', 'expired'],
+      enum: ['inactive', 'trial', 'active', 'past_due', 'cancelled', 'expired', 'paused', 'grace_period', 'on_hold', 'revoked'],
       default: 'inactive',
     },
     startDate: {
@@ -43,6 +43,76 @@ const subscriptionSchema = new Schema(
       trim: true,
       maxlength: 100,
       default: 'system',
+    },
+    platform: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 50,
+      default: null,
+    },
+    productId: {
+      type: String,
+      trim: true,
+      maxlength: 150,
+      default: null,
+    },
+    basePlanId: {
+      type: String,
+      trim: true,
+      maxlength: 120,
+      default: null,
+    },
+    offerId: {
+      type: String,
+      trim: true,
+      maxlength: 120,
+      default: null,
+    },
+    orderId: {
+      type: String,
+      trim: true,
+      maxlength: 255,
+      default: null,
+    },
+    purchaseTokenHash: {
+      type: String,
+      trim: true,
+      maxlength: 255,
+      default: null,
+    },
+    autoRenew: {
+      type: Boolean,
+      default: false,
+    },
+    currentPeriodStartAt: {
+      type: Date,
+      default: null,
+    },
+    gracePeriodEndsAt: {
+      type: Date,
+      default: null,
+    },
+    pausedAt: {
+      type: Date,
+      default: null,
+    },
+    onHoldSince: {
+      type: Date,
+      default: null,
+    },
+    lastVerifiedAt: {
+      type: Date,
+      default: null,
+    },
+    premiumFeatures: {
+      type: [String],
+      default: [],
+    },
+    payment: {
+      type: Schema.Types.ObjectId,
+      ref: 'Payment',
+      default: null,
     },
     metadata: {
       type: Map,

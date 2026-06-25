@@ -10,6 +10,8 @@ import { createBaseSchema } from './base.schema.js';
 
 const { Schema } = mongoose;
 
+const PURCHASE_STATES = ['pending', 'purchased', 'acknowledged', 'consumed', 'cancelled', 'expired', 'refunded', 'revoked', 'paused', 'grace_period', 'on_hold'];
+
 const paymentSchema = createBaseSchema({
   user: {
     type: Schema.Types.ObjectId,
@@ -31,6 +33,139 @@ const paymentSchema = createBaseSchema({
     maxlength: 50,
     index: true,
   },
+  platform: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    maxlength: 50,
+    default: 'google_play',
+    index: true,
+  },
+  paymentType: {
+    type: String,
+    enum: ['credit_purchase', 'subscription'],
+    default: 'credit_purchase',
+    index: true,
+  },
+  productType: {
+    type: String,
+    enum: ['inapp', 'subs'],
+    default: 'inapp',
+    index: true,
+  },
+  productId: {
+    type: String,
+    trim: true,
+    maxlength: 150,
+    default: null,
+    index: true,
+  },
+  packageCode: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    maxlength: 80,
+    default: null,
+    index: true,
+  },
+  subscriptionPlanCode: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    maxlength: 80,
+    default: null,
+    index: true,
+  },
+  purchaseToken: {
+    type: String,
+    trim: true,
+    maxlength: 2000,
+    default: null,
+  },
+  purchaseTokenHash: {
+    type: String,
+    trim: true,
+    maxlength: 255,
+    default: null,
+    index: true,
+  },
+  orderId: {
+    type: String,
+    trim: true,
+    maxlength: 255,
+    default: null,
+    index: true,
+  },
+  originalOrderId: {
+    type: String,
+    trim: true,
+    maxlength: 255,
+    default: null,
+  },
+  purchaseState: {
+    type: String,
+    enum: PURCHASE_STATES,
+    default: 'pending',
+    index: true,
+  },
+  verificationStatus: {
+    type: String,
+    enum: ['pending', 'verified', 'rejected', 'not_requested'],
+    default: 'not_requested',
+    index: true,
+  },
+  purchaseTime: {
+    type: Date,
+    default: null,
+  },
+  acknowledgedAt: {
+    type: Date,
+    default: null,
+  },
+  consumedAt: {
+    type: Date,
+    default: null,
+  },
+  expiresAt: {
+    type: Date,
+    default: null,
+  },
+  restoredAt: {
+    type: Date,
+    default: null,
+  },
+  refundedAt: {
+    type: Date,
+    default: null,
+  },
+  revokedAt: {
+    type: Date,
+    default: null,
+  },
+  pausedAt: {
+    type: Date,
+    default: null,
+  },
+  gracePeriodEndsAt: {
+    type: Date,
+    default: null,
+  },
+  onHoldSince: {
+    type: Date,
+    default: null,
+  },
+  autoRenew: {
+    type: Boolean,
+    default: false,
+  },
+  isAcknowledged: {
+    type: Boolean,
+    default: false,
+  },
+  isConsumed: {
+    type: Boolean,
+    default: false,
+  },
   gatewayTransactionId: {
     type: String,
     trim: true,
@@ -50,6 +185,23 @@ const paymentSchema = createBaseSchema({
     minlength: 3,
     maxlength: 10,
   },
+  baseAmount: {
+    type: Number,
+    default: null,
+    min: 0,
+  },
+  taxAmount: {
+    type: Number,
+    default: null,
+    min: 0,
+  },
+  countryCode: {
+    type: String,
+    trim: true,
+    uppercase: true,
+    maxlength: 2,
+    default: null,
+  },
   creditsPurchased: {
     type: Number,
     required: [true, 'Purchased credits are required.'],
@@ -59,6 +211,33 @@ const paymentSchema = createBaseSchema({
     type: String,
     enum: ['pending', 'success', 'failed', 'refunded', 'cancelled'],
     default: 'pending',
+    index: true,
+  },
+  verificationAttempts: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  verificationMessage: {
+    type: String,
+    trim: true,
+    maxlength: 1000,
+    default: null,
+  },
+  verificationPayload: {
+    type: Schema.Types.Mixed,
+    default: null,
+  },
+  creditTransaction: {
+    type: Schema.Types.ObjectId,
+    ref: 'CreditTransaction',
+    default: null,
+    index: true,
+  },
+  processedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
     index: true,
   },
   webhookResponse: {
@@ -73,8 +252,11 @@ const paymentSchema = createBaseSchema({
 });
 
 paymentSchema.index({ user: 1, status: 1, createdAt: -1 });
+paymentSchema.index({ user: 1, paymentType: 1, createdAt: -1 });
 paymentSchema.index({ wallet: 1, createdAt: -1 });
 paymentSchema.index({ gateway: 1, status: 1, createdAt: -1 });
+paymentSchema.index({ platform: 1, purchaseState: 1, createdAt: -1 });
+paymentSchema.index({ platform: 1, verificationStatus: 1, createdAt: -1 });
 paymentSchema.index(
   { gateway: 1, gatewayTransactionId: 1 },
   {
@@ -82,9 +264,33 @@ paymentSchema.index(
     sparse: true,
     partialFilterExpression: {
       isDeleted: false,
-      gatewayTransactionId: { $exists: true },
+      gatewayTransactionId: { $type: 'string' },
     },
     name: 'uniq_payment_gateway_transaction_active',
+  },
+);
+paymentSchema.index(
+  { platform: 1, purchaseTokenHash: 1 },
+  {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: {
+      isDeleted: false,
+      purchaseTokenHash: { $type: 'string' },
+    },
+    name: 'uniq_payment_platform_purchase_token_hash_active',
+  },
+);
+paymentSchema.index(
+  { platform: 1, orderId: 1 },
+  {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: {
+      isDeleted: false,
+      orderId: { $type: 'string' },
+    },
+    name: 'uniq_payment_platform_order_id_active',
   },
 );
 

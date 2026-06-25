@@ -5,8 +5,18 @@ import ProviderPricingModel from '../../models/ProviderPricing.js';
 import providerHealthService from './providerHealthService.js';
 import providerPricingService from './providerPricingService.js';
 import { buildPublicProviderDto } from '../../utils/provider.dto.js';
+import {
+  getEntityCapabilityMatrix,
+  normalizeGenerationType,
+  normalizeOutputType,
+  supportsGenerationType,
+} from '../../utils/mediaGeneration.js';
 
 const safeLower = (value) => (value ? String(value).trim().toLowerCase() : null);
+const safeNumber = (value) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
 
 const getMinCreditsByProviderDuration = async (providerIds) => {
   if (providerIds.length === 0) {
@@ -22,6 +32,66 @@ const getMinCreditsByProviderDuration = async (providerIds) => {
     map.set(`${String(row._id.provider)}:${Number(row._id.duration)}`, row.minCredits);
   }
   return map;
+};
+
+const supportsOutputType = (entity, outputType) => {
+  const normalized = normalizeOutputType(outputType);
+  if (normalized === 'image') {
+    return Boolean(entity?.supportsImage);
+  }
+  if (normalized === 'video') {
+    return Boolean(entity?.supportsVideo);
+  }
+  if (normalized === 'audio') {
+    return Boolean(entity?.supportsAudio || entity?.supportsAudioGeneration);
+  }
+  if (normalized === 'zip' || normalized === 'multiple_files') {
+    return true;
+  }
+  return false;
+};
+
+const isProviderCompatibleWithTemplate = ({ provider, template, generationType, outputType, requestContext = {} }) => {
+  if (!supportsGenerationType(provider, generationType)) {
+    return false;
+  }
+  if (!supportsOutputType(provider, outputType)) {
+    return false;
+  }
+
+  const capabilities = getEntityCapabilityMatrix(provider);
+  const minimumImages =
+    Number.isFinite(Number(template?.minimumImages))
+      ? Number(template.minimumImages)
+      : Number.isFinite(Number(template?.requiredImages))
+        ? Number(template.requiredImages)
+        : 0;
+  const requestedImageCount = Array.isArray(requestContext.inputImages) ? requestContext.inputImages.length : minimumImages;
+  const requestedReferenceCount = Array.isArray(requestContext.referenceImages) ? requestContext.referenceImages.length : 0;
+  const requestedMaskCount = Array.isArray(requestContext.maskImages) ? requestContext.maskImages.length : 0;
+  const requestedOutputCount = requestContext.multipleOutputs ? Math.max(2, safeNumber(requestContext.requestedOutputCount) || 2) : 1;
+  const maximumImages = safeNumber(capabilities.maximumImages);
+  const maximumOutputCount = safeNumber(capabilities.maximumOutputCount);
+
+  if (Math.max(minimumImages, requestedImageCount) > 1 && !capabilities.supportsMultipleImages) {
+    return false;
+  }
+  if (maximumImages !== null && requestedImageCount > maximumImages) {
+    return false;
+  }
+  if ((template?.allowReferenceImage || requestedReferenceCount > 0) && !capabilities.supportsReferenceImages) {
+    return false;
+  }
+  if ((template?.allowNegativePrompt || requestContext.negativePrompt) && !capabilities.supportsNegativePrompt) {
+    return false;
+  }
+  if ((template?.allowMaskImage || requestedMaskCount > 0) && !capabilities.supportsMaskImage) {
+    return false;
+  }
+  if (requestContext.multipleOutputs && maximumOutputCount !== null && requestedOutputCount > maximumOutputCount) {
+    return false;
+  }
+  return true;
 };
 
 const listProviders = async () => {
@@ -57,8 +127,25 @@ const listProviders = async () => {
         supportsVideo: 1,
         supportsAudio: 1,
         supportsMultipleImages: 1,
+        supportsTextToImage: 1,
+        supportsImageToImage: 1,
+        supportsTextToVideo: 1,
+        supportsImageToVideo: 1,
+        supportsVideoToVideo: 1,
+        supportsImageUpscale: 1,
+        supportsVideoUpscale: 1,
+        supportsImageEditing: 1,
+        supportsVideoEditing: 1,
+        supportsBackgroundRemoval: 1,
+        supportsFaceSwap: 1,
+        supportsAudioGeneration: 1,
+        supportsReferenceImages: 1,
+        supportsNegativePrompt: 1,
+        supportsMaskImage: 1,
+        maximumImages: 1,
         maximumDuration: 1,
         maximumResolution: 1,
+        maximumOutputCount: 1,
       })
       .sort({ priority: 1, createdAt: -1 })
       .lean(),
@@ -117,8 +204,25 @@ const getProviderDetails = async (slug) => {
         supportsVideo: 1,
         supportsAudio: 1,
         supportsMultipleImages: 1,
+        supportsTextToImage: 1,
+        supportsImageToImage: 1,
+        supportsTextToVideo: 1,
+        supportsImageToVideo: 1,
+        supportsVideoToVideo: 1,
+        supportsImageUpscale: 1,
+        supportsVideoUpscale: 1,
+        supportsImageEditing: 1,
+        supportsVideoEditing: 1,
+        supportsBackgroundRemoval: 1,
+        supportsFaceSwap: 1,
+        supportsAudioGeneration: 1,
+        supportsReferenceImages: 1,
+        supportsNegativePrompt: 1,
+        supportsMaskImage: 1,
+        maximumImages: 1,
         maximumDuration: 1,
         maximumResolution: 1,
+        maximumOutputCount: 1,
       })
       .sort({ priority: 1, createdAt: -1 })
       .lean(),
@@ -136,7 +240,7 @@ const getProviderDetails = async (slug) => {
   });
 };
 
-const buildCandidates = async ({ template = null, excludedProviderIds = [] } = {}) => {
+const buildCandidates = async ({ template = null, excludedProviderIds = [], generationType = null, outputType = null, requestContext = {} } = {}) => {
   const supportedProviderIds = new Set((template?.supportedProviders || []).map((p) => String(p)));
   const supportedProviderModelIds = new Set((template?.supportedProviderModels || []).map((m) => String(m)));
 
@@ -155,8 +259,29 @@ const buildCandidates = async ({ template = null, excludedProviderIds = [] } = {
       priority: 1,
       healthStatus: 1,
       averageResponseTimeMs: 1,
+      supportsImage: 1,
+      supportsVideo: 1,
+      supportsAudio: 1,
+      supportsMultipleImages: 1,
+      supportsTextToImage: 1,
+      supportsImageToImage: 1,
+      supportsTextToVideo: 1,
+      supportsImageToVideo: 1,
+      supportsVideoToVideo: 1,
+      supportsImageUpscale: 1,
+      supportsVideoUpscale: 1,
+      supportsImageEditing: 1,
+      supportsVideoEditing: 1,
+      supportsBackgroundRemoval: 1,
+      supportsFaceSwap: 1,
+      supportsAudioGeneration: 1,
+      supportsReferenceImages: 1,
+      supportsNegativePrompt: 1,
+      supportsMaskImage: 1,
+      maximumImages: 1,
       maximumDuration: 1,
       maximumResolution: 1,
+      maximumOutputCount: 1,
       dailyLimit: 1,
       timeout: 1,
       retryCount: 1,
@@ -169,6 +294,9 @@ const buildCandidates = async ({ template = null, excludedProviderIds = [] } = {
     try {
       providerHealthService.assertProviderEnabled(p);
       providerHealthService.assertProviderHealthAllowsUse(p);
+      if (template && generationType && outputType) {
+        return isProviderCompatibleWithTemplate({ provider: p, template, generationType, outputType, requestContext });
+      }
       return true;
     } catch {
       return false;
@@ -192,8 +320,29 @@ const buildCandidates = async ({ template = null, excludedProviderIds = [] } = {
       priority: 1,
       credits: 1,
       estimatedTime: 1,
+      supportsImage: 1,
+      supportsVideo: 1,
+      supportsAudio: 1,
+      supportsMultipleImages: 1,
+      supportsTextToImage: 1,
+      supportsImageToImage: 1,
+      supportsTextToVideo: 1,
+      supportsImageToVideo: 1,
+      supportsVideoToVideo: 1,
+      supportsImageUpscale: 1,
+      supportsVideoUpscale: 1,
+      supportsImageEditing: 1,
+      supportsVideoEditing: 1,
+      supportsBackgroundRemoval: 1,
+      supportsFaceSwap: 1,
+      supportsAudioGeneration: 1,
+      supportsReferenceImages: 1,
+      supportsNegativePrompt: 1,
+      supportsMaskImage: 1,
+      maximumImages: 1,
       maximumDuration: 1,
       maximumResolution: 1,
+      maximumOutputCount: 1,
       metadata: 1,
     })
     .sort({ priority: 1, createdAt: -1 })
@@ -211,8 +360,19 @@ const buildCandidates = async ({ template = null, excludedProviderIds = [] } = {
   return { providers: eligibleProviders, modelsByProviderId };
 };
 
-const pickModelForProvider = ({ providerId, providerModelSlug = null, modelsByProviderId }) => {
-  const list = modelsByProviderId.get(String(providerId)) || [];
+const pickModelForProvider = ({
+  providerId,
+  providerModelSlug = null,
+  modelsByProviderId,
+  template = null,
+  generationType = null,
+  outputType = null,
+  requestContext = {},
+}) => {
+  let list = modelsByProviderId.get(String(providerId)) || [];
+  if (template && generationType && outputType) {
+    list = list.filter((model) => isProviderCompatibleWithTemplate({ provider: model, template, generationType, outputType, requestContext }));
+  }
   if (providerModelSlug) {
     const slug = safeLower(providerModelSlug);
     return list.find((m) => m.slug === slug) || null;
@@ -229,8 +389,20 @@ const selectProviderAndModel = async ({
   providerModelSlug = null,
   strategy = 'priority',
   excludedProviderIds = [],
+  executionContext = {},
 } = {}) => {
-  const { providers, modelsByProviderId } = await buildCandidates({ template, excludedProviderIds });
+  const resolvedGenerationType = normalizeGenerationType(executionContext.generationType || template?.generationType || 'image_to_video');
+  const resolvedOutputType = normalizeOutputType(
+    executionContext.outputType ||
+      (Array.isArray(template?.supportedOutputTypes) && template.supportedOutputTypes.length > 0 ? template.supportedOutputTypes[0] : template?.outputType || 'video'),
+  );
+  const { providers, modelsByProviderId } = await buildCandidates({
+    template,
+    excludedProviderIds,
+    generationType: resolvedGenerationType,
+    outputType: resolvedOutputType,
+    requestContext: executionContext,
+  });
   if (providers.length === 0) {
     throw new ApiError(400, 'No available providers for this template.', { code: 'NO_AVAILABLE_PROVIDERS' });
   }
@@ -243,14 +415,30 @@ const selectProviderAndModel = async ({
     if (!provider) {
       throw new ApiError(404, 'Provider not found for this template.', { code: 'PROVIDER_NOT_AVAILABLE' });
     }
-    const model = pickModelForProvider({ providerId: provider._id, providerModelSlug, modelsByProviderId });
+    const model = pickModelForProvider({
+      providerId: provider._id,
+      providerModelSlug,
+      modelsByProviderId,
+      template,
+      generationType: resolvedGenerationType,
+      outputType: resolvedOutputType,
+      requestContext: executionContext,
+    });
     return { provider, model };
   }
 
   if (normalizedStrategy === 'fastest') {
     const ranked = providers
       .map((p) => {
-        const model = pickModelForProvider({ providerId: p._id, providerModelSlug: null, modelsByProviderId });
+        const model = pickModelForProvider({
+          providerId: p._id,
+          providerModelSlug: null,
+          modelsByProviderId,
+          template,
+          generationType: resolvedGenerationType,
+          outputType: resolvedOutputType,
+          requestContext: executionContext,
+        });
         const modelTime = model?.estimatedTime && model.estimatedTime > 0 ? model.estimatedTime : null;
         const providerTime = p.averageResponseTimeMs && p.averageResponseTimeMs > 0 ? p.averageResponseTimeMs : null;
         const score = modelTime ?? providerTime ?? Number.MAX_SAFE_INTEGER;
@@ -267,7 +455,15 @@ const selectProviderAndModel = async ({
 
     const ranked = providers
       .map((p) => {
-        const model = pickModelForProvider({ providerId: p._id, providerModelSlug: null, modelsByProviderId });
+    const model = pickModelForProvider({
+      providerId: p._id,
+      providerModelSlug: null,
+      modelsByProviderId,
+      template,
+      generationType: resolvedGenerationType,
+      outputType: resolvedOutputType,
+      requestContext: executionContext,
+    });
         const key = `${String(p._id)}:${Number(duration)}`;
         const providerPricingCredits = pricingMap.has(key) ? pricingMap.get(key) : null;
         const modelCredits = model?.credits && model.credits > 0 ? model.credits : null;
@@ -284,7 +480,15 @@ const selectProviderAndModel = async ({
   if (normalizedStrategy === 'highest_quality') {
     const ranked = providers
       .map((p) => {
-        const model = pickModelForProvider({ providerId: p._id, providerModelSlug: null, modelsByProviderId });
+        const model = pickModelForProvider({
+          providerId: p._id,
+          providerModelSlug: null,
+          modelsByProviderId,
+          template,
+          generationType: resolvedGenerationType,
+          outputType: resolvedOutputType,
+          requestContext: executionContext,
+        });
         const score = (model?.priority ?? 0) * -1;
         return { provider: p, model, score };
       })
@@ -293,7 +497,15 @@ const selectProviderAndModel = async ({
   }
 
   const provider = providers.slice().sort((a, b) => (a.priority || 0) - (b.priority || 0))[0];
-  const model = pickModelForProvider({ providerId: provider._id, providerModelSlug, modelsByProviderId });
+  const model = pickModelForProvider({
+    providerId: provider._id,
+    providerModelSlug,
+    modelsByProviderId,
+    template,
+    generationType: resolvedGenerationType,
+    outputType: resolvedOutputType,
+    requestContext: executionContext,
+  });
   return { provider, model };
 };
 

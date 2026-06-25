@@ -1,5 +1,22 @@
 const buildResult = ({ valid = true, message = '', errors = [] } = {}) => ({ valid, message, errors });
 
+const validateAssetArray = (items, field, errors) => {
+  if (!Array.isArray(items)) {
+    errors.push({ field, message: `${field} must be an array.` });
+    return;
+  }
+  for (let i = 0; i < items.length; i += 1) {
+    const item = items[i];
+    if (!item || typeof item !== 'object') {
+      errors.push({ field: `${field}[${i}]`, message: 'Each asset must be an object.' });
+      continue;
+    }
+    if (!item.url || typeof item.url !== 'string') {
+      errors.push({ field: `${field}[${i}].url`, message: 'Asset url is required.' });
+    }
+  }
+};
+
 const validateStart = async (body = {}) => {
   const errors = [];
 
@@ -24,20 +41,43 @@ const validateStart = async (body = {}) => {
   }
 
   if (body.inputImages !== undefined && body.inputImages !== null) {
-    if (!Array.isArray(body.inputImages)) {
-      errors.push({ field: 'inputImages', message: 'inputImages must be an array.' });
-    } else {
-      for (let i = 0; i < body.inputImages.length; i += 1) {
-        const img = body.inputImages[i];
-        if (!img || typeof img !== 'object') {
-          errors.push({ field: `inputImages[${i}]`, message: 'Each input image must be an object.' });
-          continue;
-        }
-        if (!img.url || typeof img.url !== 'string') {
-          errors.push({ field: `inputImages[${i}].url`, message: 'Image url is required.' });
-        }
-      }
-    }
+    validateAssetArray(body.inputImages, 'inputImages', errors);
+  }
+
+  if (body.inputVideos !== undefined && body.inputVideos !== null) {
+    validateAssetArray(body.inputVideos, 'inputVideos', errors);
+  }
+
+  if (body.inputAudio !== undefined && body.inputAudio !== null) {
+    validateAssetArray(body.inputAudio, 'inputAudio', errors);
+  }
+
+  if (body.referenceImages !== undefined && body.referenceImages !== null) {
+    validateAssetArray(body.referenceImages, 'referenceImages', errors);
+  }
+
+  if (body.maskImages !== undefined && body.maskImages !== null) {
+    validateAssetArray(body.maskImages, 'maskImages', errors);
+  }
+
+  if (body.prompt !== undefined && body.prompt !== null && typeof body.prompt !== 'string') {
+    errors.push({ field: 'prompt', message: 'prompt must be a string.' });
+  }
+
+  if (body.negativePrompt !== undefined && body.negativePrompt !== null && typeof body.negativePrompt !== 'string') {
+    errors.push({ field: 'negativePrompt', message: 'negativePrompt must be a string.' });
+  }
+
+  if (body.generationType !== undefined && body.generationType !== null && typeof body.generationType !== 'string') {
+    errors.push({ field: 'generationType', message: 'generationType must be a string.' });
+  }
+
+  if (body.outputType !== undefined && body.outputType !== null && typeof body.outputType !== 'string') {
+    errors.push({ field: 'outputType', message: 'outputType must be a string.' });
+  }
+
+  if (body.multipleOutputs !== undefined && typeof body.multipleOutputs !== 'boolean') {
+    errors.push({ field: 'multipleOutputs', message: 'multipleOutputs must be a boolean.' });
   }
 
   if (errors.length > 0) {

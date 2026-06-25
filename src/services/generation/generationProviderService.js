@@ -22,8 +22,13 @@ const resolveTemplateById = async (templateId) => {
   return template;
 };
 
-const planExecution = async ({ template, providerSlug = null, providerModelSlug = null, strategy = 'priority' } = {}) =>
-  providerRoutingService.planGeneration({ template, providerSlug, providerModelSlug, strategy });
+const planExecution = async ({
+  template,
+  providerSlug = null,
+  providerModelSlug = null,
+  strategy = 'priority',
+  executionContext = {},
+} = {}) => providerRoutingService.planGeneration({ template, providerSlug, providerModelSlug, strategy, executionContext });
 
 const startExecution = async ({
   template,
@@ -31,7 +36,8 @@ const startExecution = async ({
   providerModelSlug = null,
   strategy = 'priority',
   allowFailover = true,
-} = {}) => providerRoutingService.startGeneration({ template, providerSlug, providerModelSlug, strategy, allowFailover });
+  executionContext = {},
+} = {}) => providerRoutingService.startGeneration({ template, providerSlug, providerModelSlug, strategy, allowFailover, executionContext });
 
 const getProviderDocById = async (providerId) => {
   const provider = await ProviderModel.findById(providerId).lean();
@@ -41,8 +47,13 @@ const getProviderDocById = async (providerId) => {
   return provider;
 };
 
-const resolveSelection = async ({ template, providerSlug = null, providerModelSlug = null, strategy = 'priority' } = {}) =>
-  providerSelectionService.selectProviderAndModel({ template, providerSlug, providerModelSlug, strategy });
+const resolveSelection = async ({
+  template,
+  providerSlug = null,
+  providerModelSlug = null,
+  strategy = 'priority',
+  executionContext = {},
+} = {}) => providerSelectionService.selectProviderAndModel({ template, providerSlug, providerModelSlug, strategy, executionContext });
 
 const generationProviderService = Object.freeze({
   computeEstimatedTimeMs,

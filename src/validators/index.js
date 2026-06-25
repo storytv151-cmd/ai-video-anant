@@ -12,8 +12,10 @@ import paymentValidator from './payment.validator.js';
 import providerValidator from './provider.validator.js';
 import rewardValidator from './reward.validator.js';
 import statusValidator from './status.validator.js';
+import subscriptionValidator from './subscription.validator.js';
 import templateValidator from './template.validator.js';
 import transactionValidator from './transaction.validator.js';
+import uploadValidator from './upload.validator.js';
 import walletValidator from './wallet.validator.js';
 
 const buildValidatorResult = ({ valid = true, message = '', errors = [] } = {}) => ({
@@ -33,8 +35,10 @@ const validators = Object.freeze({
   providerValidator,
   rewardValidator,
   statusValidator,
+  subscriptionValidator,
   templateValidator,
   transactionValidator,
+  uploadValidator,
   walletValidator,
 });
 

@@ -7,6 +7,7 @@ import AuditLogModel from './AuditLog.js';
 import CouponModel from './Coupon.js';
 import CreditTransactionModel from './CreditTransaction.js';
 import DailyCheckinModel from './DailyCheckin.js';
+import FileAssetModel from './FileAsset.js';
 import NotificationModel from './Notification.js';
 import PaymentModel from './Payment.js';
 import ProviderModel from './Provider.js';
@@ -27,6 +28,7 @@ const models = Object.freeze({
   CouponModel,
   CreditTransactionModel,
   DailyCheckinModel,
+  FileAssetModel,
   NotificationModel,
   PaymentModel,
   ProviderModel,
