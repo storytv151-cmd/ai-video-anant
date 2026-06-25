@@ -4,6 +4,7 @@
  */
 import authValidator from './auth.validator.js';
 import bootstrapValidator from './bootstrap.validator.js';
+import categoryValidator from './category.validator.js';
 import commonValidator from './common.validator.js';
 import generationValidator from './generation.validator.js';
 import paymentValidator from './payment.validator.js';
@@ -22,6 +23,7 @@ const buildValidatorResult = ({ valid = true, message = '', errors = [] } = {}) 
 const validators = Object.freeze({
   authValidator,
   bootstrapValidator,
+  categoryValidator,
   commonValidator,
   generationValidator,
   paymentValidator,

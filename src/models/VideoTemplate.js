@@ -50,6 +50,16 @@ const videoTemplateSchema = createBaseSchema({
       message: 'Preview image must be a valid URL.',
     },
   },
+  previewImages: [
+    {
+      type: String,
+      trim: true,
+      validate: {
+        validator: metadataUrlValidator,
+        message: 'Preview image must be a valid URL.',
+      },
+    },
+  ],
   previewVideo: {
     type: String,
     trim: true,
@@ -59,6 +69,16 @@ const videoTemplateSchema = createBaseSchema({
       message: 'Preview video must be a valid URL.',
     },
   },
+  previewVideos: [
+    {
+      type: String,
+      trim: true,
+      validate: {
+        validator: metadataUrlValidator,
+        message: 'Preview video must be a valid URL.',
+      },
+    },
+  ],
   thumbnail: {
     type: String,
     trim: true,
@@ -84,6 +104,12 @@ const videoTemplateSchema = createBaseSchema({
     {
       type: Schema.Types.ObjectId,
       ref: 'Provider',
+    },
+  ],
+  supportedProviderModels: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'ProviderModel',
     },
   ],
   requiredImages: {
@@ -117,6 +143,11 @@ const videoTemplateSchema = createBaseSchema({
     default: false,
     index: true,
   },
+  featured: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
   premium: {
     type: Boolean,
     default: false,
@@ -126,6 +157,31 @@ const videoTemplateSchema = createBaseSchema({
     type: Number,
     default: null,
     min: 0,
+  },
+  estimatedGenerationTimeMs: {
+    type: Number,
+    default: null,
+    min: 0,
+  },
+  usageCount: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  favoriteCount: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  publishAt: {
+    type: Date,
+    default: null,
+    index: true,
+  },
+  expiresAt: {
+    type: Date,
+    default: null,
+    index: true,
   },
   sortOrder: {
     type: Number,
@@ -155,8 +211,23 @@ videoTemplateSchema.index(
 );
 videoTemplateSchema.index({ category: 1, status: 1, sortOrder: 1 });
 videoTemplateSchema.index({ supportedProviders: 1, status: 1 });
+videoTemplateSchema.index({ supportedProviderModels: 1, status: 1 });
 videoTemplateSchema.index({ tags: 1 });
-videoTemplateSchema.index({ trending: 1, premium: 1, createdAt: -1 });
+videoTemplateSchema.index({ trending: 1, featured: 1, premium: 1, createdAt: -1 });
+videoTemplateSchema.index({ status: 1, createdAt: -1 });
+videoTemplateSchema.index({ status: 1, category: 1, createdAt: -1 });
+videoTemplateSchema.index({ status: 1, usageCount: -1, createdAt: -1 });
+videoTemplateSchema.index({ status: 1, favoriteCount: -1, createdAt: -1 });
+videoTemplateSchema.index({ status: 1, publishAt: 1, expiresAt: 1 });
+
+videoTemplateSchema.index(
+  { title: 'text', description: 'text', tags: 'text', slug: 'text' },
+  {
+    weights: { title: 10, slug: 8, tags: 6, description: 2 },
+    name: 'idx_video_template_text',
+    partialFilterExpression: { isDeleted: false, status: 'active' },
+  },
+);
 
 videoTemplateSchema.virtual('generationJobs', {
   ref: 'VideoGenerationJob',

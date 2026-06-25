@@ -23,6 +23,12 @@ const templateCategorySchema = createBaseSchema({
     lowercase: true,
     maxlength: 140,
   },
+  description: {
+    type: String,
+    trim: true,
+    maxlength: 2000,
+    default: null,
+  },
   icon: {
     type: String,
     trim: true,
@@ -66,6 +72,7 @@ templateCategorySchema.index(
 );
 templateCategorySchema.index({ featured: 1, status: 1, sortOrder: 1 });
 templateCategorySchema.index({ title: 1 });
+templateCategorySchema.index({ status: 1, sortOrder: 1, createdAt: -1 });
 
 templateCategorySchema.virtual('templates', {
   ref: 'VideoTemplate',
