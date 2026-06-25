@@ -18,8 +18,14 @@ const validateVerifyGooglePurchase = async (body = {}) => {
   if (body.paymentType !== undefined && !['credit_purchase', 'subscription'].includes(body.paymentType)) {
     errors.push({ field: 'paymentType', message: 'paymentType must be credit_purchase or subscription.' });
   }
+  if (body.paymentType === 'subscription') {
+    errors.push({ field: 'paymentType', message: 'subscription verification is not implemented in this phase.' });
+  }
   if (body.productType !== undefined && !['inapp', 'subs'].includes(body.productType)) {
     errors.push({ field: 'productType', message: 'productType must be inapp or subs.' });
+  }
+  if (body.productType === 'subs') {
+    errors.push({ field: 'productType', message: 'subs is not implemented in this phase.' });
   }
 
   return errors.length > 0 ? buildResult({ valid: false, message: 'Validation failed.', errors }) : buildResult({ valid: true });
@@ -41,6 +47,37 @@ const validateRestorePurchases = async (body = {}) => {
         }
       }
     }
+  }
+
+  if (body.purchases !== undefined && body.purchases !== null) {
+    if (!Array.isArray(body.purchases) || body.purchases.length === 0) {
+      errors.push({ field: 'purchases', message: 'purchases must be a non-empty array.' });
+    } else {
+      for (let i = 0; i < body.purchases.length; i += 1) {
+        const item = body.purchases[i] || {};
+        if (!item.purchaseToken || typeof item.purchaseToken !== 'string') {
+          errors.push({ field: `purchases[${i}].purchaseToken`, message: 'purchaseToken is required.' });
+        }
+        if (!item.productId || typeof item.productId !== 'string') {
+          errors.push({ field: `purchases[${i}].productId`, message: 'productId is required.' });
+        }
+        if (item.orderId !== undefined && item.orderId !== null && typeof item.orderId !== 'string') {
+          errors.push({ field: `purchases[${i}].orderId`, message: 'orderId must be a string.' });
+        }
+        if (item.packageName !== undefined && item.packageName !== null && typeof item.packageName !== 'string') {
+          errors.push({ field: `purchases[${i}].packageName`, message: 'packageName must be a string.' });
+        }
+      }
+    }
+  }
+
+  const hasLegacyArrays =
+    (Array.isArray(body.productIds) && body.productIds.length > 0) ||
+    (Array.isArray(body.orderIds) && body.orderIds.length > 0) ||
+    (Array.isArray(body.purchaseTokens) && body.purchaseTokens.length > 0);
+
+  if (!Array.isArray(body.purchases) && !hasLegacyArrays) {
+    errors.push({ field: 'purchases', message: 'Provide purchases or legacy productIds/purchaseTokens arrays.' });
   }
 
   return errors.length > 0 ? buildResult({ valid: false, message: 'Validation failed.', errors }) : buildResult({ valid: true });
@@ -67,10 +104,19 @@ const validatePaymentHistoryQuery = async (query = {}) => {
   return errors.length > 0 ? buildResult({ valid: false, message: 'Validation failed.', errors }) : buildResult({ valid: true });
 };
 
+const validatePaymentDetailParams = async (params = {}) => {
+  const errors = [];
+  if (!params.id || typeof params.id !== 'string') {
+    errors.push({ field: 'id', message: 'Payment id is required.' });
+  }
+  return errors.length > 0 ? buildResult({ valid: false, message: 'Validation failed.', errors }) : buildResult({ valid: true });
+};
+
 const paymentValidator = Object.freeze({
   validateVerifyGooglePurchase,
   validateRestorePurchases,
   validatePaymentHistoryQuery,
+  validatePaymentDetailParams,
 });
 
 export default paymentValidator;

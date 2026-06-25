@@ -10,7 +10,7 @@ import { createBaseSchema } from './base.schema.js';
 
 const { Schema } = mongoose;
 
-const PURCHASE_STATES = ['pending', 'purchased', 'acknowledged', 'consumed', 'cancelled', 'expired', 'refunded', 'revoked', 'paused', 'grace_period', 'on_hold'];
+const PURCHASE_STATES = ['pending', 'purchased', 'acknowledged', 'consumed', 'renewed', 'cancelled', 'expired', 'refunded', 'revoked', 'paused', 'grace_period', 'on_hold', 'failed'];
 
 const paymentSchema = createBaseSchema({
   user: {
@@ -60,6 +60,13 @@ const paymentSchema = createBaseSchema({
     default: null,
     index: true,
   },
+  packageName: {
+    type: String,
+    trim: true,
+    maxlength: 255,
+    default: null,
+    index: true,
+  },
   packageCode: {
     type: String,
     trim: true,
@@ -102,6 +109,13 @@ const paymentSchema = createBaseSchema({
     maxlength: 255,
     default: null,
   },
+  googlePurchaseId: {
+    type: String,
+    trim: true,
+    maxlength: 255,
+    default: null,
+    index: true,
+  },
   purchaseState: {
     type: String,
     enum: PURCHASE_STATES,
@@ -110,13 +124,34 @@ const paymentSchema = createBaseSchema({
   },
   verificationStatus: {
     type: String,
-    enum: ['pending', 'verified', 'rejected', 'not_requested'],
+    enum: ['pending', 'verified', 'rejected', 'not_requested', 'duplicate'],
     default: 'not_requested',
     index: true,
+  },
+  purchaseStateCode: {
+    type: Number,
+    default: null,
+  },
+  acknowledgementStateCode: {
+    type: Number,
+    default: null,
+  },
+  consumptionStateCode: {
+    type: Number,
+    default: null,
   },
   purchaseTime: {
     type: Date,
     default: null,
+  },
+  verifiedAt: {
+    type: Date,
+    default: null,
+  },
+  verificationTimeMs: {
+    type: Number,
+    default: null,
+    min: 0,
   },
   acknowledgedAt: {
     type: Date,
@@ -202,6 +237,16 @@ const paymentSchema = createBaseSchema({
     maxlength: 2,
     default: null,
   },
+  quantity: {
+    type: Number,
+    default: 1,
+    min: 1,
+  },
+  refundableQuantity: {
+    type: Number,
+    default: null,
+    min: 0,
+  },
   creditsPurchased: {
     type: Number,
     required: [true, 'Purchased credits are required.'],
@@ -225,6 +270,42 @@ const paymentSchema = createBaseSchema({
     default: null,
   },
   verificationPayload: {
+    type: Schema.Types.Mixed,
+    default: null,
+  },
+  requestId: {
+    type: String,
+    trim: true,
+    maxlength: 120,
+    default: null,
+    index: true,
+  },
+  requestIdempotencyKey: {
+    type: String,
+    trim: true,
+    maxlength: 120,
+    default: null,
+    index: true,
+  },
+  ipAddress: {
+    type: String,
+    trim: true,
+    maxlength: 100,
+    default: null,
+  },
+  userAgent: {
+    type: String,
+    trim: true,
+    maxlength: 500,
+    default: null,
+  },
+  clientDeviceId: {
+    type: String,
+    trim: true,
+    maxlength: 255,
+    default: null,
+  },
+  deviceInfo: {
     type: Schema.Types.Mixed,
     default: null,
   },
@@ -257,6 +338,7 @@ paymentSchema.index({ wallet: 1, createdAt: -1 });
 paymentSchema.index({ gateway: 1, status: 1, createdAt: -1 });
 paymentSchema.index({ platform: 1, purchaseState: 1, createdAt: -1 });
 paymentSchema.index({ platform: 1, verificationStatus: 1, createdAt: -1 });
+paymentSchema.index({ user: 1, requestIdempotencyKey: 1, createdAt: -1 });
 paymentSchema.index(
   { gateway: 1, gatewayTransactionId: 1 },
   {
@@ -291,6 +373,18 @@ paymentSchema.index(
       orderId: { $type: 'string' },
     },
     name: 'uniq_payment_platform_order_id_active',
+  },
+);
+paymentSchema.index(
+  { platform: 1, googlePurchaseId: 1 },
+  {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: {
+      isDeleted: false,
+      googlePurchaseId: { $type: 'string' },
+    },
+    name: 'uniq_payment_platform_google_purchase_id_active',
   },
 );
 

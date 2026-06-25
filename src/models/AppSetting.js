@@ -108,11 +108,16 @@ const subscriptionPlanSchema = new Schema(
       maxlength: 80,
       required: true,
     },
+    version: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
     googlePlayProductId: {
       type: String,
       trim: true,
       maxlength: 150,
-      required: true,
+      default: null,
     },
     basePlanId: {
       type: String,
@@ -141,8 +146,20 @@ const subscriptionPlanSchema = new Schema(
       default: 'USD',
     },
     enabled: { type: Boolean, default: true },
+    isDefault: { type: Boolean, default: false },
+    isPremium: { type: Boolean, default: false },
     autoRenew: { type: Boolean, default: true },
     premiumFeatures: { type: [String], default: [] },
+    featureFlags: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
+    limits: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
     trialDays: { type: Number, default: 0, min: 0 },
     offerLabel: {
       type: String,
@@ -153,6 +170,20 @@ const subscriptionPlanSchema = new Schema(
     countries: {
       type: [String],
       default: [],
+    },
+    transitions: {
+      allowUpgrade: { type: Boolean, default: true },
+      allowDowngrade: { type: Boolean, default: true },
+      allowRenew: { type: Boolean, default: true },
+      allowPause: { type: Boolean, default: true },
+      allowResume: { type: Boolean, default: true },
+      allowCancel: { type: Boolean, default: true },
+      allowTrial: { type: Boolean, default: false },
+      metadata: {
+        type: Map,
+        of: Schema.Types.Mixed,
+        default: {},
+      },
     },
     metadata: {
       type: Map,
@@ -187,6 +218,40 @@ const futureProviderSchema = new Schema(
   { _id: false },
 );
 
+const adminPermissionSchema = new Schema(
+  {
+    code: { type: String, trim: true, lowercase: true, maxlength: 150, required: true },
+    label: { type: String, trim: true, maxlength: 160, default: null },
+    description: { type: String, trim: true, maxlength: 1000, default: null },
+    group: { type: String, trim: true, lowercase: true, maxlength: 80, default: null },
+    enabled: { type: Boolean, default: true },
+    metadata: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
+  },
+  { _id: false },
+);
+
+const adminRoleSchema = new Schema(
+  {
+    code: { type: String, trim: true, lowercase: true, maxlength: 120, required: true },
+    label: { type: String, trim: true, maxlength: 160, required: true },
+    description: { type: String, trim: true, maxlength: 1000, default: null },
+    enabled: { type: Boolean, default: true },
+    isSystem: { type: Boolean, default: false },
+    inherits: { type: [String], default: [] },
+    permissions: { type: [String], default: [] },
+    metadata: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
+  },
+  { _id: false },
+);
+
 const appSettingSchema = createBaseSchema({
   section: {
     type: String,
@@ -204,6 +269,7 @@ const appSettingSchema = createBaseSchema({
       'API',
       'NOTIFICATIONS',
       'SYSTEM',
+      'ADMIN',
     ],
     default: 'GENERAL',
     index: true,
@@ -247,15 +313,26 @@ const appSettingSchema = createBaseSchema({
     googlePlay: {
       enabled: { type: Boolean, default: false },
       packageName: { type: String, trim: true, default: null },
+      appId: { type: String, trim: true, default: null },
       serviceAccountEmail: { type: String, trim: true, default: null },
       linkedPackageName: { type: String, trim: true, default: null },
       allowCreditPurchases: { type: Boolean, default: true },
       allowSubscriptions: { type: Boolean, default: true },
       requireAcknowledgement: { type: Boolean, default: true },
       consumeOneTimePurchases: { type: Boolean, default: true },
+      subscriptionVerificationIntervalMinutes: { type: Number, default: 180, min: 1 },
+      subscriptionSyncEnabled: { type: Boolean, default: true },
+      subscriptionSyncOnAppOpen: { type: Boolean, default: true },
+      renewalRetryCount: { type: Number, default: 3, min: 0 },
+      subscriptionRetryCount: { type: Number, default: 3, min: 0 },
+      verificationIntervalMinutes: { type: Number, default: 180, min: 1 },
       enableFraudSignals: { type: Boolean, default: true },
       enableRtdnPreparation: { type: Boolean, default: true },
       rtdnPubSubTopic: { type: String, trim: true, default: null },
+      rtdnAudience: { type: String, trim: true, default: null },
+      rtdnAuthorizedEmails: { type: [String], default: [] },
+      rtdnVerificationToken: { type: String, trim: true, default: null },
+      featureMapping: { type: Map, of: Schema.Types.Mixed, default: {} },
       metadata: { type: Map, of: Schema.Types.Mixed, default: {} },
     },
     metadata: { type: Map, of: Schema.Types.Mixed, default: {} },
@@ -310,6 +387,31 @@ const appSettingSchema = createBaseSchema({
     type: [subscriptionPlanSchema],
     default: [],
   },
+  membershipSettings: {
+    enabled: { type: Boolean, default: true },
+    freePlanCode: { type: String, trim: true, lowercase: true, default: 'free' },
+    gracePeriodDays: { type: Number, default: 3, min: 0 },
+    allowTrials: { type: Boolean, default: false },
+    allowPlanPause: { type: Boolean, default: false },
+    allowGiftSubscription: { type: Boolean, default: false },
+    supportedStatuses: {
+      type: [String],
+      default: ['inactive', 'active', 'trial', 'grace_period', 'paused', 'expired', 'cancelled', 'on_hold', 'revoked', 'pending', 'renewed', 'past_due'],
+    },
+    featureCatalog: {
+      type: [String],
+      default: [],
+    },
+    futurePlans: {
+      type: [String],
+      default: ['creator', 'family', 'enterprise'],
+    },
+    metadata: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
+  },
   trialSettings: {
     enabled: { type: Boolean, default: false },
     defaultDays: { type: Number, default: 0, min: 0 },
@@ -329,6 +431,48 @@ const appSettingSchema = createBaseSchema({
   futurePricing: {
     type: [Schema.Types.Mixed],
     default: [],
+  },
+  adminAccess: {
+    enabled: { type: Boolean, default: true },
+    allowCustomRoles: { type: Boolean, default: true },
+    sensitiveActionConfirmationRequired: { type: Boolean, default: false },
+    roles: {
+      type: [adminRoleSchema],
+      default: [],
+    },
+    permissions: {
+      type: [adminPermissionSchema],
+      default: [],
+    },
+    allowedIpRanges: {
+      type: [String],
+      default: [],
+    },
+    rateLimit: {
+      windowMs: { type: Number, default: 60000, min: 1000 },
+      maxRequests: { type: Number, default: 120, min: 1 },
+    },
+    futureScopes: {
+      type: [String],
+      default: [
+        'multi_admin',
+        'organizations',
+        'teams',
+        'regional_admins',
+        'white_label',
+        'multi_tenant',
+        'support_tickets',
+        'internal_notes',
+        'approval_workflow',
+        'bulk_operations',
+        'csv_export',
+      ],
+    },
+    metadata: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
   },
   featureToggles: {
     type: Map,

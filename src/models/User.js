@@ -13,6 +13,68 @@ import { createBaseSchema } from './base.schema.js';
 
 const { Schema } = mongoose;
 
+const subscriptionHistoryItemSchema = new Schema(
+  {
+    event: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 80,
+      required: true,
+    },
+    fromPlan: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 80,
+      default: null,
+    },
+    toPlan: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 80,
+      default: null,
+    },
+    fromStatus: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 80,
+      default: null,
+    },
+    toStatus: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 80,
+      default: null,
+    },
+    triggeredBy: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 80,
+      default: 'system',
+    },
+    payment: {
+      type: Schema.Types.ObjectId,
+      ref: 'Payment',
+      default: null,
+    },
+    happenedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    metadata: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
+  },
+  { _id: false },
+);
+
 const subscriptionSchema = new Schema(
   {
     plan: {
@@ -23,7 +85,7 @@ const subscriptionSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ['inactive', 'trial', 'active', 'past_due', 'cancelled', 'expired', 'paused', 'grace_period', 'on_hold', 'revoked'],
+      enum: ['inactive', 'trial', 'active', 'renewed', 'past_due', 'cancelled', 'expired', 'paused', 'grace_period', 'on_hold', 'revoked', 'pending'],
       default: 'inactive',
     },
     startDate: {
@@ -57,6 +119,17 @@ const subscriptionSchema = new Schema(
       maxlength: 150,
       default: null,
     },
+    purchaseToken: {
+      type: String,
+      trim: true,
+      maxlength: 2000,
+      default: null,
+    },
+    planVersion: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
     basePlanId: {
       type: String,
       trim: true,
@@ -76,6 +149,24 @@ const subscriptionSchema = new Schema(
       default: null,
     },
     purchaseTokenHash: {
+      type: String,
+      trim: true,
+      maxlength: 255,
+      default: null,
+    },
+    linkedPurchaseToken: {
+      type: String,
+      trim: true,
+      maxlength: 2000,
+      default: null,
+    },
+    linkedPurchaseTokenHash: {
+      type: String,
+      trim: true,
+      maxlength: 255,
+      default: null,
+    },
+    latestOrderId: {
       type: String,
       trim: true,
       maxlength: 255,
@@ -105,14 +196,113 @@ const subscriptionSchema = new Schema(
       type: Date,
       default: null,
     },
+    nextVerificationAt: {
+      type: Date,
+      default: null,
+    },
+    lastSyncedAt: {
+      type: Date,
+      default: null,
+    },
+    googleSubscriptionState: {
+      type: String,
+      trim: true,
+      maxlength: 120,
+      default: null,
+    },
+    acknowledgementState: {
+      type: String,
+      trim: true,
+      maxlength: 120,
+      default: null,
+    },
+    regionCode: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      maxlength: 2,
+      default: null,
+    },
+    externalAccountId: {
+      type: String,
+      trim: true,
+      maxlength: 255,
+      default: null,
+    },
+    externalProfileId: {
+      type: String,
+      trim: true,
+      maxlength: 255,
+      default: null,
+    },
     premiumFeatures: {
       type: [String],
       default: [],
+    },
+    featureSnapshot: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
+    limitsSnapshot: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
+    renewalCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    cancelledAt: {
+      type: Date,
+      default: null,
+    },
+    resumedAt: {
+      type: Date,
+      default: null,
+    },
+    gracePeriodStartedAt: {
+      type: Date,
+      default: null,
+    },
+    trialEndsAt: {
+      type: Date,
+      default: null,
+    },
+    revokedAt: {
+      type: Date,
+      default: null,
+    },
+    renewalDeclinedAt: {
+      type: Date,
+      default: null,
+    },
+    latestNotificationId: {
+      type: String,
+      trim: true,
+      maxlength: 255,
+      default: null,
+    },
+    latestNotificationType: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 120,
+      default: null,
+    },
+    latestNotificationAt: {
+      type: Date,
+      default: null,
     },
     payment: {
       type: Schema.Types.ObjectId,
       ref: 'Payment',
       default: null,
+    },
+    history: {
+      type: [subscriptionHistoryItemSchema],
+      default: [],
     },
     metadata: {
       type: Map,
@@ -202,7 +392,7 @@ const userSchema = createBaseSchema({
   },
   role: {
     type: String,
-    enum: ['user', 'admin', 'super-admin', 'support'],
+    enum: ['user', 'admin', 'super-admin', 'support', 'moderator', 'finance', 'analytics', 'read-only', 'custom'],
     default: 'user',
     index: true,
   },

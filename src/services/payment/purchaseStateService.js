@@ -10,6 +10,7 @@ const PURCHASE_STATES = Object.freeze([
   'paused',
   'grace_period',
   'on_hold',
+  'failed',
 ]);
 
 const normalizePurchaseState = (value, fallback = 'pending') => {
@@ -25,6 +26,7 @@ const normalizePurchaseState = (value, fallback = 'pending') => {
   const aliases = {
     purchase_pending: 'pending',
     purchase_completed: 'purchased',
+    error: 'failed',
     graceperiod: 'grace_period',
     grace: 'grace_period',
     hold: 'on_hold',
@@ -35,7 +37,7 @@ const normalizePurchaseState = (value, fallback = 'pending') => {
 };
 
 const isTerminalPurchaseState = (value) =>
-  ['consumed', 'cancelled', 'expired', 'refunded', 'revoked'].includes(normalizePurchaseState(value));
+  ['consumed', 'cancelled', 'expired', 'refunded', 'revoked', 'failed'].includes(normalizePurchaseState(value));
 
 const canAcknowledgePurchase = (value) => ['purchased'].includes(normalizePurchaseState(value));
 

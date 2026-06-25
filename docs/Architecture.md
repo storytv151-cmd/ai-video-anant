@@ -28,6 +28,7 @@ Existing `/api/v1` endpoints and legacy video fields remain available so previou
 - `GET /api/v1/bootstrap` returns public app configuration plus provider capability data.
 - Android can build UI dynamically from provider/model capabilities, supported generation types, supported output types, and template requirements.
 - Backward-compatible flags such as `videoGenerationEnabled` remain, while `mediaGenerationEnabled` is now also exposed.
+- Bootstrap also exposes membership plan catalogs, feature catalogs, and current subscription summaries for dynamic premium UI rendering.
 
 ### Template Layer
 
@@ -47,6 +48,14 @@ Existing `/api/v1` endpoints and legacy video fields remain available so previou
 - Jobs can store `inputImages`, `inputVideos`, `inputAudio`, `referenceImages`, `maskImages`, `prompt`, `negativePrompt`, `generationType`, `outputType`, `multipleOutputs`, and `outputAssets`.
 - Legacy `outputVideo` is preserved so existing video clients do not break.
 
+### Membership Layer
+
+- Membership is a dedicated business engine separate from credits and payments.
+- Plans and feature flags are loaded from `AppSetting.subscriptionPlans` and `membershipSettings`.
+- `featureAccessService` centralizes premium feature checks so no module needs ad hoc subscription logic.
+- User subscription state stores plan version, feature snapshots, renewal counts, and embedded lifecycle history without requiring a new collection.
+- Google Play subscription verification and RTDN processing synchronize membership state through a shared subscription sync service.
+
 ### Storage Layer
 
 - Storage is organized around generic `FileAsset` records instead of video-only artifacts.
@@ -64,6 +73,8 @@ Existing `/api/v1` endpoints and legacy video fields remain available so previou
 7. A generation job is created with media-aware input/output metadata.
 8. Provider execution starts through the adapter contract.
 9. Status and history APIs return backward-compatible video fields plus the new media fields.
+10. Premium feature access can be evaluated independently of credits through the membership engine.
+11. Google Play subscription webhooks and manual verification update membership without affecting credit accounting.
 
 ## Backward Compatibility
 

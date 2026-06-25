@@ -27,6 +27,7 @@ import ProviderModelModel from '../../models/ProviderModel.js';
 import ProviderPricingModel from '../../models/ProviderPricing.js';
 import UserModel from '../../models/User.js';
 import WalletModel from '../../models/Wallet.js';
+import membershipService from '../subscription/membershipService.js';
 import { FUTURE_MEDIA_MODULES, GENERATION_TYPES, OUTPUT_TYPES, getSupportedOutputTypes } from '../../utils/mediaGeneration.js';
 import { buildPublicProviderDto } from '../../utils/provider.dto.js';
 import { buildUserDto } from '../../utils/user.dto.js';
@@ -63,6 +64,8 @@ const buildPublicBootstrap = async () => {
   const ios = getSetting(settingsIndex, 'IOS') || system;
   const api = getSetting(settingsIndex, 'API') || system;
   const notifications = getSetting(settingsIndex, 'NOTIFICATIONS') || system;
+  const membership = getSetting(settingsIndex, 'PAYMENTS') || system;
+  const membershipConfig = await membershipService.getMembershipConfig();
 
   const [providers, providerModels, providerPricing] = await Promise.all([
     ProviderModel.find({ enabled: true })
@@ -285,6 +288,14 @@ const buildPublicBootstrap = async () => {
       enabled: pick(payments?.payments?.enabled),
       supportedGateways: pick(payments?.payments?.supportedGateways, []),
       defaultCurrency: pick(payments?.payments?.defaultCurrency),
+    },
+    membership: {
+      enabled: membershipConfig.membershipSettings.enabled,
+      freePlanCode: membershipConfig.membershipSettings.freePlanCode,
+      featureCatalog: membershipConfig.membershipSettings.featureCatalog,
+      supportedStatuses: membershipConfig.membershipSettings.supportedStatuses,
+      plans: membershipConfig.plans,
+      settings: pick(membership?.membershipSettings, {}),
     },
     coupons: {
       enabled: pick(payments?.coupons?.enabled),

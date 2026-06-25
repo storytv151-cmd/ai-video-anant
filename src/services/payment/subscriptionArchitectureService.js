@@ -1,5 +1,5 @@
 import UserModel from '../../models/User.js';
-import { getPaymentSettings } from './paymentArchitectureService.js';
+import { getPaymentSettings } from './paymentSettingsService.js';
 
 const mapPlan = (plan = {}) => ({
   name: plan.name || null,

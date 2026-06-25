@@ -8,9 +8,11 @@ const getPackages = async (request, response) => {
 };
 
 const verifyGooglePurchase = async (request, response) => {
-  const data = await paymentArchitectureService.verifyGooglePurchasePlaceholder({
+  const data = await paymentArchitectureService.verifyGooglePurchase({
     userId: request.user.id,
     payload: request.body,
+    request,
+    idempotencyKey: request.idempotencyKey || null,
   });
 
   paymentAuditService
@@ -25,13 +27,15 @@ const verifyGooglePurchase = async (request, response) => {
     })
     .catch(() => null);
 
-  response.status(202).json(formatSuccessResponse({ statusCode: 202, data }));
+  response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
 const restorePurchases = async (request, response) => {
-  const data = await paymentArchitectureService.restorePurchasesPlaceholder({
+  const data = await paymentArchitectureService.restorePurchases({
     userId: request.user.id,
     payload: request.body,
+    request,
+    idempotencyKey: request.idempotencyKey || null,
   });
 
   paymentAuditService
@@ -45,7 +49,7 @@ const restorePurchases = async (request, response) => {
     })
     .catch(() => null);
 
-  response.status(202).json(formatSuccessResponse({ statusCode: 202, data }));
+  response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
 const getPaymentHistory = async (request, response) => {
@@ -56,4 +60,12 @@ const getPaymentHistory = async (request, response) => {
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
-export { getPackages, verifyGooglePurchase, restorePurchases, getPaymentHistory };
+const getPaymentDetail = async (request, response) => {
+  const data = await paymentArchitectureService.getPaymentDetail({
+    userId: request.user.id,
+    paymentId: request.params.id,
+  });
+  response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
+};
+
+export { getPackages, verifyGooglePurchase, restorePurchases, getPaymentHistory, getPaymentDetail };

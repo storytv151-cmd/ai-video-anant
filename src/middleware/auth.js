@@ -49,6 +49,10 @@ const authenticate = async (request, response, next) => {
     request.user = {
       id: String(user._id),
       role: user.role,
+      adminRoleCode:
+        user.role === 'custom'
+          ? user.metadata?.get?.('adminRoleCode') || user.metadata?.adminRoleCode || null
+          : null,
     };
     setRequestContextValue('userId', request.user.id);
 
@@ -75,7 +79,14 @@ const optionalAuth = async (request, response, next) => {
       return;
     }
 
-    request.user = { id: String(user._id), role: user.role };
+    request.user = {
+      id: String(user._id),
+      role: user.role,
+      adminRoleCode:
+        user.role === 'custom'
+          ? user.metadata?.get?.('adminRoleCode') || user.metadata?.adminRoleCode || null
+          : null,
+    };
     setRequestContextValue('userId', request.user.id);
     next();
   } catch {

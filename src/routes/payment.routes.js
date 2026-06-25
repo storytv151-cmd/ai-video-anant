@@ -4,7 +4,7 @@ import idempotency from '../middleware/idempotency.js';
 import validation from '../middleware/validation.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { REQUEST_SOURCES } from '../utils/constants.js';
-import { getPackages, getPaymentHistory, restorePurchases, verifyGooglePurchase } from '../controllers/payment.controller.js';
+import { getPackages, getPaymentDetail, getPaymentHistory, restorePurchases, verifyGooglePurchase } from '../controllers/payment.controller.js';
 import paymentValidator from '../validators/payment.validator.js';
 
 const paymentRouter = Router();
@@ -29,6 +29,12 @@ paymentRouter.get(
   authenticate,
   validation(paymentValidator.validatePaymentHistoryQuery, REQUEST_SOURCES.QUERY),
   asyncHandler(getPaymentHistory),
+);
+paymentRouter.get(
+  '/:id',
+  authenticate,
+  validation(paymentValidator.validatePaymentDetailParams, REQUEST_SOURCES.PARAMS),
+  asyncHandler(getPaymentDetail),
 );
 
 export default paymentRouter;

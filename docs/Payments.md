@@ -1,183 +1,180 @@
-# Google Play Payment Architecture
+# Google Play Payment Engine
 
 ## Scope
 
-This phase adds payment architecture only for an Android application that uses Google Play Billing exclusively.
+The backend now implements a production-ready one-time Google Play credit purchase engine.
 
-- No Google Play Developer API integration yet
-- No credit granting logic yet
-- No subscription activation logic yet
-- No external payment gateways
+- Google Play verification happens only on the backend
+- Credits are granted only after Google verification succeeds
+- Duplicate protection is enforced before settlement
+- Wallet updates and payment persistence happen transactionally
+- Subscription activation is still deferred to a later phase
 
-The goal is to prepare the backend for Phase-10B without breaking existing modules.
+## Supported Scope In This Phase
 
-## Supported Payment Types
+- One-time credit purchases through Google Play `inapp` products
+- Restore flow for missing one-time purchases
+- Payment history and payment detail lookup
 
-- One-time credit purchase
-- Subscription purchase
+Not implemented in this phase:
 
-Credit purchases map to Google Play `inapp` products.
+- subscription verification and activation
+- RTDN ingestion
+- refund reconciliation jobs
 
-Subscriptions map to Google Play `subs` products and future base-plan or offer combinations.
+## Verification Flow
 
-## Purchase Lifecycle
-
-1. Android starts purchase through Google Play Billing Library.
-2. Google Play returns purchase success on device.
-3. Android sends `purchaseToken`, `productId`, `paymentType`, and related metadata to `POST /api/v1/payment/google/verify`.
-4. Backend validates request shape and checks duplicate-protection fields.
-5. Backend will call Google Play Developer API in Phase-10B.
-6. On successful verification in Phase-10B, backend will:
-   - create a `Payment` record
-   - grant credits or activate subscription
-   - write wallet or user updates
-   - create credit transactions where applicable
-   - write audit logs
-
-Phase-10A stops before step 5 is implemented.
-
-## Subscription Lifecycle
-
-1. Android purchases a subscription product through Google Play Billing.
-2. Backend receives purchase verification request.
-3. Backend will verify Google purchase state in Phase-10B.
-4. On success in Phase-10B, backend will update `User.subscription` with:
-   - plan code
+1. Android completes purchase with Google Play Billing Library.
+2. Android sends `purchaseToken`, `productId`, optional `orderId`, and package metadata to `POST /api/v1/payment/google/verify`.
+3. Backend validates the request shape.
+4. Backend resolves the matching credit package from `AppSetting`.
+5. Backend verifies the purchase against Google Play Developer API using service-account credentials.
+6. Backend validates:
+   - package name
    - product id
-   - base plan id
-   - offer id
-   - auto renew state
-   - expiry
-   - premium features
-   - last verification timestamp
+   - order id
+   - purchase state
+   - acknowledgement state
+   - consumption state
+   - purchase time
+   - region code
+7. Backend checks duplicate protection.
+8. Backend creates or reuses the `Payment` record.
+9. Backend grants credits through the wallet engine.
+10. Backend stores the Google response and verification metadata.
+11. Backend optionally acknowledges and consumes the purchase when configured.
+12. Backend writes audit logs and returns the settled payment result.
 
-Current architecture supports statuses such as:
+## Google API Integration
 
-- `inactive`
-- `trial`
-- `active`
-- `past_due`
-- `cancelled`
-- `expired`
-- `paused`
-- `grace_period`
-- `on_hold`
-- `revoked`
+The engine uses Google Play Android Developer API for in-app purchases:
+
+- purchase status lookup
+- optional acknowledge action
+- optional consume action
+
+Credentials are read only from environment variables:
+
+- `GOOGLE_SERVICE_ACCOUNT_JSON`
+- `GOOGLE_PLAY_PACKAGE_NAME`
+- `GOOGLE_PLAY_APP_ID`
+
+Credentials are never returned to clients and are never trusted from request payloads.
+
+## Duplicate Protection
+
+Before credits are granted, the backend checks:
+
+- `purchaseTokenHash`
+- `orderId`
+- `googlePurchaseId`
+- request idempotency key
+
+The `Payment` model enforces unique indexes for the Google identifiers, and wallet settlement uses a fixed idempotency key derived from the purchase identity. This prevents replay grants even if the same purchase is retried with a different client request key.
+
+If an already-processed purchase is retried, the API returns the existing payment instead of granting credits again.
+
+## Settlement Flow
+
+1. Google verification succeeds
+2. Matching credit package is resolved from database settings
+3. MongoDB transaction starts
+4. `Payment` is created or resumed
+5. `walletService.addCredits()` creates the `CreditTransaction` and updates the wallet atomically
+6. `Payment` is updated with transaction linkage and verification metadata
+7. Transaction commits
+8. Post-settlement Google acknowledge or consume runs as a follow-up action
+
+The wallet remains the single source of truth for credit mutations.
 
 ## Purchase States
 
-The payment architecture is prepared for these Google-oriented states:
+The engine currently supports these normalized states:
 
 - `pending`
 - `purchased`
 - `acknowledged`
 - `consumed`
 - `cancelled`
-- `expired`
 - `refunded`
 - `revoked`
-- `paused`
-- `grace_period`
-- `on_hold`
+- `expired`
+- `failed`
 
-`purchaseStateService` normalizes and classifies these states for future business logic.
+For one-time purchases:
 
-## Wallet Integration
+- `pending` is rejected for settlement
+- `cancelled`, `refunded`, `revoked`, `expired`, and `failed` are rejected
+- `consumed` without an existing successful local payment is treated as non-settlable
 
-One-time purchases will eventually follow this flow:
+## Fraud Detection
 
-1. Verify purchase with Google
-2. Create `Payment`
-3. Create `CreditTransaction`
-4. Update `Wallet`
-5. Write `AuditLog`
+The engine actively checks for:
 
-This phase only prepares the schema relationships and service boundaries for that flow.
+- replay purchase attempts
+- modified purchase tokens
+- package mismatch
+- invalid product configuration
+- order ID mismatch
+- consumed purchase replay
+- cancelled or otherwise non-settlable purchase states
 
-## Current API Surface
+It also never trusts:
 
-### Payment
+- client price
+- client currency
+- client credit amount
+
+Price, currency, and granted credits always come from `AppSetting` package configuration.
+
+## Restore Flow
+
+`POST /api/v1/payment/restore` accepts either:
+
+- `purchases[]` with `purchaseToken`, `productId`, optional `orderId`, and optional `packageName`
+- legacy parallel arrays for backward compatibility
+
+Each purchase is verified independently. Missing verified purchases are granted, and already-processed purchases are returned as existing results.
+
+## Stored Metadata
+
+`Payment` now stores:
+
+- Google response payload
+- verification time
+- request ID
+- request idempotency key
+- IP and user agent
+- device metadata
+- wallet-linked credit transaction
+- product and package metadata
+- acknowledgement and consumption state
+
+## API Surface
 
 - `GET /api/v1/payment/packages`
 - `POST /api/v1/payment/google/verify`
 - `POST /api/v1/payment/restore`
 - `GET /api/v1/payment/history`
+- `GET /api/v1/payment/:id`
 
-Plural compatibility is preserved through `/api/v1/payments`.
+Plural compatibility remains available through `/api/v1/payments`.
 
-### Subscription
-
-- `GET /api/v1/subscriptions`
-- `GET /api/v1/subscription/current`
-
-Singular and plural mounting are both supported for compatibility and future clarity.
-
-## Settings Strategy
-
-Everything is database-driven through `AppSetting`, primarily `PAYMENTS`.
-
-Prepared configuration areas include:
-
-- Google Play enablement and package metadata
-- credit packages
-- subscription plans
-- trial settings
-- offer settings
-- taxes
-- country pricing
-- future pricing structures
-
-Nothing is hardcoded into controllers.
-
-## Duplicate Protection
-
-The architecture prepares for strict deduplication with:
-
-- `purchaseTokenHash`
-- `orderId`
-
-The `Payment` model includes unique indexes for both fields scoped to Google Play platform records.
-
-## Fraud Protection
-
-Phase-10A prepares the following protections without implementing remote verification yet:
-
-- replay attack prevention through dedupe keys
-- fake token detection hook through `googlePurchaseValidator`
-- refund and revoke state handling through purchase-state mapping
-- verification attempt tracking
-- audit trail readiness
+Subscription read-only endpoints from the previous phase remain in place, but subscription settlement is not part of this phase.
 
 ## RTDN Preparation
 
-Future Real-time Developer Notifications flow:
+Future Real-time Developer Notifications flow will:
 
-1. Google sends RTDN event to Pub/Sub
-2. Backend consumer receives event
-3. Event is verified and mapped to payment or subscription record
-4. Backend refreshes Google purchase state
-5. Backend updates `Payment` and `User.subscription`
-6. Backend writes audit log and reconciliation records
+1. receive Pub/Sub notifications
+2. re-fetch Google purchase state
+3. reconcile local `Payment` records
+4. handle refunds, revokes, and delayed settlements
+5. update subscription state in a later subscription phase
 
-Phase-10A only prepares settings and state handling for this future workflow.
+## Remaining Future Work
 
-## Files Added In This Phase
-
-- payment architecture services
-- Google Play validator placeholder
-- purchase state service
-- payment and subscription controllers
-- payment and subscription routes
-- payment and subscription validators
-
-## Phase-10B Responsibilities
-
-Phase-10B will implement:
-
-- Google Play Developer API calls
-- verified payment persistence
-- credit granting
-- subscription activation
-- acknowledgement and consumption handling
-- restore logic
-- RTDN ingestion
+- subscription verification and activation
+- refund and revoke reconciliation jobs
+- RTDN ingestion worker
+- administrative payment reconciliation tooling

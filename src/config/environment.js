@@ -140,6 +140,14 @@ const environment = Object.freeze({
       runwayApiKey: process.env.RUNWAY_API_KEY || '',
       lumaApiKey: process.env.LUMA_API_KEY || '',
     },
+    googlePlay: {
+      serviceAccountJson: process.env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
+      packageName: process.env.GOOGLE_PLAY_PACKAGE_NAME || '',
+      appId: process.env.GOOGLE_PLAY_APP_ID || '',
+      rtdnAudience: process.env.GOOGLE_RTDN_AUDIENCE || '',
+      rtdnAuthorizedEmails: parseOrigins(process.env.GOOGLE_RTDN_AUTHORIZED_EMAILS || ''),
+      rtdnVerificationToken: process.env.GOOGLE_RTDN_VERIFICATION_TOKEN || '',
+    },
   },
   upload: {
     maxFileSize: parseNumber(process.env.UPLOAD_MAX_FILE_SIZE, 52_428_800),

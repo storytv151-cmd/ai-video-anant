@@ -8,6 +8,7 @@ import CouponModel from './Coupon.js';
 import CreditTransactionModel from './CreditTransaction.js';
 import DailyCheckinModel from './DailyCheckin.js';
 import FileAssetModel from './FileAsset.js';
+import GoogleWebhookEventModel from './GoogleWebhookEvent.js';
 import NotificationModel from './Notification.js';
 import PaymentModel from './Payment.js';
 import ProviderModel from './Provider.js';
@@ -29,6 +30,7 @@ const models = Object.freeze({
   CreditTransactionModel,
   DailyCheckinModel,
   FileAssetModel,
+  GoogleWebhookEventModel,
   NotificationModel,
   PaymentModel,
   ProviderModel,

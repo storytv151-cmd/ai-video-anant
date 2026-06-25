@@ -77,10 +77,26 @@ Admin (protected, internal metrics):
 ### Payments
 
 - `GET /api/v1/payment/packages`
-- `POST /api/v1/payment/google/verify` (idempotent placeholder)
-- `POST /api/v1/payment/restore` (idempotent placeholder)
+- `POST /api/v1/payment/google/verify`
+- `POST /api/v1/payment/restore`
 - `GET /api/v1/payment/history`
+- `GET /api/v1/payment/:id`
 - `GET /api/v1/subscriptions`
 - `GET /api/v1/subscription/current`
 
 Plural compatibility remains available for payment routes under `/api/v1/payments`.
+
+### Membership
+
+- `GET /api/v1/subscription/current`
+- `GET /api/v1/subscription/plans`
+- `GET /api/v1/subscription/status`
+- `GET /api/v1/subscription/history`
+- `POST /api/v1/subscription/google/verify`
+- `POST /api/v1/subscription/google/restore`
+- `GET /api/v1/membership/features`
+- `POST /api/v1/membership/check-feature`
+
+### Google RTDN
+
+- `POST /api/v1/google/rtdn/webhook`

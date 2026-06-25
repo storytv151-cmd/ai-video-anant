@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { authenticate, authorize } from '../middleware/auth.js';
-import { ROLES } from '../constants/roles.js';
+import ROLES from '../constants/roles.js';
 import validation from '../middleware/validation.js';
 import { REQUEST_SOURCES } from '../utils/constants.js';
 import asyncHandler from '../utils/asyncHandler.js';

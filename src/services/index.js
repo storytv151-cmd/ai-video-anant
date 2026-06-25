@@ -11,3 +11,4 @@ export { default as authService } from './auth/index.js';
 export { default as templateService } from './template/index.js';
 export { default as generationService } from './generation/index.js';
 export { default as settingsService } from './settings/index.js';
+export { default as adminService } from './admin/index.js';

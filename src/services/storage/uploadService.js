@@ -1,5 +1,5 @@
 import ApiError from '../../utils/ApiError.js';
-import { infoLogger } from '../../config/logger.js';
+import { applicationLogger as infoLogger } from '../../config/logger.js';
 import AppSettingModel from '../../models/AppSetting.js';
 import FileAssetModel from '../../models/FileAsset.js';
 import environment from '../../config/environment.js';

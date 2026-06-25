@@ -1,6 +1,7 @@
 import ApiError from '../utils/ApiError.js';
 import { formatSuccessResponse } from '../utils/responseFormatter.js';
 import FileAssetModel from '../models/FileAsset.js';
+import adminPermissionService from '../services/admin/adminPermissionService.js';
 import signedUrlService from '../services/storage/signedUrlService.js';
 import uploadService from '../services/storage/uploadService.js';
 
@@ -79,10 +80,13 @@ const getSignedUrl = async (request, response) => {
   const mimeType = request.query.mimeType;
 
   const normalizedFolder = String(folder || '').trim().replace(/\/+$/g, '');
-  if ((normalizedFolder === 'admin' || normalizedFolder.startsWith('admin/')) && request.user.role !== 'admin') {
+  const adminContext = await adminPermissionService.resolvePermissionContext({
+    requestUser: request.user,
+  });
+  if ((normalizedFolder === 'admin' || normalizedFolder.startsWith('admin/')) && !adminContext.isAdmin) {
     throw new ApiError(403, 'Not authorized.', { code: 'FORBIDDEN' });
   }
-  if ((normalizedFolder === 'system' || normalizedFolder === 'logs') && request.user.role !== 'admin') {
+  if ((normalizedFolder === 'system' || normalizedFolder === 'logs') && !adminContext.isAdmin) {
     throw new ApiError(403, 'Not authorized.', { code: 'FORBIDDEN' });
   }
 

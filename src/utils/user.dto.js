@@ -4,6 +4,30 @@ const buildUserDto = (user) => {
   }
 
   const id = user._id || user.id || null;
+  const subscription = user.subscription
+    ? {
+        ...user.subscription,
+        purchaseToken: undefined,
+        purchaseTokenHash: undefined,
+        linkedPurchaseToken: undefined,
+        linkedPurchaseTokenHash: undefined,
+        externalAccountId: undefined,
+        externalProfileId: undefined,
+        featureSnapshot:
+          user.subscription.featureSnapshot instanceof Map
+            ? Object.fromEntries(user.subscription.featureSnapshot.entries())
+            : user.subscription.featureSnapshot || {},
+        limitsSnapshot:
+          user.subscription.limitsSnapshot instanceof Map
+            ? Object.fromEntries(user.subscription.limitsSnapshot.entries())
+            : user.subscription.limitsSnapshot || {},
+        metadata:
+          user.subscription.metadata instanceof Map
+            ? Object.fromEntries(user.subscription.metadata.entries())
+            : user.subscription.metadata || {},
+      }
+    : null;
+
   return {
     id,
     _id: id,
@@ -13,7 +37,7 @@ const buildUserDto = (user) => {
     profileImage: user.profileImage || null,
     country: user.country || null,
     language: user.language || null,
-    subscription: user.subscription || null,
+    subscription,
     role: user.role || null,
     accountStatus: user.accountStatus || null,
     isEmailVerified: Boolean(user.isEmailVerified),
@@ -25,4 +49,3 @@ const buildUserDto = (user) => {
 };
 
 export { buildUserDto };
-

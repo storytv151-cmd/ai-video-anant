@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { authenticate, authorize } from '../middleware/auth.js';
-import ROLES from '../constants/roles.js';
+import ADMIN_PERMISSIONS from '../constants/adminPermissions.js';
+import { authenticate } from '../middleware/auth.js';
+import { requireAdminAccess, requireAdminPermission } from '../middleware/adminAccess.js';
 import validation from '../middleware/validation.js';
 import { REQUEST_SOURCES } from '../utils/constants.js';
 import asyncHandler from '../utils/asyncHandler.js';
@@ -9,7 +10,7 @@ import { getProviderAdmin, healthAdmin, listProvidersAdmin, pricingAdmin } from 
 
 const providerAdminRouter = Router();
 
-providerAdminRouter.use(authenticate, authorize(ROLES.ADMIN));
+providerAdminRouter.use(authenticate, requireAdminAccess, requireAdminPermission(ADMIN_PERMISSIONS.PROVIDERS_READ));
 
 providerAdminRouter.get('/', asyncHandler(listProvidersAdmin));
 providerAdminRouter.get('/health', asyncHandler(healthAdmin));

@@ -1,6 +1,6 @@
 import AppSettingModel from '../../models/AppSetting.js';
 import FileAssetModel from '../../models/FileAsset.js';
-import { infoLogger } from '../../config/logger.js';
+import { applicationLogger as infoLogger } from '../../config/logger.js';
 import storageService from './storageService.js';
 
 const parseRetentionHours = (settings) => {

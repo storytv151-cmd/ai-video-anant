@@ -13,6 +13,7 @@ export default [
         process: 'readonly',
         Buffer: 'readonly',
         URL: 'readonly',
+        fetch: 'readonly',
         console: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
