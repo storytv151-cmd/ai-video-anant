@@ -9,6 +9,7 @@ import DailyCheckinModel from './DailyCheckin.js';
 import NotificationModel from './Notification.js';
 import PaymentModel from './Payment.js';
 import ProviderModel from './Provider.js';
+import ProviderModelModel from './ProviderModel.js';
 import ProviderPricingModel from './ProviderPricing.js';
 import RefreshTokenModel from './RefreshToken.js';
 import RewardHistoryModel from './RewardHistory.js';
@@ -27,6 +28,7 @@ const models = Object.freeze({
   NotificationModel,
   PaymentModel,
   ProviderModel,
+  ProviderModelModel,
   ProviderPricingModel,
   RefreshTokenModel,
   RewardHistoryModel,
