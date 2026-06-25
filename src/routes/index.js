@@ -5,6 +5,7 @@
 import { Router } from 'express';
 import environment from '../config/environment.js';
 import authRouter from './auth.routes.js';
+import bootstrapRouter from './bootstrap.routes.js';
 import generationRouter from './generation.routes.js';
 import { publicHealthRouter, versionedHealthRouter } from './health.routes.js';
 import notificationRouter from './notification.routes.js';
@@ -20,6 +21,7 @@ const apiRouter = Router();
 publicRouter.use('/', publicHealthRouter);
 apiRouter.use('/', versionedHealthRouter);
 apiRouter.use('/auth', authRouter);
+apiRouter.use('/bootstrap', bootstrapRouter);
 apiRouter.use('/users', userRouter);
 apiRouter.use('/wallet', walletRouter);
 apiRouter.use('/providers', providerRouter);

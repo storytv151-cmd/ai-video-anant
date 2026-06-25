@@ -1,10 +1,13 @@
 /**
- * Authentication service placeholder.
- * Auth orchestration and token workflows will be added in a future phase.
+ * Auth module service exports.
+ * This index centralizes authentication-related services for consistent imports.
  */
-const authService = Object.freeze({
-  name: 'auth-service-placeholder',
-  status: 'not-implemented',
-});
+import authService from './authService.js';
+import googleService from './googleService.js';
+import sessionService from './sessionService.js';
+import tokenService from './tokenService.js';
+import walletBootstrapService from './walletBootstrapService.js';
 
 export default authService;
+
+export { authService, googleService, sessionService, tokenService, walletBootstrapService };

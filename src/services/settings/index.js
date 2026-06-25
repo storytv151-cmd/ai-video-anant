@@ -1,10 +1,13 @@
 /**
- * Settings service placeholder.
- * Application settings workflows will be added in a future phase.
+ * Settings services.
+ * This module groups configuration-related services that read from AppSetting.
  */
+import bootstrapService from './bootstrapService.js';
+
 const settingsService = Object.freeze({
-  name: 'settings-service-placeholder',
-  status: 'not-implemented',
+  bootstrapService,
 });
 
 export default settingsService;
+
+export { bootstrapService };

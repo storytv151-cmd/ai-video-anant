@@ -54,7 +54,7 @@ const createBaseSchema = (definition, options = {}) => {
       timestamps: true,
       versionKey: false,
       minimize: false,
-      optimisticConcurrency: true,
+      optimisticConcurrency: false,
       toJSON: {
         virtuals: true,
         transform: defaultTransform,
