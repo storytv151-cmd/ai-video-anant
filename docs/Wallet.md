@@ -26,6 +26,13 @@ This ensures that there is always a complete history for every balance change.
 
 Refunds must be issued by creating a refund `CreditTransaction` that references the original transaction, followed by a wallet update.
 
+## Idempotency
+
+Every wallet-changing operation supports an `Idempotency-Key` header. The key is stored on `CreditTransaction.idempotencyKey` with a uniqueness constraint per user.
+
+- Duplicate requests return the existing credit transaction and do not execute the mutation twice.
+- Generation-related settlement uses derived keys scoped to `(jobId, retryCount, action)` to prevent duplicate lock/consume/unlock.
+
 ## APIs
 
 - `GET /api/v1/wallet`
@@ -35,6 +42,14 @@ Refunds must be issued by creating a refund `CreditTransaction` that references 
 - `POST /api/v1/reward/daily`
 - `POST /api/v1/reward/ad`
 
+## Generation Settlement
+
+Wallet credits are never mutated directly by the generation module. Generation calls the Wallet Engine through settlement steps:
+
+- Lock credits at generation start.
+- Consume locked credits on completion.
+- Unlock locked credits on failure/cancel/timeout.
+
 ## Future Extensions
 
 This module is designed to support future phases:
@@ -43,4 +58,3 @@ This module is designed to support future phases:
 - subscription-based monthly credits
 - gift credits / marketplace credits
 - team / family wallets
-

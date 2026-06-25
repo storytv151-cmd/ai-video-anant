@@ -4,12 +4,14 @@
  */
 import { formatSuccessResponse } from '../utils/responseFormatter.js';
 import ApiError from '../utils/ApiError.js';
+import ERROR_CODES from '../constants/errorCodes.js';
 import CreditTransactionModel from '../models/CreditTransaction.js';
 import walletHistoryService from '../services/wallet/walletHistoryService.js';
+import { buildCreditTransactionDto } from '../utils/wallet.dto.js';
 
 const listTransactions = async (request, response) => {
   if (!request.user?.id) {
-    throw new ApiError(401, 'Authentication required.', { code: 'AUTH_REQUIRED' });
+    throw new ApiError(null, null, { code: ERROR_CODES.AUTH_001 });
   }
 
   const data = await walletHistoryService.listHistory({
@@ -28,7 +30,7 @@ const listTransactions = async (request, response) => {
 
 const getTransactionById = async (request, response) => {
   if (!request.user?.id) {
-    throw new ApiError(401, 'Authentication required.', { code: 'AUTH_REQUIRED' });
+    throw new ApiError(null, null, { code: ERROR_CODES.AUTH_001 });
   }
 
   const { id } = request.params;
@@ -37,8 +39,7 @@ const getTransactionById = async (request, response) => {
     throw new ApiError(404, 'Transaction not found.', { code: 'TRANSACTION_NOT_FOUND' });
   }
 
-  response.status(200).json(formatSuccessResponse({ statusCode: 200, data: transaction }));
+  response.status(200).json(formatSuccessResponse({ statusCode: 200, data: buildCreditTransactionDto(transaction) }));
 };
 
 export { listTransactions, getTransactionById };
-

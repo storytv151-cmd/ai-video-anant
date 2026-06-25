@@ -6,6 +6,7 @@
 import ApiError from '../utils/ApiError.js';
 import UserModel from '../models/User.js';
 import tokenService from '../services/auth/tokenService.js';
+import { setRequestContextValue } from '../utils/requestContext.js';
 
 const extractBearerToken = (request) => {
   const header = request.headers?.authorization || request.headers?.Authorization;
@@ -49,6 +50,7 @@ const authenticate = async (request, response, next) => {
       id: String(user._id),
       role: user.role,
     };
+    setRequestContextValue('userId', request.user.id);
 
     next();
   } catch (error) {
@@ -74,6 +76,7 @@ const optionalAuth = async (request, response, next) => {
     }
 
     request.user = { id: String(user._id), role: user.role };
+    setRequestContextValue('userId', request.user.id);
     next();
   } catch {
     request.user = null;

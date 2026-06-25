@@ -27,6 +27,9 @@ import ProviderModelModel from '../../models/ProviderModel.js';
 import ProviderPricingModel from '../../models/ProviderPricing.js';
 import UserModel from '../../models/User.js';
 import WalletModel from '../../models/Wallet.js';
+import { buildPublicProviderDto } from '../../utils/provider.dto.js';
+import { buildUserDto } from '../../utils/user.dto.js';
+import { buildWalletDto } from '../../utils/wallet.dto.js';
 
 const normalizeSettingDoc = (doc) => doc || null;
 
@@ -52,7 +55,7 @@ const buildPublicBootstrap = async () => {
   const features = getSetting(settingsIndex, 'FEATURES') || system;
   const rewards = getSetting(settingsIndex, 'REWARDS') || system;
   const payments = getSetting(settingsIndex, 'PAYMENTS') || system;
-  const providersConfig = getSetting(settingsIndex, 'PROVIDERS') || system;
+  const _providersConfig = getSetting(settingsIndex, 'PROVIDERS') || system;
   const storage = getSetting(settingsIndex, 'STORAGE') || system;
   const limits = getSetting(settingsIndex, 'LIMITS') || system;
   const android = getSetting(settingsIndex, 'ANDROID') || system;
@@ -61,10 +64,123 @@ const buildPublicBootstrap = async () => {
   const notifications = getSetting(settingsIndex, 'NOTIFICATIONS') || system;
 
   const [providers, providerModels, providerPricing] = await Promise.all([
-    ProviderModel.find({ enabled: true }).sort({ priority: 1 }).lean(),
-    ProviderModelModel.find({ enabled: true }).sort({ priority: 1 }).lean(),
-    ProviderPricingModel.find({ enabled: true }).sort({ provider: 1, quality: 1, duration: 1 }).lean(),
+    ProviderModel.find({ enabled: true })
+      .select({
+        name: 1,
+        slug: 1,
+        enabled: 1,
+        priority: 1,
+        supportsImage: 1,
+        supportsVideo: 1,
+        supportsAudio: 1,
+        supportsMultipleImages: 1,
+        maximumDuration: 1,
+        maximumResolution: 1,
+      })
+      .sort({ priority: 1 })
+      .lean(),
+    ProviderModelModel.find({ enabled: true })
+      .select({
+        provider: 1,
+        name: 1,
+        slug: 1,
+        enabled: 1,
+        priority: 1,
+        credits: 1,
+        estimatedTime: 1,
+        supportsImage: 1,
+        supportsVideo: 1,
+        supportsAudio: 1,
+        supportsMultipleImages: 1,
+        maximumDuration: 1,
+        maximumResolution: 1,
+      })
+      .sort({ priority: 1 })
+      .lean(),
+    ProviderPricingModel.find({ enabled: true })
+      .select({ provider: 1, duration: 1, credits: 1 })
+      .sort({ provider: 1, duration: 1, credits: 1 })
+      .lean(),
   ]);
+
+  const providerIdToSlug = new Map();
+  for (const p of providers) {
+    providerIdToSlug.set(String(p._id), p.slug);
+  }
+
+  const modelsByProviderSlug = new Map();
+  for (const m of providerModels) {
+    const slug = providerIdToSlug.get(String(m.provider));
+    if (!slug) {
+      continue;
+    }
+    if (!modelsByProviderSlug.has(slug)) {
+      modelsByProviderSlug.set(slug, []);
+    }
+    modelsByProviderSlug.get(slug).push(m);
+  }
+
+  const pricingByProviderSlug = new Map();
+  for (const pr of providerPricing) {
+    const slug = providerIdToSlug.get(String(pr.provider));
+    if (!slug) {
+      continue;
+    }
+    if (!pricingByProviderSlug.has(slug)) {
+      pricingByProviderSlug.set(slug, new Map());
+    }
+    const duration = Number(pr.duration);
+    const credits = Number(pr.credits);
+    const durationMap = pricingByProviderSlug.get(slug);
+    const current = durationMap.get(duration);
+    if (current === undefined || credits < current) {
+      durationMap.set(duration, credits);
+    }
+  }
+
+  const publicProviders = providers.map((p) => {
+    const models = modelsByProviderSlug.get(p.slug) || [];
+    const pricingMap = pricingByProviderSlug.get(p.slug) || new Map();
+    const pricingSummary = Array.from(pricingMap.entries())
+      .map(([duration, minCredits]) => ({ duration, minCredits }))
+      .sort((a, b) => a.duration - b.duration);
+    return buildPublicProviderDto({ provider: p, models, pricingSummary });
+  });
+
+  const publicProviderModels = providerModels
+    .map((m) => {
+      const providerSlug = providerIdToSlug.get(String(m.provider));
+      if (!providerSlug) {
+        return null;
+      }
+      return {
+        providerSlug,
+        name: m.name,
+        slug: m.slug,
+        enabled: Boolean(m.enabled),
+        estimatedTimeMs: m.estimatedTime ?? null,
+        credits: m.credits ?? null,
+        supports: {
+          image: Boolean(m.supportsImage),
+          video: Boolean(m.supportsVideo),
+          audio: Boolean(m.supportsAudio),
+          multipleImages: Boolean(m.supportsMultipleImages),
+        },
+        limits: {
+          maximumDuration: m.maximumDuration ?? null,
+          maximumResolution: m.maximumResolution || null,
+        },
+      };
+    })
+    .filter(Boolean);
+
+  const publicProviderPricing = [];
+  for (const [providerSlug, durationMap] of pricingByProviderSlug.entries()) {
+    for (const [duration, minCredits] of durationMap.entries()) {
+      publicProviderPricing.push({ providerSlug, duration, minCredits });
+    }
+  }
+  publicProviderPricing.sort((a, b) => (a.providerSlug > b.providerSlug ? 1 : -1) || a.duration - b.duration);
 
   return {
     application: {
@@ -129,10 +245,9 @@ const buildPublicBootstrap = async () => {
     },
     creditPackages: pick(payments?.creditPackages, pick(system?.creditPackages, [])),
     providers: {
-      list: providers,
-      models: providerModels,
-      pricing: providerPricing,
-      providerSettings: pick(providersConfig?.providerSettings, []),
+      list: publicProviders,
+      models: publicProviderModels,
+      pricing: publicProviderPricing,
     },
     notifications: {
       settings: pick(notifications?.notifications, pick(notifications?.metadata, {})),
@@ -154,30 +269,33 @@ const buildUserBootstrap = async ({ userId }) => {
     return { user: null };
   }
 
+  const userDto = buildUserDto(user);
+  const walletDto = buildWalletDto(wallet);
+
   return {
     user: {
       profile: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        profileImage: user.profileImage,
-        country: user.country,
-        language: user.language,
-        role: user.role,
-        subscription: user.subscription,
-        isEmailVerified: user.isEmailVerified,
+        id: userDto.id,
+        name: userDto.name,
+        email: userDto.email,
+        profileImage: userDto.profileImage,
+        country: userDto.country,
+        language: userDto.language,
+        role: userDto.role,
+        subscription: userDto.subscription,
+        isEmailVerified: userDto.isEmailVerified,
       },
-      wallet: wallet
+      wallet: walletDto
         ? {
-            id: wallet._id,
-            currentCredits: wallet.currentCredits,
-            pendingCredits: wallet.pendingCredits,
-            lockedCredits: wallet.lockedCredits,
-            lifetimeCredits: wallet.lifetimeCredits,
-            status: wallet.status,
+            id: walletDto.id,
+            currentCredits: walletDto.currentCredits,
+            pendingCredits: walletDto.pendingCredits,
+            lockedCredits: walletDto.lockedCredits,
+            lifetimeCredits: walletDto.lifetimeCredits,
+            status: walletDto.status,
           }
         : null,
-      subscription: user.subscription || null,
+      subscription: userDto.subscription || null,
     },
   };
 };
@@ -196,4 +314,3 @@ const bootstrapService = Object.freeze({
 });
 
 export default bootstrapService;
-

@@ -129,9 +129,54 @@ const getPricingSummary = async () => {
   };
 };
 
+const getPublicPricingSummary = async () => {
+  const data = await getPricingSummary();
+  const providerIdToSlug = new Map(data.providers.map((p) => [String(p.id), p.slug]));
+
+  return {
+    providers: data.providers.map((p) => ({
+      name: p.name,
+      slug: p.slug,
+      priority: p.priority,
+    })),
+    models: data.models
+      .map((m) => {
+        const providerSlug = providerIdToSlug.get(String(m.provider));
+        if (!providerSlug) {
+          return null;
+        }
+        return {
+          providerSlug,
+          name: m.name,
+          slug: m.slug,
+          enabled: true,
+          estimatedTimeMs: m.estimatedTime ?? null,
+          credits: m.credits ?? null,
+          priority: m.priority,
+        };
+      })
+      .filter(Boolean),
+    pricing: data.pricing
+      .map((p) => {
+        const providerSlug = providerIdToSlug.get(String(p.provider));
+        if (!providerSlug) {
+          return null;
+        }
+        return {
+          providerSlug,
+          quality: p.quality,
+          duration: p.duration,
+          credits: p.credits,
+        };
+      })
+      .filter(Boolean),
+  };
+};
+
 const providerPricingService = Object.freeze({
   resolveCredits,
   getPricingSummary,
+  getPublicPricingSummary,
 });
 
 export default providerPricingService;

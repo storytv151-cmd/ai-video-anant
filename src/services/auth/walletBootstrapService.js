@@ -53,29 +53,46 @@ const applyWelcomeBonusIfEligible = async ({ user, wallet, createdBy = null, ses
     return { applied: false, creditsGranted: 0 };
   }
 
+  const idempotencyKey = `auth_welcome_bonus:${String(user._id)}`;
+  const existing = await CreditTransactionModel.findOne({ user: user._id, idempotencyKey }).session(session).lean();
+  if (existing && existing.status === 'success') {
+    return { applied: true, creditsGranted: Number(existing.credits || 0) };
+  }
+
   const balanceBefore = wallet.currentCredits;
   const balanceAfter = balanceBefore + credits;
 
-  await CreditTransactionModel.create(
-    [
-      {
-        wallet: wallet._id,
-        user: user._id,
-        type: 'welcome_bonus',
-        status: 'success',
-        source: 'WelcomeBonus',
-        purpose: 'welcome_bonus',
-        credits,
-        balanceBefore,
-        balanceAfter,
-        referenceType: 'system',
-        referenceId: null,
-        description: 'Welcome bonus credits granted.',
-        createdBy,
-      },
-    ],
-    { session },
-  );
+  try {
+    await CreditTransactionModel.create(
+      [
+        {
+          wallet: wallet._id,
+          user: user._id,
+          type: 'welcome_bonus',
+          status: 'success',
+          source: 'WelcomeBonus',
+          purpose: 'welcome_bonus',
+          credits,
+          balanceBefore,
+          balanceAfter,
+          referenceType: 'system',
+          referenceId: null,
+          description: 'Welcome bonus credits granted.',
+          createdBy,
+          idempotencyKey,
+        },
+      ],
+      { session },
+    );
+  } catch (error) {
+    if (error?.code === 11000) {
+      const dup = await CreditTransactionModel.findOne({ user: user._id, idempotencyKey }).session(session).lean();
+      if (dup && dup.status === 'success') {
+        return { applied: true, creditsGranted: Number(dup.credits || 0) };
+      }
+    }
+    throw error;
+  }
 
   wallet.currentCredits = balanceAfter;
   wallet.totalRewarded += credits;

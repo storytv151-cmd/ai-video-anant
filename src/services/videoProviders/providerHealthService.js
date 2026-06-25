@@ -17,6 +17,13 @@ const buildProviderHealthItem = (provider) => ({
   lastFailureAt: provider.lastFailureAt,
 });
 
+const buildPublicProviderStatusItem = (provider) => ({
+  name: provider.name,
+  slug: provider.slug,
+  enabled: provider.enabled,
+  healthStatus: provider.healthStatus,
+});
+
 const getProviderBySlug = async (slug) => {
   const provider = await ProviderModel.findOne({ slug: String(slug).toLowerCase() }).lean();
   if (!provider) {
@@ -75,11 +82,21 @@ const getHealthSummary = async () => {
   return { summary, items: providers.map(buildProviderHealthItem) };
 };
 
+const getPublicHealthSummary = async () => {
+  const providers = await ProviderModel.find({ enabled: true })
+    .select({ name: 1, slug: 1, enabled: 1, healthStatus: 1, priority: 1 })
+    .sort({ priority: 1, createdAt: -1 })
+    .lean();
+
+  return { items: providers.map(buildPublicProviderStatusItem) };
+};
+
 const providerHealthService = Object.freeze({
   getProviderBySlug,
   assertProviderEnabled,
   assertProviderHealthAllowsUse,
   getHealthSummary,
+  getPublicHealthSummary,
 });
 
 export default providerHealthService;

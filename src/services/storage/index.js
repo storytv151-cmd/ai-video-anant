@@ -7,7 +7,7 @@ import { createStorageProvider } from './storageFactory.js';
 
 const storageService = Object.freeze({
   name: 'storage-service-placeholder',
-  status: 'not-implemented',
+  status: 'placeholder',
   adapters: {
     digitalOceanSpaces,
   },

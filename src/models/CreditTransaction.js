@@ -98,6 +98,13 @@ const creditTransactionSchema = createBaseSchema({
     maxlength: 500,
     default: null,
   },
+  idempotencyKey: {
+    type: String,
+    trim: true,
+    maxlength: 120,
+    default: null,
+    index: true,
+  },
   createdBy: {
     type: Schema.Types.ObjectId,
     ref: 'User',
@@ -113,6 +120,15 @@ creditTransactionSchema.index({ source: 1, createdAt: -1 });
 creditTransactionSchema.index({ status: 1, source: 1, createdAt: -1 });
 creditTransactionSchema.index({ referenceType: 1, referenceId: 1 });
 creditTransactionSchema.index({ purpose: 1, createdAt: -1 });
+creditTransactionSchema.index(
+  { user: 1, idempotencyKey: 1 },
+  {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: { isDeleted: false },
+    name: 'uniq_credit_tx_user_idempotency_active',
+  },
+);
 
 const CreditTransactionModel =
   mongoose.models.CreditTransaction ||

@@ -7,6 +7,7 @@ import ApiError from '../../utils/ApiError.js';
 import CreditTransactionModel from '../../models/CreditTransaction.js';
 
 const normalizeObjectId = (value) => (value ? String(value) : null);
+const normalizeIdempotencyKey = (value) => (value ? String(value).trim() : null);
 
 const assertValidAmount = (credits) => {
   if (!Number.isFinite(credits) || credits <= 0) {
@@ -29,6 +30,7 @@ const createTransaction = async ({
   referenceId = null,
   description = null,
   createdBy = null,
+  idempotencyKey = null,
 }) => {
   assertValidAmount(credits);
 
@@ -56,6 +58,7 @@ const createTransaction = async ({
         referenceId,
         description,
         createdBy: normalizeObjectId(createdBy),
+        idempotencyKey: normalizeIdempotencyKey(idempotencyKey),
       },
     ],
     { session },
@@ -64,9 +67,24 @@ const createTransaction = async ({
   return docs[0];
 };
 
+const findSuccessfulByIdempotencyKey = async ({ userId, idempotencyKey, session }) => {
+  if (!idempotencyKey) {
+    return null;
+  }
+  const query = CreditTransactionModel.findOne({
+    user: userId,
+    idempotencyKey: normalizeIdempotencyKey(idempotencyKey),
+    status: { $in: ['success', 'pending', 'cancelled'] },
+  });
+  if (session) {
+    query.session(session);
+  }
+  return query.lean();
+};
+
 const creditTransactionService = Object.freeze({
   createTransaction,
+  findSuccessfulByIdempotencyKey,
 });
 
 export default creditTransactionService;
-

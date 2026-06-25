@@ -4,49 +4,9 @@ import ProviderModelModel from '../../models/ProviderModel.js';
 import ProviderPricingModel from '../../models/ProviderPricing.js';
 import providerHealthService from './providerHealthService.js';
 import providerPricingService from './providerPricingService.js';
+import { buildPublicProviderDto } from '../../utils/provider.dto.js';
 
 const safeLower = (value) => (value ? String(value).trim().toLowerCase() : null);
-
-const buildProviderPublic = (provider) => ({
-  id: provider._id,
-  name: provider.name,
-  slug: provider.slug,
-  enabled: provider.enabled,
-  priority: provider.priority,
-  healthStatus: provider.healthStatus,
-  supportsImage: provider.supportsImage,
-  supportsVideo: provider.supportsVideo,
-  supportsAudio: provider.supportsAudio,
-  supportsMultipleImages: provider.supportsMultipleImages,
-  maximumDuration: provider.maximumDuration,
-  maximumResolution: provider.maximumResolution,
-  dailyLimit: provider.dailyLimit,
-  timeout: provider.timeout,
-  retryCount: provider.retryCount,
-  averageResponseTimeMs: provider.averageResponseTimeMs,
-  totalRequests: provider.totalRequests,
-  successfulRequests: provider.successfulRequests,
-  failedRequests: provider.failedRequests,
-  lastSuccessAt: provider.lastSuccessAt,
-  lastFailureAt: provider.lastFailureAt,
-});
-
-const buildModelPublic = (model) => ({
-  id: model._id,
-  provider: model.provider,
-  name: model.name,
-  slug: model.slug,
-  enabled: model.enabled,
-  priority: model.priority,
-  credits: model.credits,
-  estimatedTime: model.estimatedTime,
-  supportsImage: model.supportsImage,
-  supportsVideo: model.supportsVideo,
-  supportsAudio: model.supportsAudio,
-  supportsMultipleImages: model.supportsMultipleImages,
-  maximumDuration: model.maximumDuration,
-  maximumResolution: model.maximumResolution,
-});
 
 const getMinCreditsByProviderDuration = async (providerIds) => {
   if (providerIds.length === 0) {
@@ -67,28 +27,16 @@ const getMinCreditsByProviderDuration = async (providerIds) => {
 const listProviders = async () => {
   const providers = await ProviderModel.find({ enabled: true })
     .select({
-      _id: 1,
       name: 1,
       slug: 1,
       enabled: 1,
       priority: 1,
-      healthStatus: 1,
       supportsImage: 1,
       supportsVideo: 1,
       supportsAudio: 1,
       supportsMultipleImages: 1,
       maximumDuration: 1,
       maximumResolution: 1,
-      dailyLimit: 1,
-      timeout: 1,
-      retryCount: 1,
-      averageResponseTimeMs: 1,
-      totalRequests: 1,
-      successfulRequests: 1,
-      failedRequests: 1,
-      lastSuccessAt: 1,
-      lastFailureAt: 1,
-      metadata: 1,
     })
     .sort({ priority: 1, createdAt: -1 })
     .lean();
@@ -98,7 +46,6 @@ const listProviders = async () => {
   const [models, minCreditsByDurationMap] = await Promise.all([
     ProviderModelModel.find({ enabled: true, provider: { $in: providerIds } })
       .select({
-        _id: 1,
         provider: 1,
         name: 1,
         slug: 1,
@@ -118,17 +65,7 @@ const listProviders = async () => {
     getMinCreditsByProviderDuration(providerIds),
   ]);
 
-  const modelsByProvider = new Map();
-  for (const m of models) {
-    const key = String(m.provider);
-    if (!modelsByProvider.has(key)) {
-      modelsByProvider.set(key, []);
-    }
-    modelsByProvider.get(key).push(buildModelPublic(m));
-  }
-
   const items = providers.map((p) => {
-    const creditsMultiplier = Number(p?.metadata?.creditsMultiplier) || 1;
     const pricingSummary = [];
     for (const [key, minCredits] of minCreditsByDurationMap.entries()) {
       if (!key.startsWith(`${String(p._id)}:`)) {
@@ -138,12 +75,9 @@ const listProviders = async () => {
       pricingSummary.push({ duration, minCredits });
     }
     pricingSummary.sort((a, b) => a.duration - b.duration);
-    return {
-      ...buildProviderPublic(p),
-      creditsMultiplier: Number(creditsMultiplier) || 1,
-      models: modelsByProvider.get(String(p._id)) || [],
-      pricing: pricingSummary,
-    };
+
+    const providerModels = models.filter((m) => String(m.provider) === String(p._id));
+    return buildPublicProviderDto({ provider: p, models: providerModels, pricingSummary });
   });
 
   return { items };
@@ -152,29 +86,16 @@ const listProviders = async () => {
 const getProviderDetails = async (slug) => {
   const provider = await ProviderModel.findOne({ slug: safeLower(slug), enabled: true })
     .select({
-      _id: 1,
       name: 1,
       slug: 1,
       enabled: 1,
       priority: 1,
-      healthStatus: 1,
       supportsImage: 1,
       supportsVideo: 1,
       supportsAudio: 1,
       supportsMultipleImages: 1,
       maximumDuration: 1,
       maximumResolution: 1,
-      dailyLimit: 1,
-      timeout: 1,
-      retryCount: 1,
-      averageResponseTimeMs: 1,
-      totalRequests: 1,
-      successfulRequests: 1,
-      failedRequests: 1,
-      errorCount: 1,
-      lastSuccessAt: 1,
-      lastFailureAt: 1,
-      metadata: 1,
     })
     .lean();
 
@@ -185,7 +106,6 @@ const getProviderDetails = async (slug) => {
   const [models, pricingSummary] = await Promise.all([
     ProviderModelModel.find({ provider: provider._id, enabled: true })
       .select({
-        _id: 1,
         provider: 1,
         name: 1,
         slug: 1,
@@ -209,15 +129,11 @@ const getProviderDetails = async (slug) => {
     ]),
   ]);
 
-  return {
-    provider: {
-      ...buildProviderPublic(provider),
-      errorCount: provider.errorCount,
-      creditsMultiplier: Number(provider?.metadata?.creditsMultiplier) || 1,
-    },
-    models: models.map(buildModelPublic),
-    pricing: pricingSummary.map((p) => ({ duration: p._id.duration, minCredits: p.minCredits })),
-  };
+  return buildPublicProviderDto({
+    provider,
+    models,
+    pricingSummary: pricingSummary.map((p) => ({ duration: p._id.duration, minCredits: p.minCredits })),
+  });
 };
 
 const buildCandidates = async ({ template = null, excludedProviderIds = [] } = {}) => {

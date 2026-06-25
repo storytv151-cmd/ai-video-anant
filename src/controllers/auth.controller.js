@@ -7,8 +7,10 @@
  */
 import environment from '../config/environment.js';
 import ApiError from '../utils/ApiError.js';
+import ERROR_CODES from '../constants/errorCodes.js';
 import { formatSuccessResponse } from '../utils/responseFormatter.js';
 import authService from '../services/auth/authService.js';
+import auditLogService from '../services/auditLog.service.js';
 
 const buildRefreshCookieOptions = ({ expiresAt }) => ({
   httpOnly: true,
@@ -35,6 +37,22 @@ const googleLogin = async (request, response) => {
   const data = await authService.googleLogin({ idToken, device, ip });
   setRefreshCookie(response, data.tokens);
 
+  auditLogService
+    .createAuditLog({
+      actorType: 'user',
+      actorUserId: data?.user?.id || null,
+      action: 'AUTH_LOGIN',
+      targetType: 'User',
+      targetId: data?.user?.id || null,
+      ip,
+      userAgent: request.headers['user-agent'] || null,
+      requestId: request.requestId || null,
+      path: request.originalUrl,
+      method: request.method,
+      metadata: { provider: 'google', device: device || null },
+    })
+    .catch(() => null);
+
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
@@ -47,6 +65,22 @@ const refresh = async (request, response) => {
   const ip = request.ip;
   const data = await authService.refreshTokens({ refreshToken, ip });
   setRefreshCookie(response, data.tokens);
+
+  auditLogService
+    .createAuditLog({
+      actorType: request.user?.id ? 'user' : 'system',
+      actorUserId: request.user?.id || null,
+      action: 'AUTH_REFRESH',
+      targetType: 'RefreshToken',
+      targetId: null,
+      ip,
+      userAgent: request.headers['user-agent'] || null,
+      requestId: request.requestId || null,
+      path: request.originalUrl,
+      method: request.method,
+      metadata: {},
+    })
+    .catch(() => null);
 
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
@@ -61,22 +95,56 @@ const logout = async (request, response) => {
 
   await authService.logout({ refreshToken });
   clearRefreshCookie(response);
+
+  auditLogService
+    .createAuditLog({
+      actorType: request.user?.id ? 'user' : 'system',
+      actorUserId: request.user?.id || null,
+      action: 'AUTH_LOGOUT',
+      targetType: 'RefreshToken',
+      targetId: null,
+      ip: request.ip,
+      userAgent: request.headers['user-agent'] || null,
+      requestId: request.requestId || null,
+      path: request.originalUrl,
+      method: request.method,
+      metadata: {},
+    })
+    .catch(() => null);
+
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data: { loggedOut: true } }));
 };
 
 const logoutAll = async (request, response) => {
   if (!request.user?.id) {
-    throw new ApiError(401, 'Authentication required.', { code: 'AUTH_REQUIRED' });
+    throw new ApiError(null, null, { code: ERROR_CODES.AUTH_001 });
   }
 
   await authService.logoutAll({ userId: request.user.id });
   clearRefreshCookie(response);
+
+  auditLogService
+    .createAuditLog({
+      actorType: 'user',
+      actorUserId: request.user.id,
+      action: 'AUTH_LOGOUT_ALL',
+      targetType: 'User',
+      targetId: request.user.id,
+      ip: request.ip,
+      userAgent: request.headers['user-agent'] || null,
+      requestId: request.requestId || null,
+      path: request.originalUrl,
+      method: request.method,
+      metadata: {},
+    })
+    .catch(() => null);
+
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data: { loggedOutAll: true } }));
 };
 
 const me = async (request, response) => {
   if (!request.user?.id) {
-    throw new ApiError(401, 'Authentication required.', { code: 'AUTH_REQUIRED' });
+    throw new ApiError(null, null, { code: ERROR_CODES.AUTH_001 });
   }
 
   const data = await authService.getMe({ userId: request.user.id });
@@ -84,4 +152,3 @@ const me = async (request, response) => {
 };
 
 export { googleLogin, refresh, logout, logoutAll, me };
-

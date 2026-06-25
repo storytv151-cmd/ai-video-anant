@@ -4,6 +4,7 @@
  */
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
+import idempotency from '../middleware/idempotency.js';
 import validation from '../middleware/validation.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { REQUEST_SOURCES } from '../utils/constants.js';
@@ -28,6 +29,7 @@ walletRouter.get(
 walletRouter.post(
   '/promo',
   authenticate,
+  idempotency(false),
   validation(walletValidator.validateRedeemPromo, REQUEST_SOURCES.BODY),
   asyncHandler(redeemPromo),
 );

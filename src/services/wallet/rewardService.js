@@ -65,6 +65,7 @@ const grantCredits = async ({
   description,
   referenceType,
   referenceId,
+  idempotencyKey = null,
 }) => {
   const balanceBefore = wallet.currentCredits;
   const balanceAfter = balanceBefore + credits;
@@ -83,6 +84,7 @@ const grantCredits = async ({
     referenceType,
     referenceId,
     description,
+    idempotencyKey,
   });
 
   wallet.currentCredits = balanceAfter;
@@ -93,8 +95,15 @@ const grantCredits = async ({
   return transaction;
 };
 
-const claimWelcomeBonus = async ({ userId }) =>
+const claimWelcomeBonus = async ({ userId, idempotencyKey = null }) =>
   walletBootstrapService.withTransaction(async (session) => {
+    if (idempotencyKey) {
+      const existing = await creditTransactionService.findSuccessfulByIdempotencyKey({ userId, idempotencyKey });
+      if (existing) {
+        return { credits: existing.credits, transactionId: existing._id };
+      }
+    }
+
     const [wallet, rewardsSettings] = await Promise.all([
       walletBootstrapService.ensureWallet({ userId, session }),
       getRewardsSettings({ session }),
@@ -132,6 +141,7 @@ const claimWelcomeBonus = async ({ userId }) =>
       description: 'Welcome bonus credits granted.',
       referenceType: 'system',
       referenceId: null,
+      idempotencyKey,
     });
 
     await createRewardHistory({
@@ -147,8 +157,15 @@ const claimWelcomeBonus = async ({ userId }) =>
     return { credits, transactionId: transaction._id };
   });
 
-const claimDailyBonus = async ({ userId }) =>
+const claimDailyBonus = async ({ userId, idempotencyKey = null }) =>
   walletBootstrapService.withTransaction(async (session) => {
+    if (idempotencyKey) {
+      const existing = await creditTransactionService.findSuccessfulByIdempotencyKey({ userId, idempotencyKey });
+      if (existing) {
+        return { credits: existing.credits, transactionId: existing._id };
+      }
+    }
+
     const [wallet, rewardsSettings] = await Promise.all([
       walletBootstrapService.ensureWallet({ userId, session }),
       getRewardsSettings({ session }),
@@ -213,6 +230,7 @@ const claimDailyBonus = async ({ userId }) =>
       description: 'Daily bonus credits granted.',
       referenceType: 'DailyCheckin',
       referenceId: dailyDoc._id,
+      idempotencyKey,
     });
 
     dailyDoc.currentStreak = nextStreak;
@@ -234,8 +252,15 @@ const claimDailyBonus = async ({ userId }) =>
     return { credits, streak: nextStreak, transactionId: transaction._id };
   });
 
-const claimRewardAd = async ({ userId }) =>
+const claimRewardAd = async ({ userId, idempotencyKey = null }) =>
   walletBootstrapService.withTransaction(async (session) => {
+    if (idempotencyKey) {
+      const existing = await creditTransactionService.findSuccessfulByIdempotencyKey({ userId, idempotencyKey });
+      if (existing) {
+        return { credits: existing.credits, transactionId: existing._id };
+      }
+    }
+
     const [wallet, rewardsSettings] = await Promise.all([
       walletBootstrapService.ensureWallet({ userId, session }),
       getRewardsSettings({ session }),
@@ -293,6 +318,7 @@ const claimRewardAd = async ({ userId }) =>
       description: 'Reward ad credits granted.',
       referenceType: 'system',
       referenceId: null,
+      idempotencyKey,
     });
 
     await createRewardHistory({
@@ -308,8 +334,15 @@ const claimRewardAd = async ({ userId }) =>
     return { credits: creditsPerView, transactionId: transaction._id };
   });
 
-const redeemPromoCode = async ({ userId, code }) =>
+const redeemPromoCode = async ({ userId, code, idempotencyKey = null }) =>
   walletBootstrapService.withTransaction(async (session) => {
+    if (idempotencyKey) {
+      const existing = await creditTransactionService.findSuccessfulByIdempotencyKey({ userId, idempotencyKey });
+      if (existing) {
+        return { credits: existing.credits, transactionId: existing._id };
+      }
+    }
+
     const paymentsSettings = await getPaymentsSettings({ session });
     const couponsEnabled = Boolean(paymentsSettings?.coupons?.enabled);
     if (!couponsEnabled) {
@@ -366,6 +399,7 @@ const redeemPromoCode = async ({ userId, code }) =>
       description: `Promo code redeemed: ${coupon.code}`,
       referenceType: 'Coupon',
       referenceId: coupon._id,
+      idempotencyKey,
     });
 
     coupon.usageCount += 1;

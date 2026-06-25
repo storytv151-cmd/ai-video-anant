@@ -6,7 +6,7 @@ import environment from '../config/environment.js';
 import { errorLogger } from '../config/logger.js';
 import { formatErrorResponse } from '../utils/responseFormatter.js';
 
-const errorHandler = (error, request, response, next) => {
+const errorHandler = (error, request, response, _next) => {
   const statusCode = error.statusCode || 500;
 
   errorLogger.error(error.message || 'Unhandled application error.', {

@@ -7,6 +7,7 @@ import path from 'node:path';
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import environment from './environment.js';
+import { getRequestContext } from '../utils/requestContext.js';
 
 const { combine, timestamp, errors, json, colorize, printf, metadata } = winston.format;
 
@@ -17,6 +18,19 @@ const consoleFormat = combine(
   colorize(),
   timestamp(),
   errors({ stack: true }),
+  winston.format((info) => {
+    const ctx = getRequestContext();
+    if (ctx) {
+      info.requestId = ctx.requestId || info.requestId;
+      info.userId = ctx.userId || info.userId;
+      info.provider = ctx.provider || info.provider;
+      info.generationJobId = ctx.generationJobId || info.generationJobId;
+      info.walletTransactionId = ctx.walletTransactionId || info.walletTransactionId;
+      info.responseTimeMs = ctx.startAtMs ? Date.now() - ctx.startAtMs : info.responseTimeMs;
+    }
+    info.environment = environment.app.env;
+    return info;
+  })(),
   metadata({ fillExcept: ['message', 'level', 'timestamp', 'label'] }),
   printf(({ level, message, timestamp: logTimestamp, stack, metadata: meta }) => {
     const metadataString =
@@ -25,7 +39,24 @@ const consoleFormat = combine(
   }),
 );
 
-const fileFormat = combine(timestamp(), errors({ stack: true }), json());
+const fileFormat = combine(
+  timestamp(),
+  errors({ stack: true }),
+  winston.format((info) => {
+    const ctx = getRequestContext();
+    if (ctx) {
+      info.requestId = ctx.requestId || info.requestId;
+      info.userId = ctx.userId || info.userId;
+      info.provider = ctx.provider || info.provider;
+      info.generationJobId = ctx.generationJobId || info.generationJobId;
+      info.walletTransactionId = ctx.walletTransactionId || info.walletTransactionId;
+      info.responseTimeMs = ctx.startAtMs ? Date.now() - ctx.startAtMs : info.responseTimeMs;
+    }
+    info.environment = environment.app.env;
+    return info;
+  })(),
+  json(),
+);
 
 const consoleLogger = new winston.transports.Console({
   level: environment.logging.level,

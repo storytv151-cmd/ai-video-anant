@@ -14,12 +14,12 @@ const getProviderBySlug = async (request, response) => {
 };
 
 const healthSummary = async (request, response) => {
-  const data = await providerHealthService.getHealthSummary();
+  const data = await providerHealthService.getPublicHealthSummary();
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
 const pricingSummary = async (request, response) => {
-  const data = await providerPricingService.getPricingSummary();
+  const data = await providerPricingService.getPublicPricingSummary();
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 

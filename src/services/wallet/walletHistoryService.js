@@ -5,6 +5,7 @@
 import CreditTransactionModel from '../../models/CreditTransaction.js';
 import walletValidationService from './walletValidationService.js';
 import { buildPaginationMeta } from '../../utils/pagination.js';
+import { buildCreditTransactionDto } from '../../utils/wallet.dto.js';
 
 const parsePositiveInt = (value, fallback) => {
   const parsed = Number(value);
@@ -76,7 +77,7 @@ const listHistory = async ({
   ]);
 
   return {
-    items,
+    items: items.map(buildCreditTransactionDto),
     meta: buildPaginationMeta({ page: safePage, limit: safeLimit, total }),
   };
 };

@@ -8,6 +8,7 @@ import ApiError from '../../utils/ApiError.js';
 import WalletModel from '../../models/Wallet.js';
 import walletValidationService from './walletValidationService.js';
 import creditTransactionService from './creditTransactionService.js';
+import { setRequestContextValue } from '../../utils/requestContext.js';
 
 const withTransaction = async (handler) => {
   const session = await mongoose.startSession();
@@ -20,6 +21,13 @@ const withTransaction = async (handler) => {
   } finally {
     session.endSession();
   }
+};
+
+const withOptionalSession = async ({ session } = {}, handler) => {
+  if (session) {
+    return handler(session);
+  }
+  return withTransaction(handler);
 };
 
 const buildWalletResponse = (wallet) => ({
@@ -55,10 +63,23 @@ const applyMutation = async ({
   referenceType,
   referenceId,
   createdBy = null,
+  idempotencyKey = null,
+  session = null,
   mutate,
 }) =>
-  withTransaction(async (session) => {
-    const wallet = await walletValidationService.getWalletByUserId({ userId, session });
+  withOptionalSession({ session }, async (activeSession) => {
+    const wallet = await walletValidationService.getWalletByUserId({ userId, session: activeSession });
+
+    if (idempotencyKey) {
+      const existing = await creditTransactionService.findSuccessfulByIdempotencyKey({
+        userId,
+        idempotencyKey,
+        session: activeSession,
+      });
+      if (existing) {
+        return { wallet: buildWalletResponse(wallet), transaction: existing };
+      }
+    }
 
     const before = wallet.currentCredits;
     const walletState = {
@@ -72,25 +93,45 @@ const applyMutation = async ({
       totalRefunded: wallet.totalRefunded,
     };
 
-    await mutate({ wallet: walletState, session });
+    await mutate({ wallet: walletState, session: activeSession });
     const after = walletState.currentCredits;
 
-    const transaction = await creditTransactionService.createTransaction({
-      session,
-      walletId: wallet._id,
-      userId,
-      type,
-      status,
-      source,
-      purpose,
-      credits,
-      balanceBefore: before,
-      balanceAfter: after,
-      referenceType,
-      referenceId,
-      description,
-      createdBy,
-    });
+    let transaction;
+    try {
+      transaction = await creditTransactionService.createTransaction({
+        session: activeSession,
+        walletId: wallet._id,
+        userId,
+        type,
+        status,
+        source,
+        purpose,
+        credits,
+        balanceBefore: before,
+        balanceAfter: after,
+        referenceType,
+        referenceId,
+        description,
+        createdBy,
+        idempotencyKey,
+      });
+    } catch (error) {
+      if (error?.code === 11000 && idempotencyKey) {
+        const existing = await creditTransactionService.findSuccessfulByIdempotencyKey({
+          userId,
+          idempotencyKey,
+          session: activeSession,
+        });
+        if (existing) {
+          return { wallet: buildWalletResponse(wallet), transaction: existing };
+        }
+      }
+      throw error;
+    }
+
+    if (transaction?._id) {
+      setRequestContextValue('walletTransactionId', String(transaction._id));
+    }
 
     if (
       walletState.currentCredits < 0 ||
@@ -110,7 +151,7 @@ const applyMutation = async ({
     wallet.totalRewarded = walletState.totalRewarded;
     wallet.totalRefunded = walletState.totalRefunded;
 
-    await wallet.save({ session });
+    await wallet.save({ session: activeSession });
 
     return { wallet: buildWalletResponse(wallet), transaction };
   });
@@ -124,6 +165,8 @@ const addCredits = async ({
   description = null,
   referenceType = 'system',
   referenceId = null,
+  idempotencyKey = null,
+  session = null,
 }) =>
   applyMutation({
     userId,
@@ -134,6 +177,8 @@ const addCredits = async ({
     description,
     referenceType,
     referenceId,
+    idempotencyKey,
+    session,
     mutate: async ({ wallet }) => {
       if (!Number.isFinite(credits) || credits <= 0) {
         throw new ApiError(400, 'Credits must be a positive number.', { code: 'INVALID_CREDITS_AMOUNT' });
@@ -162,6 +207,8 @@ const deductCredits = async ({
   description = null,
   referenceType = 'system',
   referenceId = null,
+  idempotencyKey = null,
+  session = null,
 }) =>
   applyMutation({
     userId,
@@ -172,6 +219,8 @@ const deductCredits = async ({
     description,
     referenceType,
     referenceId,
+    idempotencyKey,
+    session,
     mutate: async ({ wallet }) => {
       if (!Number.isFinite(credits) || credits <= 0) {
         throw new ApiError(400, 'Credits must be a positive number.', { code: 'INVALID_CREDITS_AMOUNT' });
@@ -189,6 +238,8 @@ const lockCredits = async ({
   referenceType = 'system',
   referenceId = null,
   description = 'Credits locked for processing.',
+  idempotencyKey = null,
+  session = null,
 }) =>
   applyMutation({
     userId,
@@ -200,6 +251,8 @@ const lockCredits = async ({
     description,
     referenceType,
     referenceId,
+    idempotencyKey,
+    session,
     mutate: async ({ wallet }) => {
       if (!Number.isFinite(credits) || credits <= 0) {
         throw new ApiError(400, 'Credits must be a positive number.', { code: 'INVALID_CREDITS_AMOUNT' });
@@ -217,6 +270,8 @@ const unlockCredits = async ({
   referenceType = 'system',
   referenceId = null,
   description = 'Credits unlocked.',
+  idempotencyKey = null,
+  session = null,
 }) =>
   applyMutation({
     userId,
@@ -228,6 +283,8 @@ const unlockCredits = async ({
     description,
     referenceType,
     referenceId,
+    idempotencyKey,
+    session,
     mutate: async ({ wallet }) => {
       if (!Number.isFinite(credits) || credits <= 0) {
         throw new ApiError(400, 'Credits must be a positive number.', { code: 'INVALID_CREDITS_AMOUNT' });
@@ -248,6 +305,8 @@ const movePendingToBalance = async ({
   description = 'Pending credits confirmed.',
   referenceType = 'system',
   referenceId = null,
+  idempotencyKey = null,
+  session = null,
 }) =>
   applyMutation({
     userId,
@@ -259,6 +318,8 @@ const movePendingToBalance = async ({
     description,
     referenceType,
     referenceId,
+    idempotencyKey,
+    session,
     mutate: async ({ wallet }) => {
       if (!Number.isFinite(credits) || credits <= 0) {
         throw new ApiError(400, 'Credits must be a positive number.', { code: 'INVALID_CREDITS_AMOUNT' });
@@ -277,6 +338,8 @@ const refundCredits = async ({
   credits,
   originalTransactionId = null,
   description = 'Refund issued.',
+  idempotencyKey = null,
+  session = null,
 }) =>
   addCredits({
     userId,
@@ -287,6 +350,40 @@ const refundCredits = async ({
     description,
     referenceType: originalTransactionId ? 'CreditTransaction' : 'system',
     referenceId: originalTransactionId,
+    idempotencyKey,
+    session,
+  });
+
+const consumeLockedCredits = async ({
+  userId,
+  credits,
+  referenceType = 'system',
+  referenceId = null,
+  description = 'Locked credits consumed.',
+  idempotencyKey = null,
+  session = null,
+} = {}) =>
+  applyMutation({
+    userId,
+    type: 'generation',
+    status: 'success',
+    source: 'Generation',
+    purpose: 'consume_locked',
+    credits,
+    description,
+    referenceType,
+    referenceId,
+    idempotencyKey,
+    session,
+    mutate: async ({ wallet }) => {
+      if (!Number.isFinite(credits) || credits <= 0) {
+        throw new ApiError(400, 'Credits must be a positive number.', { code: 'INVALID_CREDITS_AMOUNT' });
+      }
+
+      walletValidationService.assertEnoughLocked(wallet, credits);
+      wallet.lockedCredits -= credits;
+      wallet.totalUsed += credits;
+    },
   });
 
 const transferCredits = async () => {
@@ -302,6 +399,7 @@ const walletService = Object.freeze({
   unlockCredits,
   movePendingToBalance,
   refundCredits,
+  consumeLockedCredits,
   transferCredits,
   buildWalletResponse,
 });

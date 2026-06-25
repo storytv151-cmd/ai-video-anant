@@ -175,8 +175,15 @@ const videoGenerationJobSchema = createBaseSchema({
   },
   status: {
     type: String,
-    enum: ['pending', 'queued', 'processing', 'completed', 'failed', 'cancelled', 'refunded'],
+    enum: ['pending', 'queued', 'processing', 'completed', 'failed', 'cancelled', 'refunded', 'timeout', 'expired'],
     default: 'pending',
+    index: true,
+  },
+  clientRequestKey: {
+    type: String,
+    trim: true,
+    maxlength: 120,
+    default: null,
     index: true,
   },
   queuePosition: {
@@ -263,6 +270,24 @@ const videoGenerationJobSchema = createBaseSchema({
     default: null,
     index: true,
   },
+  lockTransaction: {
+    type: Schema.Types.ObjectId,
+    ref: 'CreditTransaction',
+    default: null,
+    index: true,
+  },
+  consumeTransaction: {
+    type: Schema.Types.ObjectId,
+    ref: 'CreditTransaction',
+    default: null,
+    index: true,
+  },
+  unlockTransaction: {
+    type: Schema.Types.ObjectId,
+    ref: 'CreditTransaction',
+    default: null,
+    index: true,
+  },
   retryCount: {
     type: Number,
     default: 0,
@@ -283,6 +308,15 @@ videoGenerationJobSchema.index({ template: 1, status: 1, createdAt: -1 });
 videoGenerationJobSchema.index({ status: 1, progress: 1, createdAt: -1 });
 videoGenerationJobSchema.index({ status: 1, queuePosition: 1, createdAt: -1 });
 videoGenerationJobSchema.index({ queuePosition: 1, createdAt: -1 });
+videoGenerationJobSchema.index(
+  { user: 1, clientRequestKey: 1 },
+  {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: { isDeleted: false },
+    name: 'uniq_generation_job_user_client_request_key_active',
+  },
+);
 videoGenerationJobSchema.index(
   { externalJobId: 1 },
   {

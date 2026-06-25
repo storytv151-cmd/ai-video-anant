@@ -4,6 +4,7 @@
  */
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
+import idempotency from '../middleware/idempotency.js';
 import validation from '../middleware/validation.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { REQUEST_SOURCES } from '../utils/constants.js';
@@ -12,7 +13,7 @@ import { claimDailyBonus, claimRewardAd } from '../controllers/reward.controller
 
 const rewardRouter = Router();
 
-rewardRouter.post('/daily', authenticate, validation(rewardValidator.validateDailyBonus), asyncHandler(claimDailyBonus));
-rewardRouter.post('/ad', authenticate, validation(rewardValidator.validateRewardAd, REQUEST_SOURCES.BODY), asyncHandler(claimRewardAd));
+rewardRouter.post('/ad', authenticate, idempotency(false), validation(rewardValidator.validateRewardAd, REQUEST_SOURCES.BODY), asyncHandler(claimRewardAd));
+rewardRouter.post('/daily', authenticate, idempotency(false), validation(rewardValidator.validateDailyBonus), asyncHandler(claimDailyBonus));
 
 export default rewardRouter;

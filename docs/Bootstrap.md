@@ -22,6 +22,15 @@ Mobile clients should not make many configuration calls on startup. The Bootstra
 - If authenticated: includes user profile, wallet summary, and subscription summary
 - If not authenticated: returns only public configuration
 
+## DTO & Data Exposure Rules
+
+- Provider payloads are mapped to public DTOs.
+- The bootstrap response does not expose provider secrets, internal metadata, internal IDs, or internal operational metrics.
+
+## Request Tracing
+
+- Response includes `X-Request-ID`.
+
 ## Caching Plan (Future)
 
 This endpoint is a primary candidate for caching (Redis) because:
@@ -34,4 +43,3 @@ Recommended future strategy:
 - cache public payload keyed by app version + locale + platform
 - cache user payload keyed by userId and short TTL
 - invalidate public cache on AppSetting/provider changes
-

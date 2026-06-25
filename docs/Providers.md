@@ -74,7 +74,16 @@ The metrics service updates these counters (pipeline update when available; safe
 - `GET /api/v1/providers/health`
 - `GET /api/v1/providers/pricing`
 
-These endpoints are read-only and do not expose secrets.
+These endpoints are read-only and return only public provider information (DTOs). They never expose internal configuration, health metrics, failure counts, retry configuration, internal notes, or internal IDs.
+
+## Admin APIs
+
+Admin-only provider endpoints return internal telemetry and configuration:
+
+- `GET /api/v1/admin/providers`
+- `GET /api/v1/admin/providers/:slug`
+- `GET /api/v1/admin/providers/health`
+- `GET /api/v1/admin/providers/pricing`
 
 ## Future Integration Guide
 

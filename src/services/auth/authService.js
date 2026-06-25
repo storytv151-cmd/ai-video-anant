@@ -10,6 +10,8 @@ import googleService from './googleService.js';
 import sessionService from './sessionService.js';
 import tokenService from './tokenService.js';
 import walletBootstrapService from './walletBootstrapService.js';
+import { buildUserDto } from '../../utils/user.dto.js';
+import { buildWalletDto } from '../../utils/wallet.dto.js';
 
 const getSystemSettings = async () => {
   const systemDoc =
@@ -60,32 +62,33 @@ const buildAuthResponse = async ({ userId }) => {
     throw new ApiError(404, 'User not found.', { code: 'USER_NOT_FOUND' });
   }
 
-  const wallet = user.wallet || null;
+  const userDto = buildUserDto(user);
+  const walletDto = buildWalletDto(user.wallet || null);
 
   return {
     user: {
-      id: user._id,
-      googleId: user.googleId,
-      name: user.name,
-      email: user.email,
-      profileImage: user.profileImage,
-      country: user.country,
-      language: user.language,
-      subscription: user.subscription,
-      role: user.role,
-      accountStatus: user.accountStatus,
-      isEmailVerified: user.isEmailVerified,
-      lastLogin: user.lastLogin,
-      lastActiveAt: user.lastActiveAt,
+      id: userDto.id,
+      googleId: userDto.googleId,
+      name: userDto.name,
+      email: userDto.email,
+      profileImage: userDto.profileImage,
+      country: userDto.country,
+      language: userDto.language,
+      subscription: userDto.subscription,
+      role: userDto.role,
+      accountStatus: userDto.accountStatus,
+      isEmailVerified: userDto.isEmailVerified,
+      lastLogin: userDto.lastLogin,
+      lastActiveAt: userDto.lastActiveAt,
     },
-    wallet: wallet
+    wallet: walletDto
       ? {
-          id: wallet._id,
-          currentCredits: wallet.currentCredits,
-          pendingCredits: wallet.pendingCredits,
-          lockedCredits: wallet.lockedCredits,
-          lifetimeCredits: wallet.lifetimeCredits,
-          status: wallet.status,
+          id: walletDto.id,
+          currentCredits: walletDto.currentCredits,
+          pendingCredits: walletDto.pendingCredits,
+          lockedCredits: walletDto.lockedCredits,
+          lifetimeCredits: walletDto.lifetimeCredits,
+          status: walletDto.status,
         }
       : null,
   };

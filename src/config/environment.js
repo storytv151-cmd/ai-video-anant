@@ -52,16 +52,40 @@ const ensureValidUrl = (value, key) => {
 const nodeEnv = process.env.NODE_ENV || 'development';
 const isProduction = nodeEnv === 'production';
 
-const requiredInProduction = ['PORT', 'MONGO_URI'];
-const missingVariables = requiredInProduction.filter(
-  (key) => isProduction && !process.env[key],
-);
+const validateRequiredInProduction = () => {
+  if (!isProduction) {
+    return;
+  }
 
-if (missingVariables.length > 0) {
-  throw new Error(
-    `Missing required environment variables in production: ${missingVariables.join(', ')}`,
-  );
-}
+  const required = [
+    'PORT',
+    'NODE_ENV',
+    'MONGO_URI',
+    'JWT_SECRET',
+    'JWT_REFRESH_SECRET',
+    'COOKIE_SECRET',
+    'GOOGLE_CLIENT_ID',
+    'DIGITALOCEAN_SPACES_KEY',
+    'DIGITALOCEAN_SPACES_SECRET',
+    'DIGITALOCEAN_SPACES_BUCKET',
+    'DIGITALOCEAN_SPACES_ENDPOINT',
+    'LOG_LEVEL',
+  ];
+
+  const missing = required.filter((key) => !process.env[key] || String(process.env[key]).trim() === '');
+  if (missing.length === 0) {
+    return;
+  }
+
+  const lines = [
+    'Production startup blocked due to missing required environment variables.',
+    `Missing: ${missing.join(', ')}`,
+    'Fix: configure these variables in your production environment and restart the server.',
+  ];
+  throw new Error(lines.join(' '));
+};
+
+validateRequiredInProduction();
 
 const environment = Object.freeze({
   app: {

@@ -3,6 +3,7 @@
  * Future Mongoose schema definitions will live in this directory.
  */
 import AppSettingModel from './AppSetting.js';
+import AuditLogModel from './AuditLog.js';
 import CouponModel from './Coupon.js';
 import CreditTransactionModel from './CreditTransaction.js';
 import DailyCheckinModel from './DailyCheckin.js';
@@ -22,6 +23,7 @@ import WalletModel from './Wallet.js';
 
 const models = Object.freeze({
   AppSettingModel,
+  AuditLogModel,
   CouponModel,
   CreditTransactionModel,
   DailyCheckinModel,

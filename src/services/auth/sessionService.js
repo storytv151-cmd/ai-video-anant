@@ -12,6 +12,7 @@ const findActiveSessionByToken = async (refreshToken) => {
   return RefreshTokenModel.findOne({
     token: tokenHash,
     revoked: false,
+    expiresAt: { $gt: new Date() },
   });
 };
 
