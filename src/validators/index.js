@@ -3,11 +3,14 @@
  * Modules can export validator functions from this directory without changing middleware contracts.
  */
 import authValidator from './auth.validator.js';
+import bootstrapValidator from './bootstrap.validator.js';
 import commonValidator from './common.validator.js';
 import generationValidator from './generation.validator.js';
 import paymentValidator from './payment.validator.js';
 import providerValidator from './provider.validator.js';
+import rewardValidator from './reward.validator.js';
 import templateValidator from './template.validator.js';
+import transactionValidator from './transaction.validator.js';
 import walletValidator from './wallet.validator.js';
 
 const buildValidatorResult = ({ valid = true, message = '', errors = [] } = {}) => ({
@@ -18,11 +21,14 @@ const buildValidatorResult = ({ valid = true, message = '', errors = [] } = {}) 
 
 const validators = Object.freeze({
   authValidator,
+  bootstrapValidator,
   commonValidator,
   generationValidator,
   paymentValidator,
   providerValidator,
+  rewardValidator,
   templateValidator,
+  transactionValidator,
   walletValidator,
 });
 

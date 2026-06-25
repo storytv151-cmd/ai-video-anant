@@ -11,7 +11,9 @@ import { publicHealthRouter, versionedHealthRouter } from './health.routes.js';
 import notificationRouter from './notification.routes.js';
 import paymentRouter from './payment.routes.js';
 import providerRouter from './provider.routes.js';
+import rewardRouter from './reward.routes.js';
 import templateRouter from './template.routes.js';
+import transactionRouter from './transaction.routes.js';
 import userRouter from './user.routes.js';
 import walletRouter from './wallet.routes.js';
 
@@ -24,6 +26,8 @@ apiRouter.use('/auth', authRouter);
 apiRouter.use('/bootstrap', bootstrapRouter);
 apiRouter.use('/users', userRouter);
 apiRouter.use('/wallet', walletRouter);
+apiRouter.use('/reward', rewardRouter);
+apiRouter.use('/transactions', transactionRouter);
 apiRouter.use('/providers', providerRouter);
 apiRouter.use('/templates', templateRouter);
 apiRouter.use('/generations', generationRouter);
