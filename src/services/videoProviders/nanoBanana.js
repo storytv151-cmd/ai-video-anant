@@ -3,43 +3,31 @@ import ProviderModel from '../../models/Provider.js';
 import ProviderModelModel from '../../models/ProviderModel.js';
 import ProviderPricingModel from '../../models/ProviderPricing.js';
 import BaseVideoProvider from './baseProvider.js';
-import KlingProvider from './kling.js';
-import LumaProvider from './luma.js';
-import NanoBananaProvider from './nanoBanana.js';
-import PikaProvider from './pika.js';
-import RunwayProvider from './runway.js';
 
-const providerInstanceCache = new Map();
-
-const normalizeProviderDoc = (provider) => {
-  if (!provider) {
-    return null;
-  }
-  return {
-    id: provider._id,
-    name: provider.name,
-    slug: provider.slug,
-    enabled: provider.enabled,
-    priority: provider.priority,
-    healthStatus: provider.healthStatus,
-    supportsImage: provider.supportsImage,
-    supportsVideo: provider.supportsVideo,
-    supportsAudio: provider.supportsAudio,
-    supportsMultipleImages: provider.supportsMultipleImages,
-    maximumDuration: provider.maximumDuration,
-    maximumResolution: provider.maximumResolution,
-    dailyLimit: provider.dailyLimit,
-    timeout: provider.timeout,
-    retryCount: provider.retryCount,
-    averageResponseTimeMs: provider.averageResponseTimeMs,
-    totalRequests: provider.totalRequests,
-    successfulRequests: provider.successfulRequests,
-    failedRequests: provider.failedRequests,
-    lastSuccessAt: provider.lastSuccessAt,
-    lastFailureAt: provider.lastFailureAt,
-    metadata: provider.metadata || {},
-  };
-};
+const normalizeProviderDoc = (provider) => ({
+  id: provider._id,
+  name: provider.name,
+  slug: provider.slug,
+  enabled: provider.enabled,
+  priority: provider.priority,
+  healthStatus: provider.healthStatus,
+  supportsImage: provider.supportsImage,
+  supportsVideo: provider.supportsVideo,
+  supportsAudio: provider.supportsAudio,
+  supportsMultipleImages: provider.supportsMultipleImages,
+  maximumDuration: provider.maximumDuration,
+  maximumResolution: provider.maximumResolution,
+  dailyLimit: provider.dailyLimit,
+  timeout: provider.timeout,
+  retryCount: provider.retryCount,
+  averageResponseTimeMs: provider.averageResponseTimeMs,
+  totalRequests: provider.totalRequests,
+  successfulRequests: provider.successfulRequests,
+  failedRequests: provider.failedRequests,
+  lastSuccessAt: provider.lastSuccessAt,
+  lastFailureAt: provider.lastFailureAt,
+  metadata: provider.metadata || {},
+});
 
 const normalizeProviderModelDoc = (model) => ({
   id: model._id,
@@ -59,21 +47,16 @@ const normalizeProviderModelDoc = (model) => ({
   metadata: model.metadata || {},
 });
 
-class GenericDbVideoProvider extends BaseVideoProvider {
+class NanoBananaProvider extends BaseVideoProvider {
   async getProviderInfo() {
     const provider = await ProviderModel.findOne({ slug: this.providerSlug, enabled: true }).lean();
     if (!provider) {
       throw new ApiError(404, 'Provider not found.', { code: 'PROVIDER_NOT_FOUND' });
     }
-
     const models = await ProviderModelModel.find({ provider: provider._id, enabled: true })
       .sort({ priority: 1, createdAt: -1 })
       .lean();
-
-    return {
-      provider: normalizeProviderDoc(provider),
-      models: models.map(normalizeProviderModelDoc),
-    };
+    return { provider: normalizeProviderDoc(provider), models: models.map(normalizeProviderModelDoc) };
   }
 
   async healthCheck() {
@@ -146,38 +129,4 @@ class GenericDbVideoProvider extends BaseVideoProvider {
   }
 }
 
-const createProviderInstance = ({ providerSlug }) => {
-  switch (String(providerSlug).toLowerCase()) {
-    case 'nano-banana':
-      return new NanoBananaProvider({ providerSlug });
-    case 'kling':
-      return new KlingProvider({ providerSlug });
-    case 'pika':
-      return new PikaProvider({ providerSlug });
-    case 'runway':
-      return new RunwayProvider({ providerSlug });
-    case 'luma':
-      return new LumaProvider({ providerSlug });
-    default:
-      return new GenericDbVideoProvider({ providerSlug });
-  }
-};
-
-const createVideoProvider = async ({ providerSlug, useCache = true } = {}) => {
-  const slug = String(providerSlug || '').toLowerCase();
-  if (!slug) {
-    throw new ApiError(400, 'providerSlug is required.', { code: 'PROVIDER_SLUG_REQUIRED' });
-  }
-
-  if (useCache && providerInstanceCache.has(slug)) {
-    return providerInstanceCache.get(slug);
-  }
-
-  const instance = createProviderInstance({ providerSlug: slug });
-  if (useCache) {
-    providerInstanceCache.set(slug, instance);
-  }
-  return instance;
-};
-
-export { createVideoProvider };
+export default NanoBananaProvider;
