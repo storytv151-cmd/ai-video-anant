@@ -1,0 +1,51 @@
+{
+  "name": "ai-video-generation-backend",
+  "version": "1.0.0",
+  "description": "Phase-1 production-ready backend foundation for a large-scale AI video generation platform.",
+  "type": "module",
+  "main": "server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "mongodb",
+    "clean-architecture",
+    "ai-video-platform"
+  ],
+  "author": "Senior Backend Software Architect Scaffold",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.842.0",
+    "compression": "^1.8.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.4.1",
+    "google-auth-library": "^9.15.1",
+    "helmet": "^8.1.0",
+    "mongodb": "^6.17.0",
+    "mongoose": "^8.16.1",
+    "morgan": "^1.10.0",
+    "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
+    "sharp": "^0.34.2",
+    "uuid": "^11.1.0",
+    "validator": "^13.15.15",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.30.1",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.6.2"
+  }
+}

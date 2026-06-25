@@ -1,0 +1,33 @@
+/**
+ * Central route composition module.
+ * Public routes and versioned API routes are mounted from here for consistent expansion.
+ */
+import { Router } from 'express';
+import environment from '../config/environment.js';
+import authRouter from './auth.routes.js';
+import generationRouter from './generation.routes.js';
+import { publicHealthRouter, versionedHealthRouter } from './health.routes.js';
+import notificationRouter from './notification.routes.js';
+import paymentRouter from './payment.routes.js';
+import providerRouter from './provider.routes.js';
+import templateRouter from './template.routes.js';
+import userRouter from './user.routes.js';
+import walletRouter from './wallet.routes.js';
+
+const publicRouter = Router();
+const apiRouter = Router();
+
+publicRouter.use('/', publicHealthRouter);
+apiRouter.use('/', versionedHealthRouter);
+apiRouter.use('/auth', authRouter);
+apiRouter.use('/users', userRouter);
+apiRouter.use('/wallet', walletRouter);
+apiRouter.use('/providers', providerRouter);
+apiRouter.use('/templates', templateRouter);
+apiRouter.use('/generations', generationRouter);
+apiRouter.use('/payments', paymentRouter);
+apiRouter.use('/notifications', notificationRouter);
+
+const versionedApiPath = `${environment.app.apiBasePath}/${environment.app.apiVersion}`;
+
+export { publicRouter, apiRouter, versionedApiPath };
