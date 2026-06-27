@@ -1,5 +1,5 @@
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import googleRtdnService from '../services/subscription/googleRtdnService.js';
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import googleRtdnService from "../services/subscription/googleRtdnService.js";
 
 const handleGoogleRtdnWebhook = async (request, response) => {
   const data = await googleRtdnService.processWebhook({

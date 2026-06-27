@@ -1,8 +1,8 @@
-import AppSettingModel from '../../models/AppSetting.js';
-import FileAssetModel from '../../models/FileAsset.js';
-import ApiError from '../../utils/ApiError.js';
-import adminAuditService from './adminAuditService.js';
-import adminQueryService from './adminQueryService.js';
+import AppSettingModel from "../../models/AppSetting.js";
+import FileAssetModel from "../../models/FileAsset.js";
+import ApiError from "../../utils/ApiError.js";
+import adminAuditService from "./adminAuditService.js";
+import adminQueryService from "./adminQueryService.js";
 
 const listSettings = async ({ query = {} } = {}) => {
   const filter = {};
@@ -13,11 +13,14 @@ const listSettings = async ({ query = {} } = {}) => {
     filter.key = String(query.key).trim().toLowerCase();
   }
 
-  const items = await AppSettingModel.find(filter).withDeleted().sort({ section: 1, key: 1 }).lean();
+  const items = await AppSettingModel.find(filter)
+    .withDeleted()
+    .sort({ section: 1, key: 1 })
+    .lean();
   return { items };
 };
 
-const getSetting = async ({ section = 'GENERAL', key = 'global' } = {}) => {
+const getSetting = async ({ section = "GENERAL", key = "global" } = {}) => {
   const doc = await AppSettingModel.findOne({
     section: String(section).trim().toUpperCase(),
     key: String(key).trim().toLowerCase(),
@@ -25,14 +28,16 @@ const getSetting = async ({ section = 'GENERAL', key = 'global' } = {}) => {
     .withDeleted()
     .lean();
   if (!doc) {
-    throw new ApiError(404, 'Setting not found.', { code: 'SETTING_NOT_FOUND' });
+    throw new ApiError(404, "Setting not found.", {
+      code: "SETTING_NOT_FOUND",
+    });
   }
   return doc;
 };
 
 const updateSetting = async ({
-  section = 'GENERAL',
-  key = 'global',
+  section = "GENERAL",
+  key = "global",
   payload = {},
   adminUserId = null,
   request = null,
@@ -40,9 +45,15 @@ const updateSetting = async ({
   const normalizedSection = String(section).trim().toUpperCase();
   const normalizedKey = String(key).trim().toLowerCase();
 
-  let doc = await AppSettingModel.findOne({ section: normalizedSection, key: normalizedKey }).withDeleted();
+  let doc = await AppSettingModel.findOne({
+    section: normalizedSection,
+    key: normalizedKey,
+  }).withDeleted();
   if (!doc) {
-    doc = new AppSettingModel({ section: normalizedSection, key: normalizedKey });
+    doc = new AppSettingModel({
+      section: normalizedSection,
+      key: normalizedKey,
+    });
   }
 
   const safePayload = { ...payload };
@@ -54,8 +65,8 @@ const updateSetting = async ({
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_SETTING_UPDATED',
-    targetType: 'AppSetting',
+    action: "ADMIN_SETTING_UPDATED",
+    targetType: "AppSetting",
     targetId: doc._id,
     metadata: { section: normalizedSection, key: normalizedKey },
   });
@@ -83,7 +94,7 @@ const getStorageOverview = async ({ query = {} } = {}) => {
       $group: {
         _id: null,
         fileCount: { $sum: 1 },
-        sizeInBytes: { $sum: '$sizeInBytes' },
+        sizeInBytes: { $sum: "$sizeInBytes" },
       },
     },
   ]);

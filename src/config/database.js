@@ -2,35 +2,37 @@
  * MongoDB connection lifecycle management for Mongoose.
  * The rest of the application depends on this module for safe connectivity state.
  */
-import mongoose from 'mongoose';
-import environment from './environment.js';
-import { applicationLogger, errorLogger } from './logger.js';
+import mongoose from "mongoose";
+import environment from "./environment.js";
+import { applicationLogger, errorLogger } from "./logger.js";
 
 const connectionStateMap = Object.freeze({
-  0: 'disconnected',
-  1: 'connected',
-  2: 'connecting',
-  3: 'disconnecting',
+  0: "disconnected",
+  1: "connected",
+  2: "connecting",
+  3: "disconnecting",
 });
 
-mongoose.connection.on('connected', () => {
-  applicationLogger.info('MongoDB connection established.');
+mongoose.connection.on("connected", () => {
+  applicationLogger.info("MongoDB connection established.");
 });
 
-mongoose.connection.on('error', (error) => {
-  errorLogger.error('MongoDB connection error.', {
+mongoose.connection.on("error", (error) => {
+  errorLogger.error("MongoDB connection error.", {
     message: error.message,
     stack: error.stack,
   });
 });
 
-mongoose.connection.on('disconnected', () => {
-  applicationLogger.warn('MongoDB connection closed.');
+mongoose.connection.on("disconnected", () => {
+  applicationLogger.warn("MongoDB connection closed.");
 });
 
 const connectDatabase = async () => {
   if (!environment.database.uri) {
-    applicationLogger.warn('MONGO_URI is not configured. Database connection skipped.');
+    applicationLogger.warn(
+      "MONGO_URI is not configured. Database connection skipped.",
+    );
     return null;
   }
 
@@ -59,7 +61,7 @@ const disconnectDatabase = async () => {
 
 const getDatabaseStatus = () => ({
   readyState: mongoose.connection.readyState,
-  status: connectionStateMap[mongoose.connection.readyState] || 'unknown',
+  status: connectionStateMap[mongoose.connection.readyState] || "unknown",
   host: mongoose.connection.host || null,
   name: mongoose.connection.name || environment.database.dbName,
 });

@@ -7,8 +7,8 @@
  * dynamic rollout, usage limits, provider-level costing, and operational
  * health telemetry tracking.
  */
-import mongoose from 'mongoose';
-import { createBaseSchema } from './base.schema.js';
+import mongoose from "mongoose";
+import { createBaseSchema } from "./base.schema.js";
 
 const { Schema } = mongoose;
 
@@ -37,13 +37,13 @@ const resolutionSchema = new Schema(
 const providerSchema = createBaseSchema({
   name: {
     type: String,
-    required: [true, 'Provider name is required.'],
+    required: [true, "Provider name is required."],
     trim: true,
     maxlength: 100,
   },
   slug: {
     type: String,
-    required: [true, 'Provider slug is required.'],
+    required: [true, "Provider slug is required."],
     trim: true,
     lowercase: true,
     maxlength: 100,
@@ -61,8 +61,8 @@ const providerSchema = createBaseSchema({
   },
   healthStatus: {
     type: String,
-    enum: ['healthy', 'warning', 'offline', 'maintenance'],
-    default: 'healthy',
+    enum: ["healthy", "warning", "offline", "maintenance"],
+    default: "healthy",
     index: true,
   },
   errorCount: {
@@ -225,23 +225,29 @@ providerSchema.index(
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
-    name: 'uniq_provider_slug_active',
+    name: "uniq_provider_slug_active",
   },
 );
 providerSchema.index({ enabled: 1, priority: 1 });
 providerSchema.index({ enabled: 1, healthStatus: 1, priority: 1 });
 providerSchema.index({ name: 1 });
 providerSchema.index({ supportsVideo: 1, supportsImage: 1, enabled: 1 });
-providerSchema.index({ supportsTextToImage: 1, supportsImageToVideo: 1, supportsAudioGeneration: 1, enabled: 1 });
+providerSchema.index({
+  supportsTextToImage: 1,
+  supportsImageToVideo: 1,
+  supportsAudioGeneration: 1,
+  enabled: 1,
+});
 providerSchema.index({ lastSuccessAt: -1 });
 providerSchema.index({ lastFailureAt: -1 });
 
-providerSchema.virtual('pricingOptions', {
-  ref: 'ProviderPricing',
-  localField: '_id',
-  foreignField: 'provider',
+providerSchema.virtual("pricingOptions", {
+  ref: "ProviderPricing",
+  localField: "_id",
+  foreignField: "provider",
 });
 
-const ProviderModel = mongoose.models.Provider || mongoose.model('Provider', providerSchema);
+const ProviderModel =
+  mongoose.models.Provider || mongoose.model("Provider", providerSchema);
 
 export default ProviderModel;

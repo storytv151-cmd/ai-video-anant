@@ -2,12 +2,13 @@
  * Template search service.
  * Builds MongoDB filters and sort configuration for template listing and search.
  */
-const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeRegex = (value) =>
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const buildAvailabilityFilter = () => {
   const now = new Date();
   return {
-    status: 'active',
+    status: "active",
     $and: [
       { $or: [{ publishAt: null }, { publishAt: { $lte: now } }] },
       { $or: [{ expiresAt: null }, { expiresAt: { $gte: now } }] },
@@ -64,8 +65,15 @@ const buildTemplateFilter = ({ validatedQuery, resolvedRefs }) => {
       filter.$and = (filter.$and || []).concat(
         keywords.map((k) => {
           const escaped = escapeRegex(k);
-          const regex = new RegExp(escaped, 'i');
-          return { $or: [{ title: regex }, { description: regex }, { slug: regex }, { tags: regex }] };
+          const regex = new RegExp(escaped, "i");
+          return {
+            $or: [
+              { title: regex },
+              { description: regex },
+              { slug: regex },
+              { tags: regex },
+            ],
+          };
         }),
       );
     }
@@ -73,7 +81,7 @@ const buildTemplateFilter = ({ validatedQuery, resolvedRefs }) => {
 
   if (tagsRaw) {
     const tags = String(tagsRaw)
-      .split(',')
+      .split(",")
       .map((t) => t.trim().toLowerCase())
       .filter(Boolean)
       .slice(0, 25);
@@ -89,22 +97,22 @@ const buildTemplateFilter = ({ validatedQuery, resolvedRefs }) => {
 
 const buildSort = (sortKey) => {
   switch (sortKey) {
-    case 'oldest':
+    case "oldest":
       return { createdAt: 1 };
-    case 'trending':
+    case "trending":
       return { trending: -1, usageCount: -1, createdAt: -1 };
-    case 'most_used':
+    case "most_used":
       return { usageCount: -1, createdAt: -1 };
-    case 'featured':
+    case "featured":
       return { featured: -1, sortOrder: 1, createdAt: -1 };
-    case 'alphabetical':
+    case "alphabetical":
       return { title: 1 };
-    case 'credits_low':
-    case 'credits':
+    case "credits_low":
+    case "credits":
       return { creditsOverride: 1, createdAt: -1 };
-    case 'credits_high':
+    case "credits_high":
       return { creditsOverride: -1, createdAt: -1 };
-    case 'newest':
+    case "newest":
     default:
       return { createdAt: -1 };
   }
@@ -112,7 +120,8 @@ const buildSort = (sortKey) => {
 
 const buildPagination = ({ page, limit }) => {
   const safePage = Number.isFinite(page) && page > 0 ? page : 1;
-  const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 20;
+  const safeLimit =
+    Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 20;
   return { page: safePage, limit: safeLimit, skip: (safePage - 1) * safeLimit };
 };
 

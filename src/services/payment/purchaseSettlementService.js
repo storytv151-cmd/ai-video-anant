@@ -1,9 +1,10 @@
-import mongoose from 'mongoose';
-import PaymentModel from '../../models/Payment.js';
-import walletValidationService from '../wallet/walletValidationService.js';
-import walletService from '../wallet/walletService.js';
+import mongoose from "mongoose";
+import PaymentModel from "../../models/Payment.js";
+import walletValidationService from "../wallet/walletValidationService.js";
+import walletService from "../wallet/walletService.js";
 
-const coerceObject = (value) => (value && typeof value === 'object' ? value : {});
+const coerceObject = (value) =>
+  value && typeof value === "object" ? value : {};
 
 const buildPaymentSeed = ({
   userId,
@@ -12,18 +13,18 @@ const buildPaymentSeed = ({
   verification,
   requestMeta = {},
   requestIdempotencyKey = null,
-  paymentStatus = 'success',
+  paymentStatus = "success",
   purchaseState = null,
-  verificationStatus = 'verified',
+  verificationStatus = "verified",
   creditTransactionId = null,
   isRestore = false,
 }) => ({
   user: userId,
   wallet: walletId,
-  gateway: 'google_play',
-  platform: 'google_play',
-  paymentType: 'credit_purchase',
-  productType: packageConfig.productType || 'inapp',
+  gateway: "google_play",
+  platform: "google_play",
+  paymentType: "credit_purchase",
+  productType: packageConfig.productType || "inapp",
   productId: packageConfig.googlePlayProductId,
   packageName: verification.packageName || null,
   packageCode: packageConfig.code || null,
@@ -31,8 +32,9 @@ const buildPaymentSeed = ({
   purchaseTokenHash: verification.purchaseTokenHash || null,
   orderId: verification.orderId || null,
   originalOrderId: verification.orderId || null,
-  googlePurchaseId: verification.googlePurchaseId || verification.orderId || null,
-  purchaseState: purchaseState || verification.purchaseState || 'pending',
+  googlePurchaseId:
+    verification.googlePurchaseId || verification.orderId || null,
+  purchaseState: purchaseState || verification.purchaseState || "pending",
   verificationStatus,
   purchaseStateCode: verification.purchaseStateCode ?? null,
   acknowledgementStateCode: verification.acknowledgementStateCode ?? null,
@@ -45,11 +47,13 @@ const buildPaymentSeed = ({
   amount: Number(packageConfig.price || 0),
   baseAmount: Number(packageConfig.price || 0),
   taxAmount: 0,
-  currency: packageConfig.currency || 'USD',
+  currency: packageConfig.currency || "USD",
   countryCode: verification.regionCode || null,
   quantity: verification.quantity ?? 1,
   refundableQuantity: verification.refundableQuantity ?? null,
-  creditsPurchased: Number(packageConfig.totalCredits || packageConfig.credits || 0),
+  creditsPurchased: Number(
+    packageConfig.totalCredits || packageConfig.credits || 0,
+  ),
   status: paymentStatus,
   verificationAttempts: 1,
   verificationMessage: verification.verificationMessage || null,
@@ -59,7 +63,7 @@ const buildPaymentSeed = ({
       code: packageConfig.code || null,
       productId: packageConfig.googlePlayProductId || null,
       configuredPrice: Number(packageConfig.price || 0),
-      configuredCurrency: packageConfig.currency || 'USD',
+      configuredCurrency: packageConfig.currency || "USD",
       credits: Number(packageConfig.credits || 0),
       bonusCredits: Number(packageConfig.bonusCredits || 0),
     },
@@ -74,11 +78,15 @@ const buildPaymentSeed = ({
   creditTransaction: creditTransactionId || null,
   metadata: {
     restoreRequest: Boolean(isRestore),
-    obfuscatedExternalAccountId: verification.obfuscatedExternalAccountId || null,
-    obfuscatedExternalProfileId: verification.obfuscatedExternalProfileId || null,
+    obfuscatedExternalAccountId:
+      verification.obfuscatedExternalAccountId || null,
+    obfuscatedExternalProfileId:
+      verification.obfuscatedExternalProfileId || null,
     purchaseType: verification.purchaseType ?? null,
     developerPayload: verification.developerPayload || null,
-    packageCountries: Array.isArray(packageConfig.countries) ? packageConfig.countries : [],
+    packageCountries: Array.isArray(packageConfig.countries)
+      ? packageConfig.countries
+      : [],
     packageMetadata: coerceObject(packageConfig.metadata),
   },
 });
@@ -108,11 +116,18 @@ const settleVerifiedCreditPurchase = async ({
         ? await walletValidationService.getWalletByUserId({ userId, session })
         : await walletValidationService.getWalletByUserId({ userId, session });
 
-      let payment = existingPayment?._id ? await PaymentModel.findById(existingPayment._id).session(session) : null;
+      let payment = existingPayment?._id
+        ? await PaymentModel.findById(existingPayment._id).session(session)
+        : null;
       const hadExistingPayment = Boolean(payment);
 
-      if (payment?.status === 'success' && payment?.creditTransaction) {
-        result = { payment, wallet: null, transaction: null, alreadyProcessed: true };
+      if (payment?.status === "success" && payment?.creditTransaction) {
+        result = {
+          payment,
+          wallet: null,
+          transaction: null,
+          alreadyProcessed: true,
+        };
         return;
       }
 
@@ -124,9 +139,9 @@ const settleVerifiedCreditPurchase = async ({
           verification,
           requestMeta,
           requestIdempotencyKey,
-          paymentStatus: 'pending',
+          paymentStatus: "pending",
           purchaseState: verification.purchaseState,
-          verificationStatus: 'verified',
+          verificationStatus: "verified",
           creditTransactionId: null,
           isRestore,
         });
@@ -135,18 +150,22 @@ const settleVerifiedCreditPurchase = async ({
 
       const walletMutation = await walletService.addCredits({
         userId,
-        credits: Number(packageConfig.totalCredits || packageConfig.credits || 0),
-        type: 'purchase',
-        source: 'GooglePlay',
-        purpose: isRestore ? 'google_play_restore' : 'google_play_purchase',
-        description: `Google Play credit purchase settled for ${packageConfig.code || packageConfig.googlePlayProductId || 'package'}.`,
-        referenceType: 'Payment',
+        credits: Number(
+          packageConfig.totalCredits || packageConfig.credits || 0,
+        ),
+        type: "purchase",
+        source: "GooglePlay",
+        purpose: isRestore ? "google_play_restore" : "google_play_purchase",
+        description: `Google Play credit purchase settled for ${packageConfig.code || packageConfig.googlePlayProductId || "package"}.`,
+        referenceType: "Payment",
         referenceId: payment._id,
         idempotencyKey: settlementIdempotencyKey,
         session,
       });
 
-      const previousAttempts = hadExistingPayment ? Number(payment.verificationAttempts || 0) : 0;
+      const previousAttempts = hadExistingPayment
+        ? Number(payment.verificationAttempts || 0)
+        : 0;
       payment.set(
         buildPaymentSeed({
           userId,
@@ -155,10 +174,13 @@ const settleVerifiedCreditPurchase = async ({
           verification,
           requestMeta,
           requestIdempotencyKey,
-          paymentStatus: 'success',
+          paymentStatus: "success",
           purchaseState: verification.purchaseState,
-          verificationStatus: 'verified',
-          creditTransactionId: walletMutation.transaction?._id || payment.creditTransaction || null,
+          verificationStatus: "verified",
+          creditTransactionId:
+            walletMutation.transaction?._id ||
+            payment.creditTransaction ||
+            null,
           isRestore,
         }),
       );
@@ -188,8 +210,18 @@ const markPaymentPostActions = async ({
   requestMeta = {},
 } = {}) => {
   const update = {
-    ...(isAcknowledged === null ? {} : { isAcknowledged: Boolean(isAcknowledged), acknowledgedAt: isAcknowledged ? new Date() : null }),
-    ...(isConsumed === null ? {} : { isConsumed: Boolean(isConsumed), consumedAt: isConsumed ? new Date() : null }),
+    ...(isAcknowledged === null
+      ? {}
+      : {
+          isAcknowledged: Boolean(isAcknowledged),
+          acknowledgedAt: isAcknowledged ? new Date() : null,
+        }),
+    ...(isConsumed === null
+      ? {}
+      : {
+          isConsumed: Boolean(isConsumed),
+          consumedAt: isConsumed ? new Date() : null,
+        }),
   };
 
   if (Object.keys(update).length === 0) {

@@ -1,5 +1,5 @@
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import adminWalletService from '../services/admin/adminWalletService.js';
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import adminWalletService from "../services/admin/adminWalletService.js";
 
 const listAdminWallets = async (request, response) => {
   const data = await adminWalletService.listWallets({ query: request.query });
@@ -7,7 +7,9 @@ const listAdminWallets = async (request, response) => {
 };
 
 const getAdminWallet = async (request, response) => {
-  const data = await adminWalletService.getWallet({ userId: request.params.userId });
+  const data = await adminWalletService.getWallet({
+    userId: request.params.userId,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
@@ -20,7 +22,9 @@ const getAdminWalletHistory = async (request, response) => {
 };
 
 const searchAdminWalletTransactions = async (request, response) => {
-  const data = await adminWalletService.searchTransactions({ query: request.query });
+  const data = await adminWalletService.searchTransactions({
+    query: request.query,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 

@@ -3,8 +3,8 @@
  * Delivery providers and message templates are deferred to later phases.
  */
 const notificationService = Object.freeze({
-  name: 'notification-service-placeholder',
-  status: 'not-implemented',
+  name: "notification-service-placeholder",
+  status: "not-implemented",
 });
 
 export default notificationService;

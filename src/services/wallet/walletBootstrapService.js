@@ -2,10 +2,10 @@
  * Wallet bootstrap service for wallet module.
  * Ensures a wallet exists for a user and provides transaction helper scaffolding.
  */
-import mongoose from 'mongoose';
-import UserModel from '../../models/User.js';
-import WalletModel from '../../models/Wallet.js';
-import ApiError from '../../utils/ApiError.js';
+import mongoose from "mongoose";
+import UserModel from "../../models/User.js";
+import WalletModel from "../../models/Wallet.js";
+import ApiError from "../../utils/ApiError.js";
 
 const withTransaction = async (handler) => {
   const session = await mongoose.startSession();
@@ -23,7 +23,7 @@ const withTransaction = async (handler) => {
 const ensureWallet = async ({ userId, session }) => {
   const user = await UserModel.findById(userId).session(session);
   if (!user) {
-    throw new ApiError(404, 'User not found.', { code: 'USER_NOT_FOUND' });
+    throw new ApiError(404, "User not found.", { code: "USER_NOT_FOUND" });
   }
 
   let wallet = await WalletModel.findOne({ user: userId }).session(session);
@@ -43,4 +43,3 @@ const ensureWallet = async ({ userId, session }) => {
 const walletBootstrapService = Object.freeze({ withTransaction, ensureWallet });
 
 export default walletBootstrapService;
-

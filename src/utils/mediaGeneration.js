@@ -1,67 +1,80 @@
 const GENERATION_TYPES = Object.freeze([
-  'text_to_image',
-  'image_to_image',
-  'text_to_video',
-  'image_to_video',
-  'video_to_video',
-  'image_upscale',
-  'video_upscale',
-  'image_edit',
-  'video_edit',
-  'background_remove',
-  'face_swap',
-  'audio_generation',
-  'future_custom',
+  "text_to_image",
+  "image_to_image",
+  "text_to_video",
+  "image_to_video",
+  "video_to_video",
+  "image_upscale",
+  "video_upscale",
+  "image_edit",
+  "video_edit",
+  "background_remove",
+  "face_swap",
+  "audio_generation",
+  "future_custom",
 ]);
 
-const OUTPUT_TYPES = Object.freeze(['image', 'video', 'audio', 'zip', 'multiple_files']);
+const OUTPUT_TYPES = Object.freeze([
+  "image",
+  "video",
+  "audio",
+  "zip",
+  "multiple_files",
+]);
 
 const FUTURE_MEDIA_MODULES = Object.freeze([
-  'ai_avatar',
-  'ai_character',
-  'ai_talking_photo',
-  'ai_lip_sync',
-  'ai_voice',
-  'ai_music',
-  'ai_animation',
-  '3d_generation',
-  'multi_step_workflow',
-  'batch_generation',
+  "ai_avatar",
+  "ai_character",
+  "ai_talking_photo",
+  "ai_lip_sync",
+  "ai_voice",
+  "ai_music",
+  "ai_animation",
+  "3d_generation",
+  "multi_step_workflow",
+  "batch_generation",
 ]);
 
 const CAPABILITY_FIELD_MAP = Object.freeze({
-  text_to_image: 'supportsTextToImage',
-  image_to_image: 'supportsImageToImage',
-  text_to_video: 'supportsTextToVideo',
-  image_to_video: 'supportsImageToVideo',
-  video_to_video: 'supportsVideoToVideo',
-  image_upscale: 'supportsImageUpscale',
-  video_upscale: 'supportsVideoUpscale',
-  image_edit: 'supportsImageEditing',
-  video_edit: 'supportsVideoEditing',
-  background_remove: 'supportsBackgroundRemoval',
-  face_swap: 'supportsFaceSwap',
-  audio_generation: 'supportsAudioGeneration',
+  text_to_image: "supportsTextToImage",
+  image_to_image: "supportsImageToImage",
+  text_to_video: "supportsTextToVideo",
+  image_to_video: "supportsImageToVideo",
+  video_to_video: "supportsVideoToVideo",
+  image_upscale: "supportsImageUpscale",
+  video_upscale: "supportsVideoUpscale",
+  image_edit: "supportsImageEditing",
+  video_edit: "supportsVideoEditing",
+  background_remove: "supportsBackgroundRemoval",
+  face_swap: "supportsFaceSwap",
+  audio_generation: "supportsAudioGeneration",
 });
 
-const normalizeGenerationType = (value, fallback = 'image_to_video') => {
-  const normalized = String(value || '').trim().toLowerCase();
+const normalizeGenerationType = (value, fallback = "image_to_video") => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   if (!normalized) {
     return fallback;
   }
 
   const legacyAliases = {
-    image_and_prompt: 'image_to_video',
-    multi_image: 'image_to_video',
-    video_extend: 'video_to_video',
-    video_upscale: 'video_upscale',
+    image_and_prompt: "image_to_video",
+    multi_image: "image_to_video",
+    video_extend: "video_to_video",
+    video_upscale: "video_upscale",
   };
 
-  return legacyAliases[normalized] || (GENERATION_TYPES.includes(normalized) ? normalized : fallback);
+  return (
+    legacyAliases[normalized] ||
+    (GENERATION_TYPES.includes(normalized) ? normalized : fallback)
+  );
 };
 
-const normalizeOutputType = (value, fallback = 'video') => {
-  const normalized = String(value || '').trim().toLowerCase();
+const normalizeOutputType = (value, fallback = "video") => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   if (!normalized) {
     return fallback;
   }
@@ -71,16 +84,16 @@ const normalizeOutputType = (value, fallback = 'video') => {
 const getSupportedOutputTypes = (entity = {}) => {
   const supported = [];
   if (entity.supportsImage) {
-    supported.push('image');
+    supported.push("image");
   }
   if (entity.supportsVideo) {
-    supported.push('video');
+    supported.push("video");
   }
   if (entity.supportsAudio || entity.supportsAudioGeneration) {
-    supported.push('audio');
+    supported.push("audio");
   }
   if (Number(entity.maximumOutputCount || 0) > 1) {
-    supported.push('multiple_files');
+    supported.push("multiple_files");
   }
   return supported;
 };
@@ -88,16 +101,21 @@ const getSupportedOutputTypes = (entity = {}) => {
 const getEntityCapabilityMatrix = (entity = {}) => ({
   supportsTextToImage: entity.supportsTextToImage ?? false,
   supportsImageToImage: entity.supportsImageToImage ?? false,
-  supportsTextToVideo: entity.supportsTextToVideo ?? Boolean(entity.supportsVideo),
-  supportsImageToVideo: entity.supportsImageToVideo ?? Boolean(entity.supportsImage && entity.supportsVideo),
+  supportsTextToVideo:
+    entity.supportsTextToVideo ?? Boolean(entity.supportsVideo),
+  supportsImageToVideo:
+    entity.supportsImageToVideo ??
+    Boolean(entity.supportsImage && entity.supportsVideo),
   supportsVideoToVideo: entity.supportsVideoToVideo ?? false,
-  supportsImageUpscale: entity.supportsImageUpscale ?? Boolean(entity.supportsImage),
+  supportsImageUpscale:
+    entity.supportsImageUpscale ?? Boolean(entity.supportsImage),
   supportsVideoUpscale: entity.supportsVideoUpscale ?? false,
   supportsImageEditing: entity.supportsImageEditing ?? false,
   supportsVideoEditing: entity.supportsVideoEditing ?? false,
   supportsBackgroundRemoval: entity.supportsBackgroundRemoval ?? false,
   supportsFaceSwap: entity.supportsFaceSwap ?? false,
-  supportsAudioGeneration: entity.supportsAudioGeneration ?? Boolean(entity.supportsAudio),
+  supportsAudioGeneration:
+    entity.supportsAudioGeneration ?? Boolean(entity.supportsAudio),
   supportsMultipleImages: entity.supportsMultipleImages ?? false,
   supportsReferenceImages: entity.supportsReferenceImages ?? false,
   supportsNegativePrompt: entity.supportsNegativePrompt ?? false,
@@ -120,20 +138,22 @@ const deriveTemplateGenerationType = (template = {}) => {
     return normalizeGenerationType(template.generationType);
   }
   if (template.allowInputVideo) {
-    return 'video_to_video';
+    return "video_to_video";
   }
   if (template.requiredImages === 0 && template.allowPrompt) {
-    return 'text_to_video';
+    return "text_to_video";
   }
-  return 'image_to_video';
+  return "image_to_video";
 };
 
 const deriveTemplateOutputType = (template = {}) => {
-  const supported = Array.isArray(template.supportedOutputTypes) ? template.supportedOutputTypes : [];
+  const supported = Array.isArray(template.supportedOutputTypes)
+    ? template.supportedOutputTypes
+    : [];
   if (supported.length > 0) {
     return normalizeOutputType(supported[0]);
   }
-  return 'video';
+  return "video";
 };
 
 export {

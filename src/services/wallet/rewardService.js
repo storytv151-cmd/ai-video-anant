@@ -4,18 +4,18 @@
  * All wallet changes follow the engine flow:
  * Validate -> Create CreditTransaction -> Update Wallet -> Commit -> Return.
  */
-import ApiError from '../../utils/ApiError.js';
-import AppSettingModel from '../../models/AppSetting.js';
-import CouponModel from '../../models/Coupon.js';
-import CreditTransactionModel from '../../models/CreditTransaction.js';
-import DailyCheckinModel from '../../models/DailyCheckin.js';
-import RewardHistoryModel from '../../models/RewardHistory.js';
-import creditTransactionService from './creditTransactionService.js';
-import walletValidationService from './walletValidationService.js';
-import walletBootstrapService from './walletBootstrapService.js';
+import ApiError from "../../utils/ApiError.js";
+import AppSettingModel from "../../models/AppSetting.js";
+import CouponModel from "../../models/Coupon.js";
+import CreditTransactionModel from "../../models/CreditTransaction.js";
+import DailyCheckinModel from "../../models/DailyCheckin.js";
+import RewardHistoryModel from "../../models/RewardHistory.js";
+import creditTransactionService from "./creditTransactionService.js";
+import walletValidationService from "./walletValidationService.js";
+import walletBootstrapService from "./walletBootstrapService.js";
 
 const getRewardsSettings = async ({ session } = {}) => {
-  const query = AppSettingModel.findOne({ section: 'REWARDS', key: 'global' });
+  const query = AppSettingModel.findOne({ section: "REWARDS", key: "global" });
   if (session) {
     query.session(session);
   }
@@ -23,7 +23,7 @@ const getRewardsSettings = async ({ session } = {}) => {
 };
 
 const getPaymentsSettings = async ({ session } = {}) => {
-  const query = AppSettingModel.findOne({ section: 'PAYMENTS', key: 'global' });
+  const query = AppSettingModel.findOne({ section: "PAYMENTS", key: "global" });
   if (session) {
     query.session(session);
   }
@@ -32,10 +32,20 @@ const getPaymentsSettings = async ({ session } = {}) => {
 
 const getStartOfTodayUtc = () => {
   const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
 };
 
-const createRewardHistory = async ({ session, userId, rewardType, credits, source, referenceType, referenceId }) => {
+const createRewardHistory = async ({
+  session,
+  userId,
+  rewardType,
+  credits,
+  source,
+  referenceType,
+  referenceId,
+}) => {
   const docs = await RewardHistoryModel.create(
     [
       {
@@ -75,7 +85,7 @@ const grantCredits = async ({
     walletId: wallet._id,
     userId,
     type,
-    status: 'success',
+    status: "success",
     source,
     purpose,
     credits,
@@ -98,7 +108,11 @@ const grantCredits = async ({
 const claimWelcomeBonus = async ({ userId, idempotencyKey = null }) =>
   walletBootstrapService.withTransaction(async (session) => {
     if (idempotencyKey) {
-      const existing = await creditTransactionService.findSuccessfulByIdempotencyKey({ userId, idempotencyKey });
+      const existing =
+        await creditTransactionService.findSuccessfulByIdempotencyKey({
+          userId,
+          idempotencyKey,
+        });
       if (existing) {
         return { credits: existing.credits, transactionId: existing._id };
       }
@@ -113,21 +127,27 @@ const claimWelcomeBonus = async ({ userId, idempotencyKey = null }) =>
     const credits = Number(rewardsSettings?.welcomeBonus?.credits || 0);
 
     if (!enabled) {
-      throw new ApiError(403, 'Welcome bonus is disabled.', { code: 'REWARD_DISABLED' });
+      throw new ApiError(403, "Welcome bonus is disabled.", {
+        code: "REWARD_DISABLED",
+      });
     }
 
     if (!Number.isFinite(credits) || credits <= 0) {
-      throw new ApiError(500, 'Welcome bonus credits are not configured.', { code: 'REWARD_CONFIG_INVALID' });
+      throw new ApiError(500, "Welcome bonus credits are not configured.", {
+        code: "REWARD_CONFIG_INVALID",
+      });
     }
 
     const alreadyClaimed = await RewardHistoryModel.countDocuments({
       user: userId,
-      rewardType: 'welcome',
+      rewardType: "welcome",
       createdAt: { $gte: new Date(0) },
     }).session(session);
 
     if (alreadyClaimed > 0) {
-      throw new ApiError(409, 'Welcome bonus already claimed.', { code: 'REWARD_ALREADY_CLAIMED' });
+      throw new ApiError(409, "Welcome bonus already claimed.", {
+        code: "REWARD_ALREADY_CLAIMED",
+      });
     }
 
     const transaction = await grantCredits({
@@ -135,11 +155,11 @@ const claimWelcomeBonus = async ({ userId, idempotencyKey = null }) =>
       userId,
       wallet,
       credits,
-      type: 'welcome_bonus',
-      source: 'WelcomeBonus',
-      purpose: 'welcome_bonus',
-      description: 'Welcome bonus credits granted.',
-      referenceType: 'system',
+      type: "welcome_bonus",
+      source: "WelcomeBonus",
+      purpose: "welcome_bonus",
+      description: "Welcome bonus credits granted.",
+      referenceType: "system",
       referenceId: null,
       idempotencyKey,
     });
@@ -147,10 +167,10 @@ const claimWelcomeBonus = async ({ userId, idempotencyKey = null }) =>
     await createRewardHistory({
       session,
       userId,
-      rewardType: 'welcome',
+      rewardType: "welcome",
       credits,
-      source: 'WelcomeBonus',
-      referenceType: 'CreditTransaction',
+      source: "WelcomeBonus",
+      referenceType: "CreditTransaction",
       referenceId: transaction._id,
     });
 
@@ -160,7 +180,11 @@ const claimWelcomeBonus = async ({ userId, idempotencyKey = null }) =>
 const claimDailyBonus = async ({ userId, idempotencyKey = null }) =>
   walletBootstrapService.withTransaction(async (session) => {
     if (idempotencyKey) {
-      const existing = await creditTransactionService.findSuccessfulByIdempotencyKey({ userId, idempotencyKey });
+      const existing =
+        await creditTransactionService.findSuccessfulByIdempotencyKey({
+          userId,
+          idempotencyKey,
+        });
       if (existing) {
         return { credits: existing.credits, transactionId: existing._id };
       }
@@ -172,37 +196,53 @@ const claimDailyBonus = async ({ userId, idempotencyKey = null }) =>
     ]);
 
     const enabled = Boolean(rewardsSettings?.dailyCheckin?.enabled);
-    const rewards = Array.isArray(rewardsSettings?.dailyCheckin?.rewards) ? rewardsSettings.dailyCheckin.rewards : [];
-    const streakResetHours = Number(rewardsSettings?.dailyCheckin?.streakResetHours || 24);
+    const rewards = Array.isArray(rewardsSettings?.dailyCheckin?.rewards)
+      ? rewardsSettings.dailyCheckin.rewards
+      : [];
+    const streakResetHours = Number(
+      rewardsSettings?.dailyCheckin?.streakResetHours || 24,
+    );
 
     if (!enabled) {
-      throw new ApiError(403, 'Daily bonus is disabled.', { code: 'REWARD_DISABLED' });
+      throw new ApiError(403, "Daily bonus is disabled.", {
+        code: "REWARD_DISABLED",
+      });
     }
 
     if (rewards.length === 0) {
-      throw new ApiError(500, 'Daily bonus rewards are not configured.', { code: 'REWARD_CONFIG_INVALID' });
+      throw new ApiError(500, "Daily bonus rewards are not configured.", {
+        code: "REWARD_CONFIG_INVALID",
+      });
     }
 
     const startOfToday = getStartOfTodayUtc();
     const alreadyClaimed = await RewardHistoryModel.countDocuments({
       user: userId,
-      rewardType: 'daily',
+      rewardType: "daily",
       createdAt: { $gte: startOfToday },
     }).session(session);
 
     if (alreadyClaimed > 0) {
-      throw new ApiError(409, 'Daily bonus already claimed today.', { code: 'REWARD_ALREADY_CLAIMED' });
+      throw new ApiError(409, "Daily bonus already claimed today.", {
+        code: "REWARD_ALREADY_CLAIMED",
+      });
     }
 
     const dailyDoc =
       (await DailyCheckinModel.findOne({ user: userId }).session(session)) ||
-      (await DailyCheckinModel.create([{ user: userId }], { session }).then((docs) => docs[0]));
+      (await DailyCheckinModel.create([{ user: userId }], { session }).then(
+        (docs) => docs[0],
+      ));
 
-    const lastCheckin = dailyDoc.lastCheckin ? new Date(dailyDoc.lastCheckin) : null;
+    const lastCheckin = dailyDoc.lastCheckin
+      ? new Date(dailyDoc.lastCheckin)
+      : null;
     const isSameDay = lastCheckin && lastCheckin >= startOfToday;
 
     if (isSameDay) {
-      throw new ApiError(409, 'Daily bonus already claimed today.', { code: 'REWARD_ALREADY_CLAIMED' });
+      throw new ApiError(409, "Daily bonus already claimed today.", {
+        code: "REWARD_ALREADY_CLAIMED",
+      });
     }
 
     const canContinueStreak =
@@ -211,12 +251,16 @@ const claimDailyBonus = async ({ userId, idempotencyKey = null }) =>
       streakResetHours > 0 &&
       Date.now() - lastCheckin.getTime() <= streakResetHours * 60 * 60 * 1000;
 
-    const nextStreak = canContinueStreak ? (Number(dailyDoc.currentStreak || 0) + 1) : 1;
+    const nextStreak = canContinueStreak
+      ? Number(dailyDoc.currentStreak || 0) + 1
+      : 1;
     const rewardIndex = (nextStreak - 1) % rewards.length;
     const credits = Number(rewards[rewardIndex] || 0);
 
     if (!Number.isFinite(credits) || credits <= 0) {
-      throw new ApiError(500, 'Daily bonus reward value is invalid.', { code: 'REWARD_CONFIG_INVALID' });
+      throw new ApiError(500, "Daily bonus reward value is invalid.", {
+        code: "REWARD_CONFIG_INVALID",
+      });
     }
 
     const transaction = await grantCredits({
@@ -224,11 +268,11 @@ const claimDailyBonus = async ({ userId, idempotencyKey = null }) =>
       userId,
       wallet,
       credits,
-      type: 'daily_bonus',
-      source: 'DailyBonus',
-      purpose: 'daily_bonus',
-      description: 'Daily bonus credits granted.',
-      referenceType: 'DailyCheckin',
+      type: "daily_bonus",
+      source: "DailyBonus",
+      purpose: "daily_bonus",
+      description: "Daily bonus credits granted.",
+      referenceType: "DailyCheckin",
       referenceId: dailyDoc._id,
       idempotencyKey,
     });
@@ -242,10 +286,10 @@ const claimDailyBonus = async ({ userId, idempotencyKey = null }) =>
     await createRewardHistory({
       session,
       userId,
-      rewardType: 'daily',
+      rewardType: "daily",
       credits,
-      source: 'DailyBonus',
-      referenceType: 'CreditTransaction',
+      source: "DailyBonus",
+      referenceType: "CreditTransaction",
       referenceId: transaction._id,
     });
 
@@ -255,7 +299,11 @@ const claimDailyBonus = async ({ userId, idempotencyKey = null }) =>
 const claimRewardAd = async ({ userId, idempotencyKey = null }) =>
   walletBootstrapService.withTransaction(async (session) => {
     if (idempotencyKey) {
-      const existing = await creditTransactionService.findSuccessfulByIdempotencyKey({ userId, idempotencyKey });
+      const existing =
+        await creditTransactionService.findSuccessfulByIdempotencyKey({
+          userId,
+          idempotencyKey,
+        });
       if (existing) {
         return { credits: existing.credits, transactionId: existing._id };
       }
@@ -273,28 +321,38 @@ const claimRewardAd = async ({ userId, idempotencyKey = null }) =>
     const cooldownSeconds = Number(config.cooldownSeconds || 0);
 
     if (!enabled) {
-      throw new ApiError(403, 'Reward ads are disabled.', { code: 'REWARD_DISABLED' });
+      throw new ApiError(403, "Reward ads are disabled.", {
+        code: "REWARD_DISABLED",
+      });
     }
 
     if (!Number.isFinite(creditsPerView) || creditsPerView <= 0) {
-      throw new ApiError(500, 'Reward ad credits are not configured.', { code: 'REWARD_CONFIG_INVALID' });
+      throw new ApiError(500, "Reward ad credits are not configured.", {
+        code: "REWARD_CONFIG_INVALID",
+      });
     }
 
     const startOfToday = getStartOfTodayUtc();
     const todayCount = await RewardHistoryModel.countDocuments({
       user: userId,
-      rewardType: 'advertisement',
+      rewardType: "advertisement",
       createdAt: { $gte: startOfToday },
     }).session(session);
 
-    if (Number.isFinite(dailyLimit) && dailyLimit > 0 && todayCount >= dailyLimit) {
-      throw new ApiError(429, 'Daily reward ad limit reached.', { code: 'REWARD_DAILY_LIMIT' });
+    if (
+      Number.isFinite(dailyLimit) &&
+      dailyLimit > 0 &&
+      todayCount >= dailyLimit
+    ) {
+      throw new ApiError(429, "Daily reward ad limit reached.", {
+        code: "REWARD_DAILY_LIMIT",
+      });
     }
 
     if (Number.isFinite(cooldownSeconds) && cooldownSeconds > 0) {
       const last = await RewardHistoryModel.findOne({
         user: userId,
-        rewardType: 'advertisement',
+        rewardType: "advertisement",
       })
         .sort({ createdAt: -1 })
         .session(session);
@@ -302,7 +360,9 @@ const claimRewardAd = async ({ userId, idempotencyKey = null }) =>
       if (last?.createdAt) {
         const elapsedMs = Date.now() - new Date(last.createdAt).getTime();
         if (elapsedMs < cooldownSeconds * 1000) {
-          throw new ApiError(429, 'Reward ad cooldown active.', { code: 'REWARD_COOLDOWN' });
+          throw new ApiError(429, "Reward ad cooldown active.", {
+            code: "REWARD_COOLDOWN",
+          });
         }
       }
     }
@@ -312,11 +372,11 @@ const claimRewardAd = async ({ userId, idempotencyKey = null }) =>
       userId,
       wallet,
       credits: creditsPerView,
-      type: 'reward',
-      source: 'RewardAd',
-      purpose: 'reward_ad',
-      description: 'Reward ad credits granted.',
-      referenceType: 'system',
+      type: "reward",
+      source: "RewardAd",
+      purpose: "reward_ad",
+      description: "Reward ad credits granted.",
+      referenceType: "system",
       referenceId: null,
       idempotencyKey,
     });
@@ -324,10 +384,10 @@ const claimRewardAd = async ({ userId, idempotencyKey = null }) =>
     await createRewardHistory({
       session,
       userId,
-      rewardType: 'advertisement',
+      rewardType: "advertisement",
       credits: creditsPerView,
-      source: 'RewardAd',
-      referenceType: 'CreditTransaction',
+      source: "RewardAd",
+      referenceType: "CreditTransaction",
       referenceId: transaction._id,
     });
 
@@ -337,7 +397,11 @@ const claimRewardAd = async ({ userId, idempotencyKey = null }) =>
 const redeemPromoCode = async ({ userId, code, idempotencyKey = null }) =>
   walletBootstrapService.withTransaction(async (session) => {
     if (idempotencyKey) {
-      const existing = await creditTransactionService.findSuccessfulByIdempotencyKey({ userId, idempotencyKey });
+      const existing =
+        await creditTransactionService.findSuccessfulByIdempotencyKey({
+          userId,
+          idempotencyKey,
+        });
       if (existing) {
         return { credits: existing.credits, transactionId: existing._id };
       }
@@ -346,58 +410,79 @@ const redeemPromoCode = async ({ userId, code, idempotencyKey = null }) =>
     const paymentsSettings = await getPaymentsSettings({ session });
     const couponsEnabled = Boolean(paymentsSettings?.coupons?.enabled);
     if (!couponsEnabled) {
-      throw new ApiError(403, 'Coupons are disabled.', { code: 'COUPON_DISABLED' });
+      throw new ApiError(403, "Coupons are disabled.", {
+        code: "COUPON_DISABLED",
+      });
     }
 
-    const normalizedCode = String(code || '').trim().toUpperCase();
+    const normalizedCode = String(code || "")
+      .trim()
+      .toUpperCase();
     if (!normalizedCode) {
-      throw new ApiError(400, 'Coupon code is required.', { code: 'COUPON_INVALID' });
+      throw new ApiError(400, "Coupon code is required.", {
+        code: "COUPON_INVALID",
+      });
     }
 
-    const coupon = await CouponModel.findOne({ code: normalizedCode, enabled: true }).session(session);
+    const coupon = await CouponModel.findOne({
+      code: normalizedCode,
+      enabled: true,
+    }).session(session);
     if (!coupon) {
-      throw new ApiError(404, 'Coupon invalid.', { code: 'COUPON_INVALID' });
+      throw new ApiError(404, "Coupon invalid.", { code: "COUPON_INVALID" });
     }
 
     if (coupon.expiry && new Date(coupon.expiry).getTime() < Date.now()) {
-      throw new ApiError(409, 'Coupon expired.', { code: 'COUPON_EXPIRED' });
+      throw new ApiError(409, "Coupon expired.", { code: "COUPON_EXPIRED" });
     }
 
     if (coupon.usageLimit > 0 && coupon.usageCount >= coupon.usageLimit) {
-      throw new ApiError(409, 'Coupon usage limit reached.', { code: 'COUPON_LIMIT' });
+      throw new ApiError(409, "Coupon usage limit reached.", {
+        code: "COUPON_LIMIT",
+      });
     }
 
     const perUserLimit = Number(coupon.perUserLimit || 0);
     if (perUserLimit > 0) {
       const perUserUsed = await CreditTransactionModel.countDocuments({
         user: userId,
-        referenceType: 'Coupon',
+        referenceType: "Coupon",
         referenceId: coupon._id,
-        status: 'success',
+        status: "success",
       }).session(session);
 
       if (perUserUsed >= perUserLimit) {
-        throw new ApiError(409, 'Coupon per-user limit reached.', { code: 'COUPON_PER_USER_LIMIT' });
+        throw new ApiError(409, "Coupon per-user limit reached.", {
+          code: "COUPON_PER_USER_LIMIT",
+        });
       }
     }
 
-    const credits = coupon.type === 'credits' ? Number(coupon.credits || 0) : Number(coupon.credits || 0);
+    const credits =
+      coupon.type === "credits"
+        ? Number(coupon.credits || 0)
+        : Number(coupon.credits || 0);
     if (!Number.isFinite(credits) || credits <= 0) {
-      throw new ApiError(409, 'Coupon does not grant credits.', { code: 'COUPON_INVALID' });
+      throw new ApiError(409, "Coupon does not grant credits.", {
+        code: "COUPON_INVALID",
+      });
     }
 
-    const wallet = await walletValidationService.getWalletByUserId({ userId, session });
+    const wallet = await walletValidationService.getWalletByUserId({
+      userId,
+      session,
+    });
 
     const transaction = await grantCredits({
       session,
       userId,
       wallet,
       credits,
-      type: 'promo',
-      source: 'Coupon',
-      purpose: 'promo_code',
+      type: "promo",
+      source: "Coupon",
+      purpose: "promo_code",
       description: `Promo code redeemed: ${coupon.code}`,
-      referenceType: 'Coupon',
+      referenceType: "Coupon",
       referenceId: coupon._id,
       idempotencyKey,
     });
@@ -408,14 +493,18 @@ const redeemPromoCode = async ({ userId, code, idempotencyKey = null }) =>
     await createRewardHistory({
       session,
       userId,
-      rewardType: 'campaign',
+      rewardType: "campaign",
       credits,
-      source: 'Coupon',
-      referenceType: 'CreditTransaction',
+      source: "Coupon",
+      referenceType: "CreditTransaction",
       referenceId: transaction._id,
     });
 
-    return { credits, coupon: { code: coupon.code, id: coupon._id }, transactionId: transaction._id };
+    return {
+      credits,
+      coupon: { code: coupon.code, id: coupon._id },
+      transactionId: transaction._id,
+    };
   });
 
 const rewardService = Object.freeze({

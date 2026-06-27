@@ -2,9 +2,9 @@
  * Session service manages refresh token persistence and revocation.
  * Refresh tokens are stored in MongoDB (hashed) to support rotation and logout flows.
  */
-import RefreshTokenModel from '../../models/RefreshToken.js';
-import ApiError from '../../utils/ApiError.js';
-import tokenService from './tokenService.js';
+import RefreshTokenModel from "../../models/RefreshToken.js";
+import ApiError from "../../utils/ApiError.js";
+import tokenService from "./tokenService.js";
 
 const findActiveSessionByToken = async (refreshToken) => {
   const tokenHash = tokenService.hashToken(refreshToken);
@@ -16,7 +16,14 @@ const findActiveSessionByToken = async (refreshToken) => {
   });
 };
 
-const createRefreshSession = async ({ userId, deviceId, refreshToken, ip, expiresAt, session }) => {
+const createRefreshSession = async ({
+  userId,
+  deviceId,
+  refreshToken,
+  ip,
+  expiresAt,
+  session,
+}) => {
   const tokenHash = tokenService.hashToken(refreshToken);
 
   const doc = await RefreshTokenModel.create(
@@ -36,7 +43,11 @@ const createRefreshSession = async ({ userId, deviceId, refreshToken, ip, expire
   return doc[0];
 };
 
-const revokeSessionByToken = async ({ refreshToken, reason = 'revoked', session }) => {
+const revokeSessionByToken = async ({
+  refreshToken,
+  reason = "revoked",
+  session,
+}) => {
   const tokenHash = tokenService.hashToken(refreshToken);
   const update = {
     revoked: true,
@@ -44,10 +55,14 @@ const revokeSessionByToken = async ({ refreshToken, reason = 'revoked', session 
     deletedAt: new Date(),
   };
 
-  const result = await RefreshTokenModel.updateOne({ token: tokenHash }, update, session ? { session } : undefined);
+  const result = await RefreshTokenModel.updateOne(
+    { token: tokenHash },
+    update,
+    session ? { session } : undefined,
+  );
   if (result.matchedCount === 0) {
-    throw new ApiError(401, 'Refresh token not found or already revoked.', {
-      code: 'REFRESH_TOKEN_REVOKED',
+    throw new ApiError(401, "Refresh token not found or already revoked.", {
+      code: "REFRESH_TOKEN_REVOKED",
       details: [{ reason }],
     });
   }

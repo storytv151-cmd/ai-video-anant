@@ -1,7 +1,7 @@
-import ApiError from '../../utils/ApiError.js';
-import environment from '../../config/environment.js';
-import digitalOceanSpaces from './digitalOceanSpaces.js';
-import storageValidationService from './storageValidationService.js';
+import ApiError from "../../utils/ApiError.js";
+import environment from "../../config/environment.js";
+import digitalOceanSpaces from "./digitalOceanSpaces.js";
+import storageValidationService from "./storageValidationService.js";
 
 const parseExpiresIn = (value, fallback) => {
   const n = Number(value);
@@ -19,12 +19,19 @@ const generateSignedUploadUrl = async ({
 } = {}) => {
   const bucket = environment.integrations.digitalOceanSpaces.bucket;
   if (!bucket) {
-    throw new ApiError(500, 'Storage is not configured.', { code: 'STORAGE_NOT_CONFIGURED' });
+    throw new ApiError(500, "Storage is not configured.", {
+      code: "STORAGE_NOT_CONFIGURED",
+    });
   }
 
-  const extension = storageValidationService.resolveExtensionForMimeType({ mimeType, fileType });
+  const extension = storageValidationService.resolveExtensionForMimeType({
+    mimeType,
+    fileType,
+  });
   if (!extension) {
-    throw new ApiError(400, 'Unsupported file type.', { code: 'UPLOAD_UNSUPPORTED_TYPE' });
+    throw new ApiError(400, "Unsupported file type.", {
+      code: "UPLOAD_UNSUPPORTED_TYPE",
+    });
   }
   storageValidationService.assertNotExecutable(extension);
 
@@ -32,7 +39,9 @@ const generateSignedUploadUrl = async ({
   const objectKey = digitalOceanSpaces.buildObjectKey({
     prefix: normalizedFolder,
     extension,
-    isTemporary: normalizedFolder.startsWith('temporary') || normalizedFolder.endsWith('/temp'),
+    isTemporary:
+      normalizedFolder.startsWith("temporary") ||
+      normalizedFolder.endsWith("/temp"),
   });
   const signed = await digitalOceanSpaces.generateSignedUploadUrl({
     bucket,
@@ -54,13 +63,20 @@ const generateSignedUploadUrl = async ({
   };
 };
 
-const generateSignedDownloadUrl = async ({ storageKey, expiresInSeconds = 900 } = {}) => {
+const generateSignedDownloadUrl = async ({
+  storageKey,
+  expiresInSeconds = 900,
+} = {}) => {
   const bucket = environment.integrations.digitalOceanSpaces.bucket;
   if (!bucket) {
-    throw new ApiError(500, 'Storage is not configured.', { code: 'STORAGE_NOT_CONFIGURED' });
+    throw new ApiError(500, "Storage is not configured.", {
+      code: "STORAGE_NOT_CONFIGURED",
+    });
   }
   if (!storageKey) {
-    throw new ApiError(400, 'storageKey is required.', { code: 'STORAGE_KEY_REQUIRED' });
+    throw new ApiError(400, "storageKey is required.", {
+      code: "STORAGE_KEY_REQUIRED",
+    });
   }
 
   const signed = await digitalOceanSpaces.generateSignedDownloadUrl({

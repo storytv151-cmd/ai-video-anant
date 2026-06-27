@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
-import { createBaseSchema } from './base.schema.js';
+import mongoose from "mongoose";
+import { createBaseSchema } from "./base.schema.js";
 
 const { Schema } = mongoose;
 
@@ -9,7 +9,7 @@ const googleWebhookEventSchema = createBaseSchema({
     trim: true,
     lowercase: true,
     maxlength: 50,
-    default: 'google_play',
+    default: "google_play",
     index: true,
   },
   messageId: {
@@ -43,7 +43,7 @@ const googleWebhookEventSchema = createBaseSchema({
   },
   user: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     default: null,
     index: true,
   },
@@ -53,8 +53,8 @@ const googleWebhookEventSchema = createBaseSchema({
   },
   status: {
     type: String,
-    enum: ['pending', 'processed', 'failed', 'ignored'],
-    default: 'pending',
+    enum: ["pending", "processed", "failed", "ignored"],
+    default: "pending",
     index: true,
   },
   payload: {
@@ -72,11 +72,12 @@ googleWebhookEventSchema.index(
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
-    name: 'uniq_google_webhook_event_provider_message_active',
+    name: "uniq_google_webhook_event_provider_message_active",
   },
 );
 
 const GoogleWebhookEventModel =
-  mongoose.models.GoogleWebhookEvent || mongoose.model('GoogleWebhookEvent', googleWebhookEventSchema);
+  mongoose.models.GoogleWebhookEvent ||
+  mongoose.model("GoogleWebhookEvent", googleWebhookEventSchema);
 
 export default GoogleWebhookEventModel;

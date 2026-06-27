@@ -1,5 +1,5 @@
-import AuditLogModel from '../models/AuditLog.js';
-import { getRequestContext } from '../utils/requestContext.js';
+import AuditLogModel from "../models/AuditLog.js";
+import { getRequestContext } from "../utils/requestContext.js";
 
 const safeString = (value, max = 200) => {
   if (value === undefined || value === null) {
@@ -10,7 +10,7 @@ const safeString = (value, max = 200) => {
 };
 
 const createAuditLog = async ({
-  actorType = 'system',
+  actorType = "system",
   actorUserId = null,
   actorDeviceId = null,
   action,

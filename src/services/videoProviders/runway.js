@@ -1,8 +1,8 @@
-import ApiError from '../../utils/ApiError.js';
-import ProviderModel from '../../models/Provider.js';
-import ProviderModelModel from '../../models/ProviderModel.js';
-import ProviderPricingModel from '../../models/ProviderPricing.js';
-import BaseVideoProvider from './baseProvider.js';
+import ApiError from "../../utils/ApiError.js";
+import ProviderModel from "../../models/Provider.js";
+import ProviderModelModel from "../../models/ProviderModel.js";
+import ProviderPricingModel from "../../models/ProviderPricing.js";
+import BaseVideoProvider from "./baseProvider.js";
 
 const normalizeProviderDoc = (provider) => ({
   id: provider._id,
@@ -49,20 +49,35 @@ const normalizeProviderModelDoc = (model) => ({
 
 class RunwayProvider extends BaseVideoProvider {
   async getProviderInfo() {
-    const provider = await ProviderModel.findOne({ slug: this.providerSlug, enabled: true }).lean();
+    const provider = await ProviderModel.findOne({
+      slug: this.providerSlug,
+      enabled: true,
+    }).lean();
     if (!provider) {
-      throw new ApiError(404, 'Provider not found.', { code: 'PROVIDER_NOT_FOUND' });
+      throw new ApiError(404, "Provider not found.", {
+        code: "PROVIDER_NOT_FOUND",
+      });
     }
-    const models = await ProviderModelModel.find({ provider: provider._id, enabled: true })
+    const models = await ProviderModelModel.find({
+      provider: provider._id,
+      enabled: true,
+    })
       .sort({ priority: 1, createdAt: -1 })
       .lean();
-    return { provider: normalizeProviderDoc(provider), models: models.map(normalizeProviderModelDoc) };
+    return {
+      provider: normalizeProviderDoc(provider),
+      models: models.map(normalizeProviderModelDoc),
+    };
   }
 
   async healthCheck() {
-    const provider = await ProviderModel.findOne({ slug: this.providerSlug }).lean();
+    const provider = await ProviderModel.findOne({
+      slug: this.providerSlug,
+    }).lean();
     if (!provider) {
-      throw new ApiError(404, 'Provider not found.', { code: 'PROVIDER_NOT_FOUND' });
+      throw new ApiError(404, "Provider not found.", {
+        code: "PROVIDER_NOT_FOUND",
+      });
     }
     return {
       providerSlug: this.providerSlug,
@@ -75,9 +90,14 @@ class RunwayProvider extends BaseVideoProvider {
   }
 
   async startGeneration({ template, providerModelSlug = null } = {}) {
-    const provider = await ProviderModel.findOne({ slug: this.providerSlug, enabled: true }).lean();
+    const provider = await ProviderModel.findOne({
+      slug: this.providerSlug,
+      enabled: true,
+    }).lean();
     if (!provider) {
-      throw new ApiError(404, 'Provider not found.', { code: 'PROVIDER_NOT_FOUND' });
+      throw new ApiError(404, "Provider not found.", {
+        code: "PROVIDER_NOT_FOUND",
+      });
     }
 
     let providerModelDoc = null;
@@ -88,7 +108,9 @@ class RunwayProvider extends BaseVideoProvider {
         enabled: true,
       }).lean();
       if (!providerModelDoc) {
-        throw new ApiError(404, 'Provider model not found.', { code: 'PROVIDER_MODEL_NOT_FOUND' });
+        throw new ApiError(404, "Provider model not found.", {
+          code: "PROVIDER_MODEL_NOT_FOUND",
+        });
       }
     }
 
@@ -104,28 +126,42 @@ class RunwayProvider extends BaseVideoProvider {
             .lean()
         : [];
 
-    const providerPricingCredits = pricingDocs.length > 0 ? Math.min(...pricingDocs.map((p) => p.credits)) : null;
+    const providerPricingCredits =
+      pricingDocs.length > 0
+        ? Math.min(...pricingDocs.map((p) => p.credits))
+        : null;
     const modelCredits = providerModelDoc?.credits ?? null;
     const creditsRequired =
-      template?.creditsOverride ?? (modelCredits !== null && modelCredits !== 0 ? modelCredits : providerPricingCredits);
+      template?.creditsOverride ??
+      (modelCredits !== null && modelCredits !== 0
+        ? modelCredits
+        : providerPricingCredits);
 
     return {
       providerSlug: this.providerSlug,
       providerModelSlug: providerModelDoc?.slug || null,
       templateSlug: template?.slug || null,
       creditsRequired: creditsRequired ?? null,
-      status: 'queued',
+      status: "queued",
       externalJobId: null,
       queuedAt: new Date().toISOString(),
     };
   }
 
   async checkStatus() {
-    return { providerSlug: this.providerSlug, status: 'unknown', externalJobId: null };
+    return {
+      providerSlug: this.providerSlug,
+      status: "unknown",
+      externalJobId: null,
+    };
   }
 
   async cancelGeneration() {
-    return { providerSlug: this.providerSlug, cancelled: false, externalJobId: null };
+    return {
+      providerSlug: this.providerSlug,
+      cancelled: false,
+      externalJobId: null,
+    };
   }
 }
 

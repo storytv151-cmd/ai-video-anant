@@ -1,5 +1,5 @@
-import ApiError from '../../utils/ApiError.js';
-import subscriptionSyncService from './subscriptionSyncService.js';
+import ApiError from "../../utils/ApiError.js";
+import subscriptionSyncService from "./subscriptionSyncService.js";
 
 const normalizeRestorePayload = (payload = {}) => {
   if (Array.isArray(payload.purchases) && payload.purchases.length > 0) {
@@ -8,14 +8,19 @@ const normalizeRestorePayload = (payload = {}) => {
         purchaseToken: purchase?.purchaseToken || null,
         packageName: purchase?.packageName || payload.packageName || null,
         productId: purchase?.productId || null,
-        clientDeviceId: purchase?.clientDeviceId || payload.clientDeviceId || null,
+        clientDeviceId:
+          purchase?.clientDeviceId || payload.clientDeviceId || null,
         device: purchase?.device || payload.device || null,
       }))
       .filter((purchase) => purchase.purchaseToken);
   }
 
-  const tokens = Array.isArray(payload.purchaseTokens) ? payload.purchaseTokens : [];
-  const productIds = Array.isArray(payload.productIds) ? payload.productIds : [];
+  const tokens = Array.isArray(payload.purchaseTokens)
+    ? payload.purchaseTokens
+    : [];
+  const productIds = Array.isArray(payload.productIds)
+    ? payload.productIds
+    : [];
   const items = [];
 
   for (let index = 0; index < tokens.length; index += 1) {
@@ -42,9 +47,13 @@ const restoreSubscriptions = async ({
 } = {}) => {
   const items = normalizeRestorePayload(payload);
   if (items.length === 0) {
-    throw new ApiError(400, 'At least one subscription purchase is required for restore.', {
-      code: 'SUBSCRIPTION_RESTORE_INPUT_REQUIRED',
-    });
+    throw new ApiError(
+      400,
+      "At least one subscription purchase is required for restore.",
+      {
+        code: "SUBSCRIPTION_RESTORE_INPUT_REQUIRED",
+      },
+    );
   }
 
   const results = [];
@@ -55,22 +64,24 @@ const restoreSubscriptions = async ({
         userId,
         payload: item,
         request,
-        idempotencyKey: idempotencyKey ? `${idempotencyKey}:${index + 1}` : null,
-        syncReason: 'restore',
+        idempotencyKey: idempotencyKey
+          ? `${idempotencyKey}:${index + 1}`
+          : null,
+        syncReason: "restore",
       });
       results.push({
         productId: result.google?.productId || item.productId || null,
         paymentId: result.paymentId || null,
-        status: 'success',
+        status: "success",
         subscription: result.subscription,
       });
     } catch (error) {
       results.push({
         productId: item.productId || null,
         paymentId: null,
-        status: 'failed',
+        status: "failed",
         error: {
-          code: error.code || 'SUBSCRIPTION_RESTORE_FAILED',
+          code: error.code || "SUBSCRIPTION_RESTORE_FAILED",
           message: error.message,
         },
       });
@@ -81,8 +92,8 @@ const restoreSubscriptions = async ({
     items: results,
     summary: {
       requested: items.length,
-      restored: results.filter((item) => item.status === 'success').length,
-      failed: results.filter((item) => item.status === 'failed').length,
+      restored: results.filter((item) => item.status === "success").length,
+      failed: results.filter((item) => item.status === "failed").length,
     },
   };
 };

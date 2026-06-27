@@ -1,7 +1,7 @@
-import VideoGenerationJobModel from '../../models/VideoGenerationJob.js';
-import ApiError from '../../utils/ApiError.js';
-import adminAuditService from './adminAuditService.js';
-import adminQueryService from './adminQueryService.js';
+import VideoGenerationJobModel from "../../models/VideoGenerationJob.js";
+import ApiError from "../../utils/ApiError.js";
+import adminAuditService from "./adminAuditService.js";
+import adminQueryService from "./adminQueryService.js";
 
 const listGenerationJobs = async ({ query = {} } = {}) => {
   const { page, limit, skip } = adminQueryService.buildPagination({
@@ -37,16 +37,27 @@ const listGenerationJobs = async ({ query = {} } = {}) => {
       .skip(skip)
       .limit(limit)
       .lean(),
-    VideoGenerationJobModel.countDocuments(filter).setOptions({ withDeleted: true }),
+    VideoGenerationJobModel.countDocuments(filter).setOptions({
+      withDeleted: true,
+    }),
   ]);
 
-  return adminQueryService.buildPaginatedResponse({ items, page, limit, total });
+  return adminQueryService.buildPaginatedResponse({
+    items,
+    page,
+    limit,
+    total,
+  });
 };
 
 const getGenerationJob = async ({ jobId } = {}) => {
-  const job = await VideoGenerationJobModel.findById(jobId).withDeleted().lean();
+  const job = await VideoGenerationJobModel.findById(jobId)
+    .withDeleted()
+    .lean();
   if (!job) {
-    throw new ApiError(404, 'Generation job not found.', { code: 'GENERATION_JOB_NOT_FOUND' });
+    throw new ApiError(404, "Generation job not found.", {
+      code: "GENERATION_JOB_NOT_FOUND",
+    });
   }
   return job;
 };
@@ -60,10 +71,14 @@ const updateGenerationStatus = async ({
 } = {}) => {
   const job = await VideoGenerationJobModel.findById(jobId).withDeleted();
   if (!job) {
-    throw new ApiError(404, 'Generation job not found.', { code: 'GENERATION_JOB_NOT_FOUND' });
+    throw new ApiError(404, "Generation job not found.", {
+      code: "GENERATION_JOB_NOT_FOUND",
+    });
   }
-  job.status = String(status || '').trim().toLowerCase();
-  if (job.status === 'cancelled') {
+  job.status = String(status || "")
+    .trim()
+    .toLowerCase();
+  if (job.status === "cancelled") {
     job.cancelledAt = new Date();
   }
   await job.save();
@@ -71,8 +86,8 @@ const updateGenerationStatus = async ({
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_GENERATION_STATUS_UPDATED',
-    targetType: 'VideoGenerationJob',
+    action: "ADMIN_GENERATION_STATUS_UPDATED",
+    targetType: "VideoGenerationJob",
     targetId: job._id,
     metadata: { status: job.status, reason },
   });

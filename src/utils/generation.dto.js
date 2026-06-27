@@ -19,7 +19,9 @@ const buildGenerationJobDto = (job) => {
     inputImages: Array.isArray(job.inputImages) ? job.inputImages : [],
     inputVideos: Array.isArray(job.inputVideos) ? job.inputVideos : [],
     inputAudio: Array.isArray(job.inputAudio) ? job.inputAudio : [],
-    referenceImages: Array.isArray(job.referenceImages) ? job.referenceImages : [],
+    referenceImages: Array.isArray(job.referenceImages)
+      ? job.referenceImages
+      : [],
     maskImages: Array.isArray(job.maskImages) ? job.maskImages : [],
     multipleOutputs: Boolean(job.multipleOutputs),
     outputAssets: Array.isArray(job.outputAssets) ? job.outputAssets : [],

@@ -1,9 +1,9 @@
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import adminAuditService from '../services/admin/adminAuditService.js';
-import adminCouponService from '../services/admin/adminCouponService.js';
-import adminGenerationService from '../services/admin/adminGenerationService.js';
-import adminNotificationService from '../services/admin/adminNotificationService.js';
-import adminRoleService from '../services/admin/adminRoleService.js';
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import adminAuditService from "../services/admin/adminAuditService.js";
+import adminCouponService from "../services/admin/adminCouponService.js";
+import adminGenerationService from "../services/admin/adminGenerationService.js";
+import adminNotificationService from "../services/admin/adminNotificationService.js";
+import adminRoleService from "../services/admin/adminRoleService.js";
 
 const listAdminCoupons = async (request, response) => {
   const data = await adminCouponService.listCoupons({ query: request.query });
@@ -44,7 +44,9 @@ const listAdminRewards = async (request, response) => {
 };
 
 const listAdminNotifications = async (request, response) => {
-  const data = await adminNotificationService.listNotifications({ query: request.query });
+  const data = await adminNotificationService.listNotifications({
+    query: request.query,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
@@ -63,12 +65,16 @@ const listAdminAuditLogs = async (request, response) => {
 };
 
 const listAdminGenerationJobs = async (request, response) => {
-  const data = await adminGenerationService.listGenerationJobs({ query: request.query });
+  const data = await adminGenerationService.listGenerationJobs({
+    query: request.query,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
 const getAdminGenerationJob = async (request, response) => {
-  const data = await adminGenerationService.getGenerationJob({ jobId: request.params.jobId });
+  const data = await adminGenerationService.getGenerationJob({
+    jobId: request.params.jobId,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 

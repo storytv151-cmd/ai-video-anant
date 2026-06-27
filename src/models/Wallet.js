@@ -9,16 +9,16 @@
  * Future usage: supports wallet-ledger reconciliation, refunds, admin credit
  * actions, and analytics across the credit economy.
  */
-import mongoose from 'mongoose';
-import { createBaseSchema } from './base.schema.js';
+import mongoose from "mongoose";
+import { createBaseSchema } from "./base.schema.js";
 
 const { Schema } = mongoose;
 
 const walletSchema = createBaseSchema({
   user: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'Wallet user reference is required.'],
+    ref: "User",
+    required: [true, "Wallet user reference is required."],
     index: true,
   },
   currentCredits: {
@@ -63,8 +63,8 @@ const walletSchema = createBaseSchema({
   },
   status: {
     type: String,
-    enum: ['active', 'frozen', 'suspended', 'closed'],
-    default: 'active',
+    enum: ["active", "frozen", "suspended", "closed"],
+    default: "active",
     index: true,
   },
 });
@@ -74,7 +74,7 @@ walletSchema.index(
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
-    name: 'uniq_wallet_user_active',
+    name: "uniq_wallet_user_active",
   },
 );
 walletSchema.index({ status: 1, createdAt: -1 });
@@ -82,24 +82,25 @@ walletSchema.index({ currentCredits: -1 });
 walletSchema.index({ lockedCredits: -1, createdAt: -1 });
 walletSchema.index({ pendingCredits: -1, createdAt: -1 });
 
-walletSchema.virtual('transactions', {
-  ref: 'CreditTransaction',
-  localField: '_id',
-  foreignField: 'wallet',
+walletSchema.virtual("transactions", {
+  ref: "CreditTransaction",
+  localField: "_id",
+  foreignField: "wallet",
 });
 
-walletSchema.virtual('payments', {
-  ref: 'Payment',
-  localField: '_id',
-  foreignField: 'wallet',
+walletSchema.virtual("payments", {
+  ref: "Payment",
+  localField: "_id",
+  foreignField: "wallet",
 });
 
-walletSchema.virtual('generationJobs', {
-  ref: 'VideoGenerationJob',
-  localField: '_id',
-  foreignField: 'wallet',
+walletSchema.virtual("generationJobs", {
+  ref: "VideoGenerationJob",
+  localField: "_id",
+  foreignField: "wallet",
 });
 
-const WalletModel = mongoose.models.Wallet || mongoose.model('Wallet', walletSchema);
+const WalletModel =
+  mongoose.models.Wallet || mongoose.model("Wallet", walletSchema);
 
 export default WalletModel;

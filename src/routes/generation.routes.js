@@ -1,20 +1,20 @@
-import { Router } from 'express';
-import { authenticate } from '../middleware/auth.js';
-import idempotency from '../middleware/idempotency.js';
-import validation from '../middleware/validation.js';
-import { REQUEST_SOURCES } from '../utils/constants.js';
-import asyncHandler from '../utils/asyncHandler.js';
-import { cancel, retry, start } from '../controllers/generation.controller.js';
-import { getHistory } from '../controllers/generationHistory.controller.js';
-import { getStatus } from '../controllers/generationStatus.controller.js';
-import generationValidator from '../validators/generation.validator.js';
-import historyValidator from '../validators/history.validator.js';
-import statusValidator from '../validators/status.validator.js';
+import { Router } from "express";
+import { authenticate } from "../middleware/auth.js";
+import idempotency from "../middleware/idempotency.js";
+import validation from "../middleware/validation.js";
+import { REQUEST_SOURCES } from "../utils/constants.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import { cancel, retry, start } from "../controllers/generation.controller.js";
+import { getHistory } from "../controllers/generationHistory.controller.js";
+import { getStatus } from "../controllers/generationStatus.controller.js";
+import generationValidator from "../validators/generation.validator.js";
+import historyValidator from "../validators/history.validator.js";
+import statusValidator from "../validators/status.validator.js";
 
 const generationRouter = Router();
 
 generationRouter.post(
-  '/start',
+  "/start",
   authenticate,
   idempotency(false),
   validation(generationValidator.validateStart, REQUEST_SOURCES.BODY),
@@ -22,21 +22,21 @@ generationRouter.post(
 );
 
 generationRouter.get(
-  '/status/:jobId',
+  "/status/:jobId",
   authenticate,
   validation(statusValidator.validateJobIdParam, REQUEST_SOURCES.PARAMS),
   asyncHandler(getStatus),
 );
 
 generationRouter.get(
-  '/history',
+  "/history",
   authenticate,
   validation(historyValidator.validateHistoryQuery, REQUEST_SOURCES.QUERY),
   asyncHandler(getHistory),
 );
 
 generationRouter.post(
-  '/cancel/:jobId',
+  "/cancel/:jobId",
   authenticate,
   idempotency(false),
   validation(generationValidator.validateJobIdParam, REQUEST_SOURCES.PARAMS),
@@ -44,7 +44,7 @@ generationRouter.post(
 );
 
 generationRouter.post(
-  '/retry/:jobId',
+  "/retry/:jobId",
   authenticate,
   idempotency(false),
   validation(generationValidator.validateJobIdParam, REQUEST_SOURCES.PARAMS),

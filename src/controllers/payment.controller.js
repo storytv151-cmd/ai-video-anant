@@ -1,6 +1,6 @@
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import paymentArchitectureService from '../services/payment/paymentArchitectureService.js';
-import paymentAuditService from '../services/payment/paymentAuditService.js';
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import paymentArchitectureService from "../services/payment/paymentArchitectureService.js";
+import paymentAuditService from "../services/payment/paymentAuditService.js";
 
 const getPackages = async (request, response) => {
   const data = await paymentArchitectureService.listCreditPackages();
@@ -22,7 +22,9 @@ const verifyGooglePurchase = async (request, response) => {
       metadata: {
         productId: request.body?.productId || null,
         paymentType: request.body?.paymentType || null,
-        duplicateDetected: Boolean(data?.duplicateProtection?.duplicateDetected),
+        duplicateDetected: Boolean(
+          data?.duplicateProtection?.duplicateDetected,
+        ),
       },
     })
     .catch(() => null);
@@ -43,8 +45,12 @@ const restorePurchases = async (request, response) => {
       userId: request.user.id,
       request,
       metadata: {
-        requestedProductIds: Array.isArray(request.body?.productIds) ? request.body.productIds.length : 0,
-        requestedOrderIds: Array.isArray(request.body?.orderIds) ? request.body.orderIds.length : 0,
+        requestedProductIds: Array.isArray(request.body?.productIds)
+          ? request.body.productIds.length
+          : 0,
+        requestedOrderIds: Array.isArray(request.body?.orderIds)
+          ? request.body.orderIds.length
+          : 0,
       },
     })
     .catch(() => null);
@@ -68,4 +74,10 @@ const getPaymentDetail = async (request, response) => {
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
-export { getPackages, verifyGooglePurchase, restorePurchases, getPaymentHistory, getPaymentDetail };
+export {
+  getPackages,
+  verifyGooglePurchase,
+  restorePurchases,
+  getPaymentHistory,
+  getPaymentDetail,
+};

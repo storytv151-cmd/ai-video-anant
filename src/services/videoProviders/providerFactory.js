@@ -1,13 +1,13 @@
-import ApiError from '../../utils/ApiError.js';
-import ProviderModel from '../../models/Provider.js';
-import ProviderModelModel from '../../models/ProviderModel.js';
-import ProviderPricingModel from '../../models/ProviderPricing.js';
-import BaseVideoProvider from './baseProvider.js';
-import KlingProvider from './kling.js';
-import LumaProvider from './luma.js';
-import NanoBananaProvider from './nanoBanana.js';
-import PikaProvider from './pika.js';
-import RunwayProvider from './runway.js';
+import ApiError from "../../utils/ApiError.js";
+import ProviderModel from "../../models/Provider.js";
+import ProviderModelModel from "../../models/ProviderModel.js";
+import ProviderPricingModel from "../../models/ProviderPricing.js";
+import BaseVideoProvider from "./baseProvider.js";
+import KlingProvider from "./kling.js";
+import LumaProvider from "./luma.js";
+import NanoBananaProvider from "./nanoBanana.js";
+import PikaProvider from "./pika.js";
+import RunwayProvider from "./runway.js";
 
 const providerInstanceCache = new Map();
 
@@ -61,12 +61,20 @@ const normalizeProviderModelDoc = (model) => ({
 
 class GenericDbVideoProvider extends BaseVideoProvider {
   async getProviderInfo() {
-    const provider = await ProviderModel.findOne({ slug: this.providerSlug, enabled: true }).lean();
+    const provider = await ProviderModel.findOne({
+      slug: this.providerSlug,
+      enabled: true,
+    }).lean();
     if (!provider) {
-      throw new ApiError(404, 'Provider not found.', { code: 'PROVIDER_NOT_FOUND' });
+      throw new ApiError(404, "Provider not found.", {
+        code: "PROVIDER_NOT_FOUND",
+      });
     }
 
-    const models = await ProviderModelModel.find({ provider: provider._id, enabled: true })
+    const models = await ProviderModelModel.find({
+      provider: provider._id,
+      enabled: true,
+    })
       .sort({ priority: 1, createdAt: -1 })
       .lean();
 
@@ -77,9 +85,13 @@ class GenericDbVideoProvider extends BaseVideoProvider {
   }
 
   async healthCheck() {
-    const provider = await ProviderModel.findOne({ slug: this.providerSlug }).lean();
+    const provider = await ProviderModel.findOne({
+      slug: this.providerSlug,
+    }).lean();
     if (!provider) {
-      throw new ApiError(404, 'Provider not found.', { code: 'PROVIDER_NOT_FOUND' });
+      throw new ApiError(404, "Provider not found.", {
+        code: "PROVIDER_NOT_FOUND",
+      });
     }
     return {
       providerSlug: this.providerSlug,
@@ -92,9 +104,14 @@ class GenericDbVideoProvider extends BaseVideoProvider {
   }
 
   async startGeneration({ template, providerModelSlug = null } = {}) {
-    const provider = await ProviderModel.findOne({ slug: this.providerSlug, enabled: true }).lean();
+    const provider = await ProviderModel.findOne({
+      slug: this.providerSlug,
+      enabled: true,
+    }).lean();
     if (!provider) {
-      throw new ApiError(404, 'Provider not found.', { code: 'PROVIDER_NOT_FOUND' });
+      throw new ApiError(404, "Provider not found.", {
+        code: "PROVIDER_NOT_FOUND",
+      });
     }
 
     let providerModelDoc = null;
@@ -105,7 +122,9 @@ class GenericDbVideoProvider extends BaseVideoProvider {
         enabled: true,
       }).lean();
       if (!providerModelDoc) {
-        throw new ApiError(404, 'Provider model not found.', { code: 'PROVIDER_MODEL_NOT_FOUND' });
+        throw new ApiError(404, "Provider model not found.", {
+          code: "PROVIDER_MODEL_NOT_FOUND",
+        });
       }
     }
 
@@ -121,42 +140,56 @@ class GenericDbVideoProvider extends BaseVideoProvider {
             .lean()
         : [];
 
-    const providerPricingCredits = pricingDocs.length > 0 ? Math.min(...pricingDocs.map((p) => p.credits)) : null;
+    const providerPricingCredits =
+      pricingDocs.length > 0
+        ? Math.min(...pricingDocs.map((p) => p.credits))
+        : null;
     const modelCredits = providerModelDoc?.credits ?? null;
     const creditsRequired =
-      template?.creditsOverride ?? (modelCredits !== null && modelCredits !== 0 ? modelCredits : providerPricingCredits);
+      template?.creditsOverride ??
+      (modelCredits !== null && modelCredits !== 0
+        ? modelCredits
+        : providerPricingCredits);
 
     return {
       providerSlug: this.providerSlug,
       providerModelSlug: providerModelDoc?.slug || null,
       templateSlug: template?.slug || null,
       creditsRequired: creditsRequired ?? null,
-      status: 'queued',
+      status: "queued",
       externalJobId: null,
       queuedAt: new Date().toISOString(),
     };
   }
 
   async checkStatus() {
-    return { providerSlug: this.providerSlug, status: 'unknown', externalJobId: null };
+    return {
+      providerSlug: this.providerSlug,
+      status: "unknown",
+      externalJobId: null,
+    };
   }
 
   async cancelGeneration() {
-    return { providerSlug: this.providerSlug, cancelled: false, externalJobId: null };
+    return {
+      providerSlug: this.providerSlug,
+      cancelled: false,
+      externalJobId: null,
+    };
   }
 }
 
 const createProviderInstance = ({ providerSlug }) => {
   switch (String(providerSlug).toLowerCase()) {
-    case 'nano-banana':
+    case "nano-banana":
       return new NanoBananaProvider({ providerSlug });
-    case 'kling':
+    case "kling":
       return new KlingProvider({ providerSlug });
-    case 'pika':
+    case "pika":
       return new PikaProvider({ providerSlug });
-    case 'runway':
+    case "runway":
       return new RunwayProvider({ providerSlug });
-    case 'luma':
+    case "luma":
       return new LumaProvider({ providerSlug });
     default:
       return new GenericDbVideoProvider({ providerSlug });
@@ -164,9 +197,11 @@ const createProviderInstance = ({ providerSlug }) => {
 };
 
 const createVideoProvider = async ({ providerSlug, useCache = true } = {}) => {
-  const slug = String(providerSlug || '').toLowerCase();
+  const slug = String(providerSlug || "").toLowerCase();
   if (!slug) {
-    throw new ApiError(400, 'providerSlug is required.', { code: 'PROVIDER_SLUG_REQUIRED' });
+    throw new ApiError(400, "providerSlug is required.", {
+      code: "PROVIDER_SLUG_REQUIRED",
+    });
   }
 
   if (useCache && providerInstanceCache.has(slug)) {

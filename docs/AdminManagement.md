@@ -9,7 +9,9 @@ This document describes the design, architecture, implementation, and future exp
 The platform operates a dynamic, permission-based access control system (PBAC) instead of hardcoded role checks.
 
 ### Roles & Inheritance
+
 We support standard system roles and accommodate dynamic role configurations loaded from the database:
+
 - **Super Admin (`super_admin`)**: Grants wild-card access (`*`) to all system functions.
 - **Admin (`admin`)**: Operational control over all subsystems excluding role assignments/modifications of other Super Admins.
 - **Support (`support`)**: User resolution, account management, basic wallet adjustments, and view-only diagnostics.
@@ -19,7 +21,9 @@ We support standard system roles and accommodate dynamic role configurations loa
 - **Read Only (`read_only`)**: System-wide view access without write permissions.
 
 ### Permission Mapping
+
 Permissions are stored in [adminPermissions.js](file:///d:/jayesh2/backand/ai%20video%20ananat/backend/src/constants/adminPermissions.js) and resolved recursively through roles (supporting nested/inherited role permissions):
+
 - `users.read`, `users.write`, `users.status`, `users.role.assign`, `users.devices.read`, `users.login_history.read`, `users.generations.read`, `users.payments.read`, `users.subscriptions.read`
 - `wallets.read`, `wallets.adjust`, `wallets.refund`, `wallets.lock`, `wallets.transactions.read`
 - `templates.read`, `templates.write`, `templates.publish`
@@ -62,6 +66,7 @@ Dashboard and analytics APIs compile complex MongoDB aggregation states into fas
 ## 4. Audit Log System
 
 Security compliance requires logging every admin action. The `adminAuditService` logs:
+
 - Admin logins / logouts
 - User profile updates (suspend, block, role adjustments)
 - Wallet transactions (credit grant, deduction, locks)
@@ -77,15 +82,15 @@ Logs include the Request ID (`X-Request-ID`), Admin User ID, Client IP, Target R
 
 Placeholder interfaces are exposed on `/api/v1/admin/future/*` to enable quick integration of future enterprise capabilities:
 
-| Endpoint | Method | Service Method | Integration Target |
-| :--- | :--- | :--- | :--- |
-| `/admin/future/organizations` | `GET`, `POST` | `getOrganizations`, `createOrganization` | B2B organizational hierarchies & accounts |
-| `/admin/future/teams` | `GET`, `POST` | `getTeams`, `createTeam` | Multi-user team workflows and shared credits |
-| `/admin/future/regional-admins` | `GET` | `getRegionalAdmins` | Country/regional admin boundary mappings |
-| `/admin/future/white-label` | `POST` | `updateWhiteLabelConfig` | Custom branding, domain masking, email SMTPs |
-| `/admin/future/multi-tenant` | `GET` | `getTenants` | Multi-tenant database routing & tenant configurations |
-| `/admin/future/support-tickets` | `GET` | `getSupportTickets` | Zendesk/Freshdesk/Internal support ticket syncing |
-| `/admin/future/internal-notes` | `POST` | `addInternalNote` | Contextual notes on user profiles or support issues |
-| `/admin/future/approval-workflow` | `POST` | `submitApprovalWorkflow` | Maker-Checker (dual approval) for high-value wallet changes |
-| `/admin/future/bulk-operations` | `POST` | `executeBulkOperation` | Bulk user suspension, package updates, or template publishing |
-| `/admin/future/csv-export` | `GET` | `exportCsv` | Direct CSV data exports for spreadsheets |
+| Endpoint                          | Method        | Service Method                           | Integration Target                                            |
+| :-------------------------------- | :------------ | :--------------------------------------- | :------------------------------------------------------------ |
+| `/admin/future/organizations`     | `GET`, `POST` | `getOrganizations`, `createOrganization` | B2B organizational hierarchies & accounts                     |
+| `/admin/future/teams`             | `GET`, `POST` | `getTeams`, `createTeam`                 | Multi-user team workflows and shared credits                  |
+| `/admin/future/regional-admins`   | `GET`         | `getRegionalAdmins`                      | Country/regional admin boundary mappings                      |
+| `/admin/future/white-label`       | `POST`        | `updateWhiteLabelConfig`                 | Custom branding, domain masking, email SMTPs                  |
+| `/admin/future/multi-tenant`      | `GET`         | `getTenants`                             | Multi-tenant database routing & tenant configurations         |
+| `/admin/future/support-tickets`   | `GET`         | `getSupportTickets`                      | Zendesk/Freshdesk/Internal support ticket syncing             |
+| `/admin/future/internal-notes`    | `POST`        | `addInternalNote`                        | Contextual notes on user profiles or support issues           |
+| `/admin/future/approval-workflow` | `POST`        | `submitApprovalWorkflow`                 | Maker-Checker (dual approval) for high-value wallet changes   |
+| `/admin/future/bulk-operations`   | `POST`        | `executeBulkOperation`                   | Bulk user suspension, package updates, or template publishing |
+| `/admin/future/csv-export`        | `GET`         | `exportCsv`                              | Direct CSV data exports for spreadsheets                      |

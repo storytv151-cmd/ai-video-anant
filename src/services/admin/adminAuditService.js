@@ -1,6 +1,6 @@
-import AuditLogModel from '../../models/AuditLog.js';
-import auditLogService from '../auditLog.service.js';
-import adminQueryService from './adminQueryService.js';
+import AuditLogModel from "../../models/AuditLog.js";
+import auditLogService from "../auditLog.service.js";
+import adminQueryService from "./adminQueryService.js";
 
 const logAdminAction = async ({
   request = null,
@@ -11,13 +11,13 @@ const logAdminAction = async ({
   metadata = {},
 } = {}) =>
   auditLogService.createAuditLog({
-    actorType: 'admin',
+    actorType: "admin",
     actorUserId: adminUserId,
     action,
     targetType,
     targetId,
     ip: request?.ip || null,
-    userAgent: request?.headers?.['user-agent'] || null,
+    userAgent: request?.headers?.["user-agent"] || null,
     requestId: request?.requestId || null,
     path: request?.originalUrl || null,
     method: request?.method || null,
@@ -36,16 +36,16 @@ const listAuditLogs = async ({ query = {} } = {}) => {
     filter.action = String(query.action).trim();
   }
   if (query.actorType) {
-    filter['actor.type'] = String(query.actorType).trim().toLowerCase();
+    filter["actor.type"] = String(query.actorType).trim().toLowerCase();
   }
   if (query.actorUserId) {
-    filter['actor.user'] = query.actorUserId;
+    filter["actor.user"] = query.actorUserId;
   }
   if (query.targetType) {
-    filter['target.type'] = String(query.targetType).trim();
+    filter["target.type"] = String(query.targetType).trim();
   }
   if (query.targetId) {
-    filter['target.id'] = query.targetId;
+    filter["target.id"] = query.targetId;
   }
 
   const createdAt = adminQueryService.buildDateRange({
@@ -67,11 +67,20 @@ const listAuditLogs = async ({ query = {} } = {}) => {
   }
 
   const [items, total] = await Promise.all([
-    AuditLogModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    AuditLogModel.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
     AuditLogModel.countDocuments(filter),
   ]);
 
-  return adminQueryService.buildPaginatedResponse({ items, page, limit, total });
+  return adminQueryService.buildPaginatedResponse({
+    items,
+    page,
+    limit,
+    total,
+  });
 };
 
 const adminAuditService = Object.freeze({

@@ -1,5 +1,5 @@
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import adminUserService from '../services/admin/adminUserService.js';
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import adminUserService from "../services/admin/adminUserService.js";
 
 const listAdminUsers = async (request, response) => {
   const data = await adminUserService.listUsers({ query: request.query });
@@ -7,7 +7,9 @@ const listAdminUsers = async (request, response) => {
 };
 
 const getAdminUserDetail = async (request, response) => {
-  const data = await adminUserService.getUserDetail({ userId: request.params.userId });
+  const data = await adminUserService.getUserDetail({
+    userId: request.params.userId,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
@@ -35,7 +37,9 @@ const assignAdminUserRole = async (request, response) => {
 };
 
 const listAdminUserDevices = async (request, response) => {
-  const data = await adminUserService.listUserDevices({ userId: request.params.userId });
+  const data = await adminUserService.listUserDevices({
+    userId: request.params.userId,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 

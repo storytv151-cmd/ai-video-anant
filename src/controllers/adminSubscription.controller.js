@@ -1,8 +1,10 @@
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import adminSubscriptionService from '../services/admin/adminSubscriptionService.js';
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import adminSubscriptionService from "../services/admin/adminSubscriptionService.js";
 
 const listAdminSubscriptions = async (request, response) => {
-  const data = await adminSubscriptionService.listSubscriptions({ query: request.query });
+  const data = await adminSubscriptionService.listSubscriptions({
+    query: request.query,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 

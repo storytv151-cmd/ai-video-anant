@@ -1,6 +1,6 @@
-import ApiError from '../../utils/ApiError.js';
-import VideoGenerationJobModel from '../../models/VideoGenerationJob.js';
-import walletService from '../wallet/walletService.js';
+import ApiError from "../../utils/ApiError.js";
+import VideoGenerationJobModel from "../../models/VideoGenerationJob.js";
+import walletService from "../wallet/walletService.js";
 
 const toAttemptNumber = (value) => {
   const n = Number(value);
@@ -23,14 +23,19 @@ const lockCreditsForJob = async ({
   credits,
   requestIdempotencyKey = null,
 }) => {
-  const idempotencyKey = buildKey({ jobId, attempt, action: 'lock', requestKey: requestIdempotencyKey });
+  const idempotencyKey = buildKey({
+    jobId,
+    attempt,
+    action: "lock",
+    requestKey: requestIdempotencyKey,
+  });
 
   const { transaction } = await walletService.lockCredits({
     userId,
     credits: Number(credits),
-    referenceType: 'VideoGenerationJob',
+    referenceType: "VideoGenerationJob",
     referenceId: jobId,
-    description: 'Credits locked for generation.',
+    description: "Credits locked for generation.",
     idempotencyKey,
     session,
   });
@@ -52,14 +57,19 @@ const consumeLockedCreditsForJob = async ({
   credits,
   requestIdempotencyKey = null,
 }) => {
-  const idempotencyKey = buildKey({ jobId, attempt, action: 'consume', requestKey: requestIdempotencyKey });
+  const idempotencyKey = buildKey({
+    jobId,
+    attempt,
+    action: "consume",
+    requestKey: requestIdempotencyKey,
+  });
 
   const { transaction } = await walletService.consumeLockedCredits({
     userId,
     credits: Number(credits),
-    referenceType: 'VideoGenerationJob',
+    referenceType: "VideoGenerationJob",
     referenceId: jobId,
-    description: 'Locked credits consumed for generation.',
+    description: "Locked credits consumed for generation.",
     idempotencyKey,
     session,
   });
@@ -79,15 +89,20 @@ const unlockLockedCreditsForJob = async ({
   jobId,
   attempt = 0,
   credits,
-  reason = 'Credits unlocked.',
+  reason = "Credits unlocked.",
   requestIdempotencyKey = null,
 }) => {
-  const idempotencyKey = buildKey({ jobId, attempt, action: 'unlock', requestKey: requestIdempotencyKey });
+  const idempotencyKey = buildKey({
+    jobId,
+    attempt,
+    action: "unlock",
+    requestKey: requestIdempotencyKey,
+  });
 
   const { transaction } = await walletService.unlockCredits({
     userId,
     credits: Number(credits),
-    referenceType: 'VideoGenerationJob',
+    referenceType: "VideoGenerationJob",
     referenceId: jobId,
     description: reason,
     idempotencyKey,
@@ -105,7 +120,9 @@ const unlockLockedCreditsForJob = async ({
 
 const assertCreditsValid = (credits) => {
   if (!Number.isFinite(Number(credits)) || Number(credits) <= 0) {
-    throw new ApiError(400, 'Invalid credits amount.', { code: 'INVALID_CREDITS_AMOUNT' });
+    throw new ApiError(400, "Invalid credits amount.", {
+      code: "INVALID_CREDITS_AMOUNT",
+    });
   }
 };
 
@@ -117,7 +134,7 @@ const settleCompletedJob = async ({
   requestIdempotencyKey = null,
 } = {}) => {
   if (!job?._id) {
-    throw new ApiError(400, 'Invalid generation job.', { code: 'JOB_INVALID' });
+    throw new ApiError(400, "Invalid generation job.", { code: "JOB_INVALID" });
   }
 
   const attempt = toAttemptNumber(job.retryCount || 0);
@@ -137,14 +154,21 @@ const settleCompletedJob = async ({
     { _id: job._id, user: userId },
     {
       $set: {
-        status: 'completed',
+        status: "completed",
         creditsUsed: credits,
         completedAt: new Date(),
         outputVideo: outputVideo || job.outputVideo || {},
         failureReason: null,
         progress: 100,
       },
-      $push: { logs: { level: 'info', message: 'Job completed.', timestamp: new Date(), context: {} } },
+      $push: {
+        logs: {
+          level: "info",
+          message: "Job completed.",
+          timestamp: new Date(),
+          context: {},
+        },
+      },
     },
     { session },
   );
@@ -159,7 +183,7 @@ const settleTerminalFailure = async ({
   requestIdempotencyKey = null,
 } = {}) => {
   if (!job?._id) {
-    throw new ApiError(400, 'Invalid generation job.', { code: 'JOB_INVALID' });
+    throw new ApiError(400, "Invalid generation job.", { code: "JOB_INVALID" });
   }
 
   const attempt = toAttemptNumber(job.retryCount || 0);
@@ -181,10 +205,18 @@ const settleTerminalFailure = async ({
     {
       $set: {
         status: terminalStatus,
-        failureReason: terminalStatus === 'failed' ? reason : job.failureReason,
-        completedAt: terminalStatus === 'timeout' ? new Date() : job.completedAt,
+        failureReason: terminalStatus === "failed" ? reason : job.failureReason,
+        completedAt:
+          terminalStatus === "timeout" ? new Date() : job.completedAt,
       },
-      $push: { logs: { level: terminalStatus === 'failed' ? 'error' : 'warn', message: reason, timestamp: new Date(), context: {} } },
+      $push: {
+        logs: {
+          level: terminalStatus === "failed" ? "error" : "warn",
+          message: reason,
+          timestamp: new Date(),
+          context: {},
+        },
+      },
     },
     { session },
   );
@@ -200,4 +232,3 @@ const generationSettlementService = Object.freeze({
 });
 
 export default generationSettlementService;
-

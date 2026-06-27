@@ -40,7 +40,10 @@ const buildPaymentDetailDto = (payment = {}) => ({
   purchaseStateCode: payment.purchaseStateCode ?? null,
   acknowledgementStateCode: payment.acknowledgementStateCode ?? null,
   consumptionStateCode: payment.consumptionStateCode ?? null,
-  developerPayload: payment.verificationPayload?.googleResponse?.developerPayload || payment.metadata?.developerPayload || null,
+  developerPayload:
+    payment.verificationPayload?.googleResponse?.developerPayload ||
+    payment.metadata?.developerPayload ||
+    null,
   rawVerificationStatus: payment.verificationPayload?.status || null,
   metadata: payment.metadata || {},
 });

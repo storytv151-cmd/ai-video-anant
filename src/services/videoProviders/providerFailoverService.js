@@ -1,15 +1,18 @@
-import ApiError from '../../utils/ApiError.js';
-import providerSelectionService from './providerSelectionService.js';
+import ApiError from "../../utils/ApiError.js";
+import providerSelectionService from "./providerSelectionService.js";
 
 const selectFailover = async ({
   template = null,
   failedProviderId = null,
   attemptedProviderIds = [],
-  strategy = 'priority',
+  strategy = "priority",
   executionContext = {},
 } = {}) => {
   const excludedProviderIds = Array.from(
-    new Set([...(attemptedProviderIds || []), ...(failedProviderId ? [failedProviderId] : [])]),
+    new Set([
+      ...(attemptedProviderIds || []),
+      ...(failedProviderId ? [failedProviderId] : []),
+    ]),
   );
 
   try {
@@ -20,8 +23,8 @@ const selectFailover = async ({
       executionContext,
     });
   } catch (error) {
-    throw new ApiError(400, 'Failover provider selection failed.', {
-      code: 'PROVIDER_FAILOVER_FAILED',
+    throw new ApiError(400, "Failover provider selection failed.", {
+      code: "PROVIDER_FAILOVER_FAILED",
       details: error?.details || null,
     });
   }

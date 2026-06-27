@@ -1,11 +1,12 @@
-import ApiError from '../../utils/ApiError.js';
-import ProviderModel from '../../models/Provider.js';
-import ProviderModelModel from '../../models/ProviderModel.js';
-import ProviderPricingModel from '../../models/ProviderPricing.js';
-import providerHealthService from './providerHealthService.js';
-import providerPricingService from './providerPricingService.js';
+import ApiError from "../../utils/ApiError.js";
+import ProviderModel from "../../models/Provider.js";
+import ProviderModelModel from "../../models/ProviderModel.js";
+import ProviderPricingModel from "../../models/ProviderPricing.js";
+import providerHealthService from "./providerHealthService.js";
+import providerPricingService from "./providerPricingService.js";
 
-const safeLower = (value) => (value ? String(value).trim().toLowerCase() : null);
+const safeLower = (value) =>
+  value ? String(value).trim().toLowerCase() : null;
 
 const buildProviderInternal = (provider) => ({
   id: provider._id,
@@ -55,12 +56,20 @@ const getMinCreditsByProviderDuration = async (providerIds) => {
   }
   const rows = await ProviderPricingModel.aggregate([
     { $match: { enabled: true, provider: { $in: providerIds } } },
-    { $group: { _id: { provider: '$provider', duration: '$duration' }, minCredits: { $min: '$credits' } } },
+    {
+      $group: {
+        _id: { provider: "$provider", duration: "$duration" },
+        minCredits: { $min: "$credits" },
+      },
+    },
   ]);
 
   const map = new Map();
   for (const row of rows) {
-    map.set(`${String(row._id.provider)}:${Number(row._id.duration)}`, row.minCredits);
+    map.set(
+      `${String(row._id.provider)}:${Number(row._id.duration)}`,
+      row.minCredits,
+    );
   }
   return map;
 };
@@ -118,7 +127,7 @@ const listProvidersInternal = async () => {
       if (!key.startsWith(`${String(p._id)}:`)) {
         continue;
       }
-      const duration = Number(key.split(':')[1]);
+      const duration = Number(key.split(":")[1]);
       pricingSummary.push({ duration, minCredits });
     }
     pricingSummary.sort((a, b) => a.duration - b.duration);
@@ -133,30 +142,45 @@ const listProvidersInternal = async () => {
 };
 
 const getProviderInternal = async (slug) => {
-  const provider = await ProviderModel.findOne({ slug: safeLower(slug) }).lean();
+  const provider = await ProviderModel.findOne({
+    slug: safeLower(slug),
+  }).lean();
   if (!provider) {
-    throw new ApiError(404, 'Provider not found.', { code: 'PROVIDER_NOT_FOUND' });
+    throw new ApiError(404, "Provider not found.", {
+      code: "PROVIDER_NOT_FOUND",
+    });
   }
 
   const [models, pricingSummary] = await Promise.all([
-    ProviderModelModel.find({ provider: provider._id }).sort({ priority: 1, createdAt: -1 }).lean(),
+    ProviderModelModel.find({ provider: provider._id })
+      .sort({ priority: 1, createdAt: -1 })
+      .lean(),
     ProviderPricingModel.aggregate([
       { $match: { enabled: true, provider: provider._id } },
-      { $group: { _id: { duration: '$duration' }, minCredits: { $min: '$credits' } } },
-      { $sort: { '_id.duration': 1 } },
+      {
+        $group: {
+          _id: { duration: "$duration" },
+          minCredits: { $min: "$credits" },
+        },
+      },
+      { $sort: { "_id.duration": 1 } },
     ]),
   ]);
 
   return {
     provider: buildProviderInternal(provider),
     models: models.map(buildProviderModelInternal),
-    pricingSummary: pricingSummary.map((p) => ({ duration: p._id.duration, minCredits: p.minCredits })),
+    pricingSummary: pricingSummary.map((p) => ({
+      duration: p._id.duration,
+      minCredits: p.minCredits,
+    })),
   };
 };
 
 const getHealthInternal = async () => providerHealthService.getHealthSummary();
 
-const getPricingInternal = async () => providerPricingService.getPricingSummary();
+const getPricingInternal = async () =>
+  providerPricingService.getPricingSummary();
 
 const providerAdminService = Object.freeze({
   listProvidersInternal,

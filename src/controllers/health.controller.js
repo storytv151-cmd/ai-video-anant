@@ -6,8 +6,8 @@ import {
   getHealthInformation,
   getRootInformation,
   getVersionedInformation,
-} from '../services/system.service.js';
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
+} from "../services/system.service.js";
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
 
 const getRoot = async (request, response) => {
   const data = await getRootInformation();

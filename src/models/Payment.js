@@ -5,29 +5,43 @@
  * Future usage: supports webhook reconciliation, refunds, audit trails,
  * purchase analytics, and payment-provider integrations.
  */
-import mongoose from 'mongoose';
-import { createBaseSchema } from './base.schema.js';
+import mongoose from "mongoose";
+import { createBaseSchema } from "./base.schema.js";
 
 const { Schema } = mongoose;
 
-const PURCHASE_STATES = ['pending', 'purchased', 'acknowledged', 'consumed', 'renewed', 'cancelled', 'expired', 'refunded', 'revoked', 'paused', 'grace_period', 'on_hold', 'failed'];
+const PURCHASE_STATES = [
+  "pending",
+  "purchased",
+  "acknowledged",
+  "consumed",
+  "renewed",
+  "cancelled",
+  "expired",
+  "refunded",
+  "revoked",
+  "paused",
+  "grace_period",
+  "on_hold",
+  "failed",
+];
 
 const paymentSchema = createBaseSchema({
   user: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'User reference is required.'],
+    ref: "User",
+    required: [true, "User reference is required."],
     index: true,
   },
   wallet: {
     type: Schema.Types.ObjectId,
-    ref: 'Wallet',
-    required: [true, 'Wallet reference is required.'],
+    ref: "Wallet",
+    required: [true, "Wallet reference is required."],
     index: true,
   },
   gateway: {
     type: String,
-    required: [true, 'Payment gateway is required.'],
+    required: [true, "Payment gateway is required."],
     trim: true,
     lowercase: true,
     maxlength: 50,
@@ -38,19 +52,19 @@ const paymentSchema = createBaseSchema({
     trim: true,
     lowercase: true,
     maxlength: 50,
-    default: 'google_play',
+    default: "google_play",
     index: true,
   },
   paymentType: {
     type: String,
-    enum: ['credit_purchase', 'subscription'],
-    default: 'credit_purchase',
+    enum: ["credit_purchase", "subscription"],
+    default: "credit_purchase",
     index: true,
   },
   productType: {
     type: String,
-    enum: ['inapp', 'subs'],
-    default: 'inapp',
+    enum: ["inapp", "subs"],
+    default: "inapp",
     index: true,
   },
   productId: {
@@ -119,13 +133,13 @@ const paymentSchema = createBaseSchema({
   purchaseState: {
     type: String,
     enum: PURCHASE_STATES,
-    default: 'pending',
+    default: "pending",
     index: true,
   },
   verificationStatus: {
     type: String,
-    enum: ['pending', 'verified', 'rejected', 'not_requested', 'duplicate'],
-    default: 'not_requested',
+    enum: ["pending", "verified", "rejected", "not_requested", "duplicate"],
+    default: "not_requested",
     index: true,
   },
   purchaseStateCode: {
@@ -209,12 +223,12 @@ const paymentSchema = createBaseSchema({
   },
   amount: {
     type: Number,
-    required: [true, 'Payment amount is required.'],
+    required: [true, "Payment amount is required."],
     min: 0,
   },
   currency: {
     type: String,
-    required: [true, 'Currency is required.'],
+    required: [true, "Currency is required."],
     trim: true,
     uppercase: true,
     minlength: 3,
@@ -249,13 +263,13 @@ const paymentSchema = createBaseSchema({
   },
   creditsPurchased: {
     type: Number,
-    required: [true, 'Purchased credits are required.'],
+    required: [true, "Purchased credits are required."],
     min: 0,
   },
   status: {
     type: String,
-    enum: ['pending', 'success', 'failed', 'refunded', 'cancelled'],
-    default: 'pending',
+    enum: ["pending", "success", "failed", "refunded", "cancelled"],
+    default: "pending",
     index: true,
   },
   verificationAttempts: {
@@ -311,13 +325,13 @@ const paymentSchema = createBaseSchema({
   },
   creditTransaction: {
     type: Schema.Types.ObjectId,
-    ref: 'CreditTransaction',
+    ref: "CreditTransaction",
     default: null,
     index: true,
   },
   processedBy: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     default: null,
     index: true,
   },
@@ -346,9 +360,9 @@ paymentSchema.index(
     sparse: true,
     partialFilterExpression: {
       isDeleted: false,
-      gatewayTransactionId: { $type: 'string' },
+      gatewayTransactionId: { $type: "string" },
     },
-    name: 'uniq_payment_gateway_transaction_active',
+    name: "uniq_payment_gateway_transaction_active",
   },
 );
 paymentSchema.index(
@@ -358,9 +372,9 @@ paymentSchema.index(
     sparse: true,
     partialFilterExpression: {
       isDeleted: false,
-      purchaseTokenHash: { $type: 'string' },
+      purchaseTokenHash: { $type: "string" },
     },
-    name: 'uniq_payment_platform_purchase_token_hash_active',
+    name: "uniq_payment_platform_purchase_token_hash_active",
   },
 );
 paymentSchema.index(
@@ -370,9 +384,9 @@ paymentSchema.index(
     sparse: true,
     partialFilterExpression: {
       isDeleted: false,
-      orderId: { $type: 'string' },
+      orderId: { $type: "string" },
     },
-    name: 'uniq_payment_platform_order_id_active',
+    name: "uniq_payment_platform_order_id_active",
   },
 );
 paymentSchema.index(
@@ -382,12 +396,13 @@ paymentSchema.index(
     sparse: true,
     partialFilterExpression: {
       isDeleted: false,
-      googlePurchaseId: { $type: 'string' },
+      googlePurchaseId: { $type: "string" },
     },
-    name: 'uniq_payment_platform_google_purchase_id_active',
+    name: "uniq_payment_platform_google_purchase_id_active",
   },
 );
 
-const PaymentModel = mongoose.models.Payment || mongoose.model('Payment', paymentSchema);
+const PaymentModel =
+  mongoose.models.Payment || mongoose.model("Payment", paymentSchema);
 
 export default PaymentModel;

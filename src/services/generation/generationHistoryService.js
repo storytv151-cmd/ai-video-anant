@@ -1,14 +1,15 @@
-import ProviderModel from '../../models/Provider.js';
-import VideoGenerationJobModel from '../../models/VideoGenerationJob.js';
-import VideoTemplateModel from '../../models/VideoTemplate.js';
-import { buildPaginationMeta } from '../../utils/pagination.js';
-import { buildGenerationJobDto } from '../../utils/generation.dto.js';
-import generationAnalyticsService from './generationAnalyticsService.js';
+import ProviderModel from "../../models/Provider.js";
+import VideoGenerationJobModel from "../../models/VideoGenerationJob.js";
+import VideoTemplateModel from "../../models/VideoTemplate.js";
+import { buildPaginationMeta } from "../../utils/pagination.js";
+import { buildGenerationJobDto } from "../../utils/generation.dto.js";
+import generationAnalyticsService from "./generationAnalyticsService.js";
 
-const safeLower = (value) => (value ? String(value).trim().toLowerCase() : null);
+const safeLower = (value) =>
+  value ? String(value).trim().toLowerCase() : null;
 
 const parseNumber = (value) => {
-  if (value === undefined || value === null || value === '') {
+  if (value === undefined || value === null || value === "") {
     return null;
   }
   const n = Number(value);
@@ -23,14 +24,18 @@ const buildFilter = async ({ userId, query }) => {
   }
 
   if (query.provider) {
-    const provider = await ProviderModel.findOne({ slug: safeLower(query.provider) }).lean();
+    const provider = await ProviderModel.findOne({
+      slug: safeLower(query.provider),
+    }).lean();
     if (provider) {
       filter.provider = provider._id;
     }
   }
 
   if (query.template) {
-    const template = await VideoTemplateModel.findOne({ slug: safeLower(query.template) }).lean();
+    const template = await VideoTemplateModel.findOne({
+      slug: safeLower(query.template),
+    }).lean();
     if (template) {
       filter.template = template._id;
     }
@@ -38,7 +43,10 @@ const buildFilter = async ({ userId, query }) => {
 
   const from = query.from ? new Date(query.from) : null;
   const to = query.to ? new Date(query.to) : null;
-  if ((from && !Number.isNaN(from.getTime())) || (to && !Number.isNaN(to.getTime()))) {
+  if (
+    (from && !Number.isNaN(from.getTime())) ||
+    (to && !Number.isNaN(to.getTime()))
+  ) {
     filter.createdAt = {};
     if (from && !Number.isNaN(from.getTime())) {
       filter.createdAt.$gte = from;
@@ -53,9 +61,9 @@ const buildFilter = async ({ userId, query }) => {
 
 const buildSort = (sortKey) => {
   switch (safeLower(sortKey)) {
-    case 'oldest':
+    case "oldest":
       return { createdAt: 1 };
-    case 'status':
+    case "status":
       return { status: 1, createdAt: -1 };
     default:
       return { createdAt: -1 };
@@ -100,7 +108,12 @@ const listHistory = async ({ userId, query = {} }) => {
   };
 
   const [items, total, analytics] = await Promise.all([
-    VideoGenerationJobModel.find(filter).sort(sort).skip(skip).limit(limit).select(projection).lean(),
+    VideoGenerationJobModel.find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .select(projection)
+      .lean(),
     VideoGenerationJobModel.countDocuments(filter),
     generationAnalyticsService.summarizeByFilter({ filter }),
   ]);

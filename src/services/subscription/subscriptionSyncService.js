@@ -1,18 +1,22 @@
-import mongoose from 'mongoose';
-import UserModel from '../../models/User.js';
-import ApiError from '../../utils/ApiError.js';
-import paymentAuditService from '../payment/paymentAuditService.js';
-import paymentSettingsService from '../payment/paymentSettingsService.js';
-import googleSubscriptionVerificationService from './googleSubscriptionVerificationService.js';
-import subscriptionFraudService from './subscriptionFraudService.js';
-import subscriptionRenewalService from './subscriptionRenewalService.js';
-import subscriptionService from './subscriptionService.js';
+import mongoose from "mongoose";
+import UserModel from "../../models/User.js";
+import ApiError from "../../utils/ApiError.js";
+import paymentAuditService from "../payment/paymentAuditService.js";
+import paymentSettingsService from "../payment/paymentSettingsService.js";
+import googleSubscriptionVerificationService from "./googleSubscriptionVerificationService.js";
+import subscriptionFraudService from "./subscriptionFraudService.js";
+import subscriptionRenewalService from "./subscriptionRenewalService.js";
+import subscriptionService from "./subscriptionService.js";
 
 const buildRequestMeta = ({ request = null, payload = {} } = {}) => ({
   requestId: request?.requestId || null,
   ipAddress: request?.ip || null,
-  userAgent: request?.headers?.['user-agent'] || null,
-  clientDeviceId: payload.clientDeviceId || payload.deviceId || request?.headers?.['x-device-id'] || null,
+  userAgent: request?.headers?.["user-agent"] || null,
+  clientDeviceId:
+    payload.clientDeviceId ||
+    payload.deviceId ||
+    request?.headers?.["x-device-id"] ||
+    null,
   deviceInfo: payload.device || payload.deviceInfo || null,
 });
 
@@ -28,7 +32,11 @@ const buildNextVerificationAt = (settings) => {
   return new Date(Date.now() + minutes * 60 * 1000);
 };
 
-const shouldSynchronizeNow = ({ subscription = {}, settings, force = false } = {}) => {
+const shouldSynchronizeNow = ({
+  subscription = {},
+  settings,
+  force = false,
+} = {}) => {
   if (force) {
     return true;
   }
@@ -38,7 +46,7 @@ const shouldSynchronizeNow = ({ subscription = {}, settings, force = false } = {
   if (!settings?.googlePlay?.subscriptionSyncOnAppOpen) {
     return false;
   }
-  if (!subscription?.platform || subscription.platform !== 'google_play') {
+  if (!subscription?.platform || subscription.platform !== "google_play") {
     return false;
   }
   if (!subscription?.purchaseToken) {
@@ -47,54 +55,74 @@ const shouldSynchronizeNow = ({ subscription = {}, settings, force = false } = {
   if (!subscription?.lastVerifiedAt) {
     return true;
   }
-  const nextVerificationAt = subscription.nextVerificationAt ? new Date(subscription.nextVerificationAt) : null;
+  const nextVerificationAt = subscription.nextVerificationAt
+    ? new Date(subscription.nextVerificationAt)
+    : null;
   if (nextVerificationAt && !Number.isNaN(nextVerificationAt.getTime())) {
     return nextVerificationAt.getTime() <= Date.now();
   }
   const intervalMs = resolveVerificationIntervalMinutes(settings) * 60 * 1000;
-  return new Date(subscription.lastVerifiedAt).getTime() + intervalMs <= Date.now();
+  return (
+    new Date(subscription.lastVerifiedAt).getTime() + intervalMs <= Date.now()
+  );
 };
 
-const resolveUserByVerification = async ({ purchaseTokenHash, externalAccountId, externalProfileId } = {}) => {
+const resolveUserByVerification = async ({
+  purchaseTokenHash,
+  externalAccountId,
+  externalProfileId,
+} = {}) => {
   let user = null;
 
   if (purchaseTokenHash) {
     user = await UserModel.findOne({
       $or: [
-        { 'subscription.purchaseTokenHash': purchaseTokenHash },
-        { 'subscription.linkedPurchaseTokenHash': purchaseTokenHash },
+        { "subscription.purchaseTokenHash": purchaseTokenHash },
+        { "subscription.linkedPurchaseTokenHash": purchaseTokenHash },
       ],
     });
   }
 
   if (!user && externalAccountId) {
     user =
-      (mongoose.isValidObjectId(externalAccountId) ? await UserModel.findById(externalAccountId) : null) ||
-      (await UserModel.findOne({ 'subscription.externalAccountId': externalAccountId }));
+      (mongoose.isValidObjectId(externalAccountId)
+        ? await UserModel.findById(externalAccountId)
+        : null) ||
+      (await UserModel.findOne({
+        "subscription.externalAccountId": externalAccountId,
+      }));
   }
 
   if (!user && externalProfileId) {
     user = await UserModel.findOne({
-      $or: [{ 'subscription.externalProfileId': externalProfileId }, { googleId: externalProfileId }],
+      $or: [
+        { "subscription.externalProfileId": externalProfileId },
+        { googleId: externalProfileId },
+      ],
     });
   }
 
   return user;
 };
 
-const applyPostVerificationActions = async ({ settings, verification } = {}) => {
+const applyPostVerificationActions = async ({
+  settings,
+  verification,
+} = {}) => {
   if (
     settings?.googlePlay?.requireAcknowledgement &&
     !verification.isAcknowledged &&
     verification.productId
   ) {
-    await googleSubscriptionVerificationService.acknowledgeSubscriptionPurchase({
-      packageName: verification.packageName,
-      productId: verification.productId,
-      purchaseToken: verification.purchaseToken,
-    });
+    await googleSubscriptionVerificationService.acknowledgeSubscriptionPurchase(
+      {
+        packageName: verification.packageName,
+        productId: verification.productId,
+        purchaseToken: verification.purchaseToken,
+      },
+    );
     verification.isAcknowledged = true;
-    verification.acknowledgementState = 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED';
+    verification.acknowledgementState = "ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED";
   }
 };
 
@@ -103,7 +131,7 @@ const verifySubscriptionForUser = async ({
   payload = {},
   request = null,
   idempotencyKey = null,
-  syncReason = 'verify',
+  syncReason = "verify",
   notification = null,
 } = {}) => {
   const settings = await paymentSettingsService.getPaymentSettings();
@@ -111,8 +139,8 @@ const verifySubscriptionForUser = async ({
   paymentSettingsService.assertGooglePlayEnabled(settings);
 
   if (!settings.googlePlay?.allowSubscriptions) {
-    throw new ApiError(403, 'Subscriptions are disabled.', {
-      code: 'GOOGLE_PLAY_SUBSCRIPTIONS_DISABLED',
+    throw new ApiError(403, "Subscriptions are disabled.", {
+      code: "GOOGLE_PLAY_SUBSCRIPTIONS_DISABLED",
     });
   }
 
@@ -121,17 +149,23 @@ const verifySubscriptionForUser = async ({
     packageName: payload.packageName,
   });
   if (!payload.purchaseToken) {
-    throw new ApiError(400, 'purchaseToken is required.', {
-      code: 'GOOGLE_SUBSCRIPTION_PURCHASE_TOKEN_REQUIRED',
+    throw new ApiError(400, "purchaseToken is required.", {
+      code: "GOOGLE_SUBSCRIPTION_PURCHASE_TOKEN_REQUIRED",
     });
   }
 
-  const verification = await googleSubscriptionVerificationService.verifySubscriptionPurchase({
-    packageName,
-    purchaseToken: payload.purchaseToken,
-  });
-  verification.purchaseTokenHash = subscriptionFraudService.hashPurchaseToken(payload.purchaseToken);
-  verification.linkedPurchaseTokenHash = subscriptionFraudService.hashPurchaseToken(verification.linkedPurchaseToken);
+  const verification =
+    await googleSubscriptionVerificationService.verifySubscriptionPurchase({
+      packageName,
+      purchaseToken: payload.purchaseToken,
+    });
+  verification.purchaseTokenHash = subscriptionFraudService.hashPurchaseToken(
+    payload.purchaseToken,
+  );
+  verification.linkedPurchaseTokenHash =
+    subscriptionFraudService.hashPurchaseToken(
+      verification.linkedPurchaseToken,
+    );
   verification.nextVerificationAt = buildNextVerificationAt(settings);
 
   const plan = paymentSettingsService.findSubscriptionPlanByProductId({
@@ -139,8 +173,14 @@ const verifySubscriptionForUser = async ({
     productId: verification.productId,
     basePlanId: verification.basePlanId,
   });
-  subscriptionFraudService.assertPlanMatchesVerification({ plan, verification });
-  subscriptionFraudService.assertCountryAllowed({ plan, regionCode: verification.regionCode });
+  subscriptionFraudService.assertPlanMatchesVerification({
+    plan,
+    verification,
+  });
+  subscriptionFraudService.assertCountryAllowed({
+    plan,
+    regionCode: verification.regionCode,
+  });
   await subscriptionFraudService.assertOwnership({
     userId,
     purchaseTokenHash: verification.purchaseTokenHash,
@@ -149,30 +189,40 @@ const verifySubscriptionForUser = async ({
   });
 
   if (payload.productId && payload.productId !== verification.productId) {
-    throw new ApiError(400, 'Subscription product does not match Google verification response.', {
-      code: 'GOOGLE_SUBSCRIPTION_PRODUCT_MISMATCH',
-    });
+    throw new ApiError(
+      400,
+      "Subscription product does not match Google verification response.",
+      {
+        code: "GOOGLE_SUBSCRIPTION_PRODUCT_MISMATCH",
+      },
+    );
   }
 
   await applyPostVerificationActions({ settings, verification });
 
   const requestMeta = buildRequestMeta({ request, payload });
-  const synchronized = await subscriptionRenewalService.synchronizeVerifiedSubscription({
-    userId,
-    plan,
-    verification,
-    requestMeta,
-    request,
-    idempotencyKey,
-    syncReason,
-    notification,
-  });
+  const synchronized =
+    await subscriptionRenewalService.synchronizeVerifiedSubscription({
+      userId,
+      plan,
+      verification,
+      requestMeta,
+      request,
+      idempotencyKey,
+      syncReason,
+      notification,
+    });
 
   await paymentAuditService
     .logEvent({
-      action: notification ? 'SUBSCRIPTION_GOOGLE_SYNCED' : 'SUBSCRIPTION_GOOGLE_VERIFIED',
+      action: notification
+        ? "SUBSCRIPTION_GOOGLE_SYNCED"
+        : "SUBSCRIPTION_GOOGLE_VERIFIED",
       actorUserId: userId,
-      targetId: synchronized.payment?._id || synchronized.currentSubscription?.payment || null,
+      targetId:
+        synchronized.payment?._id ||
+        synchronized.currentSubscription?.payment ||
+        null,
       request,
       metadata: {
         plan: plan.code,
@@ -207,15 +257,19 @@ const synchronizeStoredSubscription = async ({
   userId,
   force = false,
   request = null,
-  reason = 'app_open',
+  reason = "app_open",
 } = {}) => {
   const settings = await paymentSettingsService.getPaymentSettings();
-  const user = await UserModel.findById(userId).select({ subscription: 1 }).lean();
+  const user = await UserModel.findById(userId)
+    .select({ subscription: 1 })
+    .lean();
   if (!user) {
-    throw new ApiError(404, 'User not found.', { code: 'USER_NOT_FOUND' });
+    throw new ApiError(404, "User not found.", { code: "USER_NOT_FOUND" });
   }
 
-  if (!shouldSynchronizeNow({ subscription: user.subscription, settings, force })) {
+  if (
+    !shouldSynchronizeNow({ subscription: user.subscription, settings, force })
+  ) {
     return subscriptionService.buildCurrentSubscriptionResponse({ userId });
   }
 
@@ -239,12 +293,16 @@ const synchronizeStoredSubscription = async ({
   return result.subscription;
 };
 
-const getVerifiedStatus = async ({ userId, request = null, force = false } = {}) => {
+const getVerifiedStatus = async ({
+  userId,
+  request = null,
+  force = false,
+} = {}) => {
   const data = await synchronizeStoredSubscription({
     userId,
     force,
     request,
-    reason: force ? 'status_force' : 'status_check',
+    reason: force ? "status_force" : "status_check",
   });
   return data;
 };
@@ -255,19 +313,24 @@ const synchronizeByPurchaseToken = async ({
   request = null,
   notification = null,
   forceUserId = null,
-  syncReason = 'rtdn',
+  syncReason = "rtdn",
 } = {}) => {
   const settings = await paymentSettingsService.getPaymentSettings();
   const resolvedPackageName = subscriptionFraudService.assertPackageAllowed({
     settings,
     packageName,
   });
-  const verification = await googleSubscriptionVerificationService.verifySubscriptionPurchase({
-    packageName: resolvedPackageName,
-    purchaseToken,
-  });
-  verification.purchaseTokenHash = subscriptionFraudService.hashPurchaseToken(purchaseToken);
-  verification.linkedPurchaseTokenHash = subscriptionFraudService.hashPurchaseToken(verification.linkedPurchaseToken);
+  const verification =
+    await googleSubscriptionVerificationService.verifySubscriptionPurchase({
+      packageName: resolvedPackageName,
+      purchaseToken,
+    });
+  verification.purchaseTokenHash =
+    subscriptionFraudService.hashPurchaseToken(purchaseToken);
+  verification.linkedPurchaseTokenHash =
+    subscriptionFraudService.hashPurchaseToken(
+      verification.linkedPurchaseToken,
+    );
   verification.nextVerificationAt = buildNextVerificationAt(settings);
 
   const user =
@@ -279,13 +342,17 @@ const synchronizeByPurchaseToken = async ({
     }));
 
   if (!user) {
-    throw new ApiError(404, 'Unable to map Google subscription to a local user.', {
-      code: 'SUBSCRIPTION_USER_MAPPING_NOT_FOUND',
-      details: {
-        productId: verification.productId,
-        purchaseTokenHash: verification.purchaseTokenHash,
+    throw new ApiError(
+      404,
+      "Unable to map Google subscription to a local user.",
+      {
+        code: "SUBSCRIPTION_USER_MAPPING_NOT_FOUND",
+        details: {
+          productId: verification.productId,
+          purchaseTokenHash: verification.purchaseTokenHash,
+        },
       },
-    });
+    );
   }
 
   const plan = paymentSettingsService.findSubscriptionPlanByProductId({
@@ -293,8 +360,14 @@ const synchronizeByPurchaseToken = async ({
     productId: verification.productId,
     basePlanId: verification.basePlanId,
   });
-  subscriptionFraudService.assertPlanMatchesVerification({ plan, verification });
-  subscriptionFraudService.assertCountryAllowed({ plan, regionCode: verification.regionCode });
+  subscriptionFraudService.assertPlanMatchesVerification({
+    plan,
+    verification,
+  });
+  subscriptionFraudService.assertCountryAllowed({
+    plan,
+    regionCode: verification.regionCode,
+  });
   await subscriptionFraudService.assertOwnership({
     userId: user._id,
     purchaseTokenHash: verification.purchaseTokenHash,
@@ -304,16 +377,18 @@ const synchronizeByPurchaseToken = async ({
   await applyPostVerificationActions({ settings, verification });
 
   const requestMeta = buildRequestMeta({ request, payload: {} });
-  const synchronized = await subscriptionRenewalService.synchronizeVerifiedSubscription({
-    userId: user._id,
-    plan,
-    verification,
-    requestMeta,
-    request,
-    idempotencyKey: request?.idempotencyKey || notification?.notificationId || null,
-    syncReason,
-    notification,
-  });
+  const synchronized =
+    await subscriptionRenewalService.synchronizeVerifiedSubscription({
+      userId: user._id,
+      plan,
+      verification,
+      requestMeta,
+      request,
+      idempotencyKey:
+        request?.idempotencyKey || notification?.notificationId || null,
+      syncReason,
+      notification,
+    });
 
   return {
     userId: user._id,

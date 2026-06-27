@@ -1,16 +1,24 @@
-import ApiError from '../../utils/ApiError.js';
-import environment from '../../config/environment.js';
-import digitalOceanSpaces from './digitalOceanSpaces.js';
+import ApiError from "../../utils/ApiError.js";
+import environment from "../../config/environment.js";
+import digitalOceanSpaces from "./digitalOceanSpaces.js";
 
 const requireBucket = () => {
   const bucket = environment.integrations.digitalOceanSpaces.bucket;
   if (!bucket) {
-    throw new ApiError(500, 'Storage is not configured.', { code: 'STORAGE_NOT_CONFIGURED' });
+    throw new ApiError(500, "Storage is not configured.", {
+      code: "STORAGE_NOT_CONFIGURED",
+    });
   }
   return bucket;
 };
 
-const uploadBuffer = async ({ storageKey, buffer, mimeType, metadata = {}, cacheControl = null } = {}) => {
+const uploadBuffer = async ({
+  storageKey,
+  buffer,
+  mimeType,
+  metadata = {},
+  cacheControl = null,
+} = {}) => {
   const bucket = requireBucket();
   const res = await digitalOceanSpaces.uploadFile({
     bucket,
@@ -31,25 +39,49 @@ const deleteByKey = async ({ storageKey } = {}) => {
 
 const copy = async ({ sourceKey, destinationKey } = {}) => {
   const bucket = requireBucket();
-  const res = await digitalOceanSpaces.copyFile({ bucket, sourceKey, destinationKey });
+  const res = await digitalOceanSpaces.copyFile({
+    bucket,
+    sourceKey,
+    destinationKey,
+  });
   return { bucket: res.bucket, storageKey: res.key, publicUrl: res.publicUrl };
 };
 
 const move = async ({ sourceKey, destinationKey } = {}) => {
   const bucket = requireBucket();
-  const res = await digitalOceanSpaces.moveFile({ bucket, sourceKey, destinationKey });
+  const res = await digitalOceanSpaces.moveFile({
+    bucket,
+    sourceKey,
+    destinationKey,
+  });
   return { bucket: res.bucket, storageKey: res.key, publicUrl: res.publicUrl };
 };
 
-const generateSignedUploadUrl = async ({ storageKey, mimeType, expiresInSeconds = 900 } = {}) => {
+const generateSignedUploadUrl = async ({
+  storageKey,
+  mimeType,
+  expiresInSeconds = 900,
+} = {}) => {
   const bucket = requireBucket();
-  const signed = await digitalOceanSpaces.generateSignedUploadUrl({ bucket, key: storageKey, contentType: mimeType, expiresInSeconds });
+  const signed = await digitalOceanSpaces.generateSignedUploadUrl({
+    bucket,
+    key: storageKey,
+    contentType: mimeType,
+    expiresInSeconds,
+  });
   return { uploadUrl: signed.url, uploadUrlExpiresAt: signed.expiresAt };
 };
 
-const generateSignedDownloadUrl = async ({ storageKey, expiresInSeconds = 900 } = {}) => {
+const generateSignedDownloadUrl = async ({
+  storageKey,
+  expiresInSeconds = 900,
+} = {}) => {
   const bucket = requireBucket();
-  const signed = await digitalOceanSpaces.generateSignedDownloadUrl({ bucket, key: storageKey, expiresInSeconds });
+  const signed = await digitalOceanSpaces.generateSignedDownloadUrl({
+    bucket,
+    key: storageKey,
+    expiresInSeconds,
+  });
   return { downloadUrl: signed.url, downloadUrlExpiresAt: signed.expiresAt };
 };
 
@@ -69,4 +101,3 @@ const storageService = Object.freeze({
 });
 
 export default storageService;
-

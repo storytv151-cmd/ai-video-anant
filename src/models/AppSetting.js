@@ -11,19 +11,20 @@
  * Settings are grouped by a `section` to avoid a single giant configuration
  * document. The application can load settings by section and merge at runtime.
  */
-import mongoose from 'mongoose';
-import validator from 'validator';
-import { createBaseSchema } from './base.schema.js';
+import mongoose from "mongoose";
+import validator from "validator";
+import { createBaseSchema } from "./base.schema.js";
 
 const { Schema } = mongoose;
 
-const isValidUrlOrEmpty = (value) => !value || validator.isURL(value, { require_protocol: true });
+const isValidUrlOrEmpty = (value) =>
+  !value || validator.isURL(value, { require_protocol: true });
 
 const providerSettingSchema = new Schema(
   {
     provider: {
       type: Schema.Types.ObjectId,
-      ref: 'Provider',
+      ref: "Provider",
       default: null,
     },
     enabled: { type: Boolean, default: true },
@@ -59,7 +60,7 @@ const creditPackageSchema = new Schema(
       trim: true,
       uppercase: true,
       maxlength: 10,
-      default: 'USD',
+      default: "USD",
     },
     enabled: { type: Boolean, default: true },
     externalId: {
@@ -76,8 +77,8 @@ const creditPackageSchema = new Schema(
     },
     productType: {
       type: String,
-      enum: ['inapp', 'subs'],
-      default: 'inapp',
+      enum: ["inapp", "subs"],
+      default: "inapp",
     },
     offerToken: {
       type: String,
@@ -133,8 +134,8 @@ const subscriptionPlanSchema = new Schema(
     },
     billingCycle: {
       type: String,
-      enum: ['monthly', 'quarterly', 'yearly', 'custom'],
-      default: 'monthly',
+      enum: ["monthly", "quarterly", "yearly", "custom"],
+      default: "monthly",
     },
     durationDays: { type: Number, default: 30, min: 1 },
     price: { type: Number, default: 0, min: 0 },
@@ -143,7 +144,7 @@ const subscriptionPlanSchema = new Schema(
       trim: true,
       uppercase: true,
       maxlength: 10,
-      default: 'USD',
+      default: "USD",
     },
     enabled: { type: Boolean, default: true },
     isDefault: { type: Boolean, default: false },
@@ -206,8 +207,8 @@ const futureProviderSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ['planned', 'testing', 'disabled', 'enabled'],
-      default: 'planned',
+      enum: ["planned", "testing", "disabled", "enabled"],
+      default: "planned",
     },
     metadata: {
       type: Map,
@@ -220,10 +221,22 @@ const futureProviderSchema = new Schema(
 
 const adminPermissionSchema = new Schema(
   {
-    code: { type: String, trim: true, lowercase: true, maxlength: 150, required: true },
+    code: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 150,
+      required: true,
+    },
     label: { type: String, trim: true, maxlength: 160, default: null },
     description: { type: String, trim: true, maxlength: 1000, default: null },
-    group: { type: String, trim: true, lowercase: true, maxlength: 80, default: null },
+    group: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 80,
+      default: null,
+    },
     enabled: { type: Boolean, default: true },
     metadata: {
       type: Map,
@@ -236,7 +249,13 @@ const adminPermissionSchema = new Schema(
 
 const adminRoleSchema = new Schema(
   {
-    code: { type: String, trim: true, lowercase: true, maxlength: 120, required: true },
+    code: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 120,
+      required: true,
+    },
     label: { type: String, trim: true, maxlength: 160, required: true },
     description: { type: String, trim: true, maxlength: 1000, default: null },
     enabled: { type: Boolean, default: true },
@@ -256,31 +275,31 @@ const appSettingSchema = createBaseSchema({
   section: {
     type: String,
     enum: [
-      'GENERAL',
-      'FEATURES',
-      'PAYMENTS',
-      'PROVIDERS',
-      'STORAGE',
-      'SECURITY',
-      'REWARDS',
-      'LIMITS',
-      'ANDROID',
-      'IOS',
-      'API',
-      'NOTIFICATIONS',
-      'SYSTEM',
-      'ADMIN',
+      "GENERAL",
+      "FEATURES",
+      "PAYMENTS",
+      "PROVIDERS",
+      "STORAGE",
+      "SECURITY",
+      "REWARDS",
+      "LIMITS",
+      "ANDROID",
+      "IOS",
+      "API",
+      "NOTIFICATIONS",
+      "SYSTEM",
+      "ADMIN",
     ],
-    default: 'GENERAL',
+    default: "GENERAL",
     index: true,
   },
   key: {
     type: String,
-    required: [true, 'Settings key is required.'],
+    required: [true, "Settings key is required."],
     trim: true,
     lowercase: true,
     maxlength: 100,
-    default: 'global',
+    default: "global",
   },
   welcomeBonus: {
     enabled: { type: Boolean, default: true },
@@ -307,7 +326,12 @@ const appSettingSchema = createBaseSchema({
   payments: {
     enabled: { type: Boolean, default: false },
     supportedGateways: { type: [String], default: [] },
-    defaultCurrency: { type: String, trim: true, uppercase: true, default: 'USD' },
+    defaultCurrency: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      default: "USD",
+    },
     minimumAmount: { type: Number, default: 0, min: 0 },
     taxPercentage: { type: Number, default: 0, min: 0 },
     googlePlay: {
@@ -320,7 +344,11 @@ const appSettingSchema = createBaseSchema({
       allowSubscriptions: { type: Boolean, default: true },
       requireAcknowledgement: { type: Boolean, default: true },
       consumeOneTimePurchases: { type: Boolean, default: true },
-      subscriptionVerificationIntervalMinutes: { type: Number, default: 180, min: 1 },
+      subscriptionVerificationIntervalMinutes: {
+        type: Number,
+        default: 180,
+        min: 1,
+      },
       subscriptionSyncEnabled: { type: Boolean, default: true },
       subscriptionSyncOnAppOpen: { type: Boolean, default: true },
       renewalRetryCount: { type: Number, default: 3, min: 0 },
@@ -389,14 +417,32 @@ const appSettingSchema = createBaseSchema({
   },
   membershipSettings: {
     enabled: { type: Boolean, default: true },
-    freePlanCode: { type: String, trim: true, lowercase: true, default: 'free' },
+    freePlanCode: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      default: "free",
+    },
     gracePeriodDays: { type: Number, default: 3, min: 0 },
     allowTrials: { type: Boolean, default: false },
     allowPlanPause: { type: Boolean, default: false },
     allowGiftSubscription: { type: Boolean, default: false },
     supportedStatuses: {
       type: [String],
-      default: ['inactive', 'active', 'trial', 'grace_period', 'paused', 'expired', 'cancelled', 'on_hold', 'revoked', 'pending', 'renewed', 'past_due'],
+      default: [
+        "inactive",
+        "active",
+        "trial",
+        "grace_period",
+        "paused",
+        "expired",
+        "cancelled",
+        "on_hold",
+        "revoked",
+        "pending",
+        "renewed",
+        "past_due",
+      ],
     },
     featureCatalog: {
       type: [String],
@@ -404,7 +450,7 @@ const appSettingSchema = createBaseSchema({
     },
     futurePlans: {
       type: [String],
-      default: ['creator', 'family', 'enterprise'],
+      default: ["creator", "family", "enterprise"],
     },
     metadata: {
       type: Map,
@@ -455,17 +501,17 @@ const appSettingSchema = createBaseSchema({
     futureScopes: {
       type: [String],
       default: [
-        'multi_admin',
-        'organizations',
-        'teams',
-        'regional_admins',
-        'white_label',
-        'multi_tenant',
-        'support_tickets',
-        'internal_notes',
-        'approval_workflow',
-        'bulk_operations',
-        'csv_export',
+        "multi_admin",
+        "organizations",
+        "teams",
+        "regional_admins",
+        "white_label",
+        "multi_tenant",
+        "support_tickets",
+        "internal_notes",
+        "approval_workflow",
+        "bulk_operations",
+        "csv_export",
       ],
     },
     metadata: {
@@ -480,7 +526,7 @@ const appSettingSchema = createBaseSchema({
     default: {},
   },
   storageSettings: {
-    driver: { type: String, trim: true, default: 'digitalocean-spaces' },
+    driver: { type: String, trim: true, default: "digitalocean-spaces" },
     bucket: { type: String, trim: true, default: null },
     region: { type: String, trim: true, default: null },
     endpoint: {
@@ -489,7 +535,7 @@ const appSettingSchema = createBaseSchema({
       default: null,
       validate: {
         validator: isValidUrlOrEmpty,
-        message: 'Storage endpoint must be a valid URL.',
+        message: "Storage endpoint must be a valid URL.",
       },
     },
     cdnBaseUrl: {
@@ -498,7 +544,7 @@ const appSettingSchema = createBaseSchema({
       default: null,
       validate: {
         validator: isValidUrlOrEmpty,
-        message: 'Storage CDN URL must be a valid URL.',
+        message: "Storage CDN URL must be a valid URL.",
       },
     },
     signedUrlExpirySeconds: { type: Number, default: 0, min: 0 },
@@ -523,7 +569,7 @@ const appSettingSchema = createBaseSchema({
     default: null,
     validate: {
       validator: (value) => !value || validator.isEmail(value),
-      message: 'Support email must be a valid email address.',
+      message: "Support email must be a valid email address.",
     },
   },
   supportWhatsApp: {
@@ -538,7 +584,7 @@ const appSettingSchema = createBaseSchema({
     default: null,
     validate: {
       validator: isValidUrlOrEmpty,
-      message: 'Privacy policy URL must be valid.',
+      message: "Privacy policy URL must be valid.",
     },
   },
   termsUrl: {
@@ -547,7 +593,7 @@ const appSettingSchema = createBaseSchema({
     default: null,
     validate: {
       validator: isValidUrlOrEmpty,
-      message: 'Terms URL must be valid.',
+      message: "Terms URL must be valid.",
     },
   },
   appVersion: {
@@ -579,7 +625,7 @@ const appSettingSchema = createBaseSchema({
       default: null,
       validate: {
         validator: isValidUrlOrEmpty,
-        message: 'Dynamic banner image URL must be valid.',
+        message: "Dynamic banner image URL must be valid.",
       },
     },
     redirectUrl: {
@@ -588,7 +634,7 @@ const appSettingSchema = createBaseSchema({
       default: null,
       validate: {
         validator: isValidUrlOrEmpty,
-        message: 'Dynamic banner redirect URL must be valid.',
+        message: "Dynamic banner redirect URL must be valid.",
       },
     },
     startAt: { type: Date, default: null },
@@ -616,13 +662,19 @@ appSettingSchema.index(
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
-    name: 'uniq_app_setting_section_key_active',
+    name: "uniq_app_setting_section_key_active",
   },
 );
 appSettingSchema.index({ section: 1, createdAt: -1 });
-appSettingSchema.index({ maintenanceMode: 1, registrationEnabled: 1, videoGenerationEnabled: 1, mediaGenerationEnabled: 1 });
+appSettingSchema.index({
+  maintenanceMode: 1,
+  registrationEnabled: 1,
+  videoGenerationEnabled: 1,
+  mediaGenerationEnabled: 1,
+});
 appSettingSchema.index({ createdAt: -1 });
 
-const AppSettingModel = mongoose.models.AppSetting || mongoose.model('AppSetting', appSettingSchema);
+const AppSettingModel =
+  mongoose.models.AppSetting || mongoose.model("AppSetting", appSettingSchema);
 
 export default AppSettingModel;

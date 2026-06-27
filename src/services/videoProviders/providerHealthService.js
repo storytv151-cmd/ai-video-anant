@@ -1,5 +1,5 @@
-import ApiError from '../../utils/ApiError.js';
-import ProviderModel from '../../models/Provider.js';
+import ApiError from "../../utils/ApiError.js";
+import ProviderModel from "../../models/Provider.js";
 
 const buildProviderHealthItem = (provider) => ({
   id: provider._id,
@@ -25,23 +25,31 @@ const buildPublicProviderStatusItem = (provider) => ({
 });
 
 const getProviderBySlug = async (slug) => {
-  const provider = await ProviderModel.findOne({ slug: String(slug).toLowerCase() }).lean();
+  const provider = await ProviderModel.findOne({
+    slug: String(slug).toLowerCase(),
+  }).lean();
   if (!provider) {
-    throw new ApiError(404, 'Provider not found.', { code: 'PROVIDER_NOT_FOUND' });
+    throw new ApiError(404, "Provider not found.", {
+      code: "PROVIDER_NOT_FOUND",
+    });
   }
   return provider;
 };
 
 const assertProviderEnabled = (provider) => {
   if (!provider?.enabled) {
-    throw new ApiError(400, 'Provider is disabled.', { code: 'PROVIDER_DISABLED' });
+    throw new ApiError(400, "Provider is disabled.", {
+      code: "PROVIDER_DISABLED",
+    });
   }
 };
 
 const assertProviderHealthAllowsUse = (provider) => {
   const status = provider?.healthStatus;
-  if (status === 'offline' || status === 'maintenance') {
-    throw new ApiError(400, 'Provider is not available.', { code: 'PROVIDER_UNAVAILABLE' });
+  if (status === "offline" || status === "maintenance") {
+    throw new ApiError(400, "Provider is not available.", {
+      code: "PROVIDER_UNAVAILABLE",
+    });
   }
 };
 
@@ -74,7 +82,10 @@ const getHealthSummary = async () => {
   };
 
   for (const p of providers) {
-    if (p.healthStatus && Object.prototype.hasOwnProperty.call(summary, p.healthStatus)) {
+    if (
+      p.healthStatus &&
+      Object.prototype.hasOwnProperty.call(summary, p.healthStatus)
+    ) {
       summary[p.healthStatus] += 1;
     }
   }

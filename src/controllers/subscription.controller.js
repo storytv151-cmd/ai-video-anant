@@ -1,8 +1,8 @@
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import paymentAuditService from '../services/payment/paymentAuditService.js';
-import subscriptionRestoreService from '../services/subscription/subscriptionRestoreService.js';
-import subscriptionService from '../services/subscription/subscriptionService.js';
-import subscriptionSyncService from '../services/subscription/subscriptionSyncService.js';
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import paymentAuditService from "../services/payment/paymentAuditService.js";
+import subscriptionRestoreService from "../services/subscription/subscriptionRestoreService.js";
+import subscriptionService from "../services/subscription/subscriptionService.js";
+import subscriptionSyncService from "../services/subscription/subscriptionSyncService.js";
 
 const listSubscriptions = async (request, response) => {
   const data = await subscriptionService.listSubscriptionPlans();
@@ -10,7 +10,9 @@ const listSubscriptions = async (request, response) => {
 };
 
 const getCurrentSubscription = async (request, response) => {
-  const data = await subscriptionService.buildCurrentSubscriptionResponse({ userId: request.user.id });
+  const data = await subscriptionService.buildCurrentSubscriptionResponse({
+    userId: request.user.id,
+  });
 
   paymentAuditService
     .logSubscriptionViewed({
@@ -45,7 +47,7 @@ const verifyGoogleSubscription = async (request, response) => {
     payload: request.body,
     request,
     idempotencyKey: request.idempotencyKey || null,
-    syncReason: 'verify',
+    syncReason: "verify",
   });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
@@ -64,7 +66,10 @@ const getVerifiedSubscriptionStatus = async (request, response) => {
   const data = await subscriptionSyncService.getVerifiedStatus({
     userId: request.user.id,
     request,
-    force: String(request.query.force || '').trim().toLowerCase() === 'true',
+    force:
+      String(request.query.force || "")
+        .trim()
+        .toLowerCase() === "true",
   });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };

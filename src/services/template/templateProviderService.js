@@ -2,15 +2,16 @@
  * Template provider service.
  * Resolves provider/model mappings and estimates credits using ProviderPricing.
  */
-import ProviderPricingModel from '../../models/ProviderPricing.js';
+import ProviderPricingModel from "../../models/ProviderPricing.js";
 
-const buildPricingKey = ({ providerId, duration }) => `${String(providerId)}:${Number(duration)}`;
+const buildPricingKey = ({ providerId, duration }) =>
+  `${String(providerId)}:${Number(duration)}`;
 
 const extractId = (value) => {
   if (!value) {
     return null;
   }
-  if (typeof value === 'object') {
+  if (typeof value === "object") {
     return value._id || value.id || null;
   }
   return value;
@@ -20,7 +21,10 @@ const buildMinCreditsMap = (pricingDocs) => {
   const map = new Map();
 
   for (const doc of pricingDocs) {
-    const key = buildPricingKey({ providerId: doc.provider, duration: doc.duration });
+    const key = buildPricingKey({
+      providerId: doc.provider,
+      duration: doc.duration,
+    });
     const current = map.get(key);
     if (current === undefined || doc.credits < current) {
       map.set(key, doc.credits);
@@ -60,7 +64,10 @@ const fetchPricingForTemplates = async ({ templates }) => {
 };
 
 const resolveCreditsRequired = ({ template, pricingMap }) => {
-  if (template.creditsOverride !== null && template.creditsOverride !== undefined) {
+  if (
+    template.creditsOverride !== null &&
+    template.creditsOverride !== undefined
+  ) {
     return template.creditsOverride;
   }
 

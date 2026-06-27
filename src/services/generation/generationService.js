@@ -1,20 +1,20 @@
-import ApiError from '../../utils/ApiError.js';
-import mongoose from 'mongoose';
-import ProviderModel from '../../models/Provider.js';
-import VideoGenerationJobModel from '../../models/VideoGenerationJob.js';
-import walletService from '../wallet/walletService.js';
-import generationHistoryService from './generationHistoryService.js';
-import generationLifecycleService from './generationLifecycleService.js';
-import generationProviderService from './generationProviderService.js';
-import generationQueueService from './generationQueueService.js';
-import generationRefundService from './generationRefundService.js';
-import generationSettlementService from './generationSettlementService.js';
-import generationStorageService from './generationStorageService.js';
-import generationStatusService from './generationStatusService.js';
-import generationValidationService from './generationValidationService.js';
-import { setRequestContextValue } from '../../utils/requestContext.js';
+import ApiError from "../../utils/ApiError.js";
+import mongoose from "mongoose";
+import ProviderModel from "../../models/Provider.js";
+import VideoGenerationJobModel from "../../models/VideoGenerationJob.js";
+import walletService from "../wallet/walletService.js";
+import generationHistoryService from "./generationHistoryService.js";
+import generationLifecycleService from "./generationLifecycleService.js";
+import generationProviderService from "./generationProviderService.js";
+import generationQueueService from "./generationQueueService.js";
+import generationRefundService from "./generationRefundService.js";
+import generationSettlementService from "./generationSettlementService.js";
+import generationStorageService from "./generationStorageService.js";
+import generationStatusService from "./generationStatusService.js";
+import generationValidationService from "./generationValidationService.js";
+import { setRequestContextValue } from "../../utils/requestContext.js";
 
-const buildJobLog = ({ level = 'info', message, context = {} }) => ({
+const buildJobLog = ({ level = "info", message, context = {} }) => ({
   level,
   message,
   timestamp: new Date(),
@@ -25,37 +25,56 @@ const getStringToggle = (featureToggles, key) => {
   if (!featureToggles) {
     return null;
   }
-  const raw = featureToggles.get ? featureToggles.get(key) : featureToggles[key];
-  if (raw === undefined || raw === null || raw === '') {
+  const raw = featureToggles.get
+    ? featureToggles.get(key)
+    : featureToggles[key];
+  if (raw === undefined || raw === null || raw === "") {
     return null;
   }
   return String(raw).trim();
 };
 
 const computeEstimatedCompletionTime = ({ estimatedTimeMs }) => {
-  if (!Number.isFinite(Number(estimatedTimeMs)) || Number(estimatedTimeMs) <= 0) {
+  if (
+    !Number.isFinite(Number(estimatedTimeMs)) ||
+    Number(estimatedTimeMs) <= 0
+  ) {
     return null;
   }
   return new Date(Date.now() + Number(estimatedTimeMs));
 };
 
-const resolveOptionalImageAssets = ({ assets, uploadLimits, storageSettings, maxCount = null, itemLabel = 'Image' }) =>
+const resolveOptionalImageAssets = ({
+  assets,
+  uploadLimits,
+  storageSettings,
+  maxCount = null,
+  itemLabel = "Image",
+}) =>
   generationStorageService.validateMediaAssets({
     assets,
     requiredCount: null,
     maxCount,
     maxSizeBytes:
-      Number.isFinite(Number(uploadLimits?.maxImageSizeMB)) && Number(uploadLimits.maxImageSizeMB) > 0
+      Number.isFinite(Number(uploadLimits?.maxImageSizeMB)) &&
+      Number(uploadLimits.maxImageSizeMB) > 0
         ? Number(uploadLimits.maxImageSizeMB) * 1024 * 1024
         : null,
-    allowedMimeTypes: Array.isArray(uploadLimits?.allowedMimeTypes) ? uploadLimits.allowedMimeTypes : [],
+    allowedMimeTypes: Array.isArray(uploadLimits?.allowedMimeTypes)
+      ? uploadLimits.allowedMimeTypes
+      : [],
     storageSettings,
     itemLabel,
   });
 
 const buildExecutionContext = ({ template, payload = {}, settings }) => {
-  const validated = generationValidationService.validateGenerationPayload({ template, payload });
-  const templateConfig = validated.templateConfig || generationValidationService.normalizeTemplateMediaConfig(template);
+  const validated = generationValidationService.validateGenerationPayload({
+    template,
+    payload,
+  });
+  const templateConfig =
+    validated.templateConfig ||
+    generationValidationService.normalizeTemplateMediaConfig(template);
 
   const inputImages = generationStorageService.validateInputImages({
     inputImages: validated.inputImages,
@@ -80,14 +99,14 @@ const buildExecutionContext = ({ template, payload = {}, settings }) => {
     uploadLimits: settings.uploadLimits,
     storageSettings: settings.storageSettings,
     maxCount: templateConfig.maximumImages || null,
-    itemLabel: 'Reference image',
+    itemLabel: "Reference image",
   });
   const maskImages = resolveOptionalImageAssets({
     assets: validated.maskImages,
     uploadLimits: settings.uploadLimits,
     storageSettings: settings.storageSettings,
     maxCount: templateConfig.maximumImages || null,
-    itemLabel: 'Mask image',
+    itemLabel: "Mask image",
   });
 
   return {
@@ -134,7 +153,7 @@ const createJob = async ({
         template: templateId,
         generationType,
         outputType,
-        status: 'pending',
+        status: "pending",
         progress: 0,
         inputImages,
         inputVideos,
@@ -145,11 +164,13 @@ const createJob = async ({
         negativePrompt,
         multipleOutputs,
         costInCredits: credits,
-        estimatedCompletionTime: computeEstimatedCompletionTime({ estimatedTimeMs }),
+        estimatedCompletionTime: computeEstimatedCompletionTime({
+          estimatedTimeMs,
+        }),
         providerProcessingTimeMs: estimatedTimeMs,
         externalResponse: external || null,
         clientRequestKey: clientRequestKey || null,
-        logs: [buildJobLog({ message: 'Job created.' })],
+        logs: [buildJobLog({ message: "Job created." })],
       },
     ],
     session ? { session } : undefined,
@@ -158,11 +179,21 @@ const createJob = async ({
   return docs[0];
 };
 
-const updateJobAfterStart = async ({ jobId, plan, result, executionContext = {} }) => {
-  const nextStatus = result?.status === 'processing' ? 'processing' : 'queued';
-  const current = await VideoGenerationJobModel.findById(jobId).select({ status: 1 }).lean();
+const updateJobAfterStart = async ({
+  jobId,
+  plan,
+  result,
+  executionContext = {},
+}) => {
+  const nextStatus = result?.status === "processing" ? "processing" : "queued";
+  const current = await VideoGenerationJobModel.findById(jobId)
+    .select({ status: 1 })
+    .lean();
   if (current?.status && current.status !== nextStatus) {
-    generationLifecycleService.assertTransitionAllowed({ from: current.status, to: nextStatus });
+    generationLifecycleService.assertTransitionAllowed({
+      from: current.status,
+      to: nextStatus,
+    });
   }
   await VideoGenerationJobModel.updateOne(
     { _id: jobId },
@@ -180,23 +211,37 @@ const updateJobAfterStart = async ({ jobId, plan, result, executionContext = {} 
           multipleOutputs: Boolean(executionContext.multipleOutputs),
         },
         status: nextStatus,
-        startedAt: nextStatus === 'processing' ? new Date() : null,
+        startedAt: nextStatus === "processing" ? new Date() : null,
       },
-      $push: { logs: buildJobLog({ message: 'Provider start requested.', context: { provider: plan.provider.slug } }) },
+      $push: {
+        logs: buildJobLog({
+          message: "Provider start requested.",
+          context: { provider: plan.provider.slug },
+        }),
+      },
     },
   );
 };
 
-const getJobOrThrow = async ({ userId, jobId }) => generationStatusService.getJobForUser({ userId, jobId });
+const getJobOrThrow = async ({ userId, jobId }) =>
+  generationStatusService.getJobForUser({ userId, jobId });
 
-const startGeneration = async ({ userId, payload, idempotencyKey: requestIdempotencyKey = null }) => {
+const startGeneration = async ({
+  userId,
+  payload,
+  idempotencyKey: requestIdempotencyKey = null,
+}) => {
   const settings = await generationValidationService.getGenerationSettings();
   generationValidationService.assertGenerationEnabled(settings);
 
-  const effectiveIdempotencyKey = requestIdempotencyKey || payload?.idempotencyKey || null;
+  const effectiveIdempotencyKey =
+    requestIdempotencyKey || payload?.idempotencyKey || null;
 
   if (effectiveIdempotencyKey) {
-    const existing = await VideoGenerationJobModel.findOne({ user: userId, clientRequestKey: effectiveIdempotencyKey }).lean();
+    const existing = await VideoGenerationJobModel.findOne({
+      user: userId,
+      clientRequestKey: effectiveIdempotencyKey,
+    }).lean();
     if (existing) {
       return {
         jobId: existing._id,
@@ -210,18 +255,27 @@ const startGeneration = async ({ userId, payload, idempotencyKey: requestIdempot
     }
   }
 
-  const template = await generationValidationService.resolveTemplateBySlug(payload.templateSlug);
+  const template = await generationValidationService.resolveTemplateBySlug(
+    payload.templateSlug,
+  );
 
   const strategy =
     payload.strategy ||
-    getStringToggle(settings.featureToggles, 'generationSelectionStrategy') ||
-    getStringToggle(settings.featureToggles, 'generation_selection_strategy') ||
-    'priority';
+    getStringToggle(settings.featureToggles, "generationSelectionStrategy") ||
+    getStringToggle(settings.featureToggles, "generation_selection_strategy") ||
+    "priority";
 
-  const executionContext = buildExecutionContext({ template, payload, settings });
+  const executionContext = buildExecutionContext({
+    template,
+    payload,
+    settings,
+  });
 
   const maxConcurrentJobs = Number(settings.apiLimits?.maxConcurrentJobs);
-  await generationValidationService.assertUserConcurrencyLimits({ userId, maxConcurrentJobs });
+  await generationValidationService.assertUserConcurrencyLimits({
+    userId,
+    maxConcurrentJobs,
+  });
 
   const wallet = await generationValidationService.resolveWallet({ userId });
 
@@ -235,11 +289,15 @@ const startGeneration = async ({ userId, payload, idempotencyKey: requestIdempot
 
   const creditsToLock = planned.credits?.finalCredits ?? null;
   if (!Number.isFinite(Number(creditsToLock)) || Number(creditsToLock) <= 0) {
-    throw new ApiError(400, 'Unable to resolve credits for this generation.', { code: 'CREDITS_UNRESOLVED' });
+    throw new ApiError(400, "Unable to resolve credits for this generation.", {
+      code: "CREDITS_UNRESOLVED",
+    });
   }
 
   if (Number(wallet.currentCredits) < Number(creditsToLock)) {
-    throw new ApiError(402, 'Not enough credits.', { code: 'INSUFFICIENT_CREDITS' });
+    throw new ApiError(402, "Not enough credits.", {
+      code: "INSUFFICIENT_CREDITS",
+    });
   }
 
   const estimatedTimeMs = generationProviderService.computeEstimatedTimeMs({
@@ -285,18 +343,29 @@ const startGeneration = async ({ userId, payload, idempotencyKey: requestIdempot
           session,
           userId,
           jobId: job._id,
-          attempt: generationSettlementService.toAttemptNumber(job.retryCount || 0),
+          attempt: generationSettlementService.toAttemptNumber(
+            job.retryCount || 0,
+          ),
           credits: Number(creditsToLock),
           requestIdempotencyKey: effectiveIdempotencyKey,
         });
 
-        generationLifecycleService.assertTransitionAllowed({ from: 'pending', to: 'queued' });
-        const queued = await generationQueueService.enqueueJob({ jobId: job._id, session });
+        generationLifecycleService.assertTransitionAllowed({
+          from: "pending",
+          to: "queued",
+        });
+        const queued = await generationQueueService.enqueueJob({
+          jobId: job._id,
+          session,
+        });
         queuePosition = queued.queuePosition ?? null;
       });
     } catch (error) {
       if (error?.code === 11000 && effectiveIdempotencyKey) {
-        const existing = await VideoGenerationJobModel.findOne({ user: userId, clientRequestKey: effectiveIdempotencyKey }).lean();
+        const existing = await VideoGenerationJobModel.findOne({
+          user: userId,
+          clientRequestKey: effectiveIdempotencyKey,
+        }).lean();
         if (existing) {
           return {
             jobId: existing._id,
@@ -316,8 +385,8 @@ const startGeneration = async ({ userId, payload, idempotencyKey: requestIdempot
   }
 
   try {
-    setRequestContextValue('generationJobId', String(job._id));
-    setRequestContextValue('provider', planned.provider.slug);
+    setRequestContextValue("generationJobId", String(job._id));
+    setRequestContextValue("provider", planned.provider.slug);
 
     const started = await generationProviderService.startExecution({
       template,
@@ -328,30 +397,52 @@ const startGeneration = async ({ userId, payload, idempotencyKey: requestIdempot
       executionContext,
     });
 
-    setRequestContextValue('provider', started.plan?.provider?.slug || planned.provider.slug);
+    setRequestContextValue(
+      "provider",
+      started.plan?.provider?.slug || planned.provider.slug,
+    );
 
-    await updateJobAfterStart({ jobId: job._id, plan: started.plan, result: started.result, executionContext });
+    await updateJobAfterStart({
+      jobId: job._id,
+      plan: started.plan,
+      result: started.result,
+      executionContext,
+    });
 
     return {
       jobId: job._id,
       generationType: executionContext.generationType,
       outputType: executionContext.outputType,
-      status: started.result?.status === 'processing' ? 'processing' : 'queued',
+      status: started.result?.status === "processing" ? "processing" : "queued",
       estimatedTimeMs: estimatedTimeMs ?? null,
       creditsLocked: Number(creditsToLock),
       queuePosition,
     };
   } catch (error) {
     await walletService.withTransaction(async (txSession) => {
-      const current = await VideoGenerationJobModel.findById(job._id).select({ status: 1, retryCount: 1 }).lean();
-      if (current?.status && current.status !== 'failed') {
-        generationLifecycleService.assertTransitionAllowed({ from: current.status, to: 'failed' });
+      const current = await VideoGenerationJobModel.findById(job._id)
+        .select({ status: 1, retryCount: 1 })
+        .lean();
+      if (current?.status && current.status !== "failed") {
+        generationLifecycleService.assertTransitionAllowed({
+          from: current.status,
+          to: "failed",
+        });
       }
       await VideoGenerationJobModel.updateOne(
         { _id: job._id },
         {
-          $set: { status: 'failed', failureReason: error?.message || 'Generation start failed.' },
-          $push: { logs: buildJobLog({ level: 'error', message: 'Provider start failed.', context: { error: error?.message } }) },
+          $set: {
+            status: "failed",
+            failureReason: error?.message || "Generation start failed.",
+          },
+          $push: {
+            logs: buildJobLog({
+              level: "error",
+              message: "Provider start failed.",
+              context: { error: error?.message },
+            }),
+          },
         },
         { session: txSession },
       );
@@ -359,7 +450,7 @@ const startGeneration = async ({ userId, payload, idempotencyKey: requestIdempot
       await generationRefundService.unlockIfLocked({
         userId,
         job: { ...job.toObject?.() },
-        reason: 'Credits unlocked due to generation start failure.',
+        reason: "Credits unlocked due to generation start failure.",
         requestIdempotencyKey: effectiveIdempotencyKey,
         session: txSession,
       });
@@ -369,84 +460,125 @@ const startGeneration = async ({ userId, payload, idempotencyKey: requestIdempot
   }
 };
 
-const cancelJob = async ({ userId, jobId, idempotencyKey: requestIdempotencyKey = null }) => {
+const cancelJob = async ({
+  userId,
+  jobId,
+  idempotencyKey: requestIdempotencyKey = null,
+}) => {
   const settings = await generationValidationService.getGenerationSettings();
   generationValidationService.assertGenerationEnabled(settings);
 
   const job = await getJobOrThrow({ userId, jobId });
 
-  if (job.status === 'pending' || job.status === 'queued') {
+  if (job.status === "pending" || job.status === "queued") {
     await walletService.withTransaction(async (session) => {
-      generationLifecycleService.assertTransitionAllowed({ from: job.status, to: 'cancelled' });
+      generationLifecycleService.assertTransitionAllowed({
+        from: job.status,
+        to: "cancelled",
+      });
       await VideoGenerationJobModel.updateOne(
         { _id: job._id, user: userId },
-        { $set: { status: 'cancelled' }, $push: { logs: buildJobLog({ message: 'Job cancelled by user.' }) } },
+        {
+          $set: { status: "cancelled" },
+          $push: { logs: buildJobLog({ message: "Job cancelled by user." }) },
+        },
         { session },
       );
 
       await generationRefundService.unlockIfLocked({
         userId,
         job,
-        reason: 'Credits unlocked due to cancellation.',
+        reason: "Credits unlocked due to cancellation.",
         requestIdempotencyKey: requestIdempotencyKey,
         session,
       });
     });
 
-    return { jobId: job._id, status: 'cancelled', refunded: false };
+    return { jobId: job._id, status: "cancelled", refunded: false };
   }
 
-  if (job.status === 'processing') {
+  if (job.status === "processing") {
     const provider = await ProviderModel.findById(job.provider).lean();
-    const supportsCancellation = Boolean(provider?.metadata?.supportsCancellation);
+    const supportsCancellation = Boolean(
+      provider?.metadata?.supportsCancellation,
+    );
     if (!supportsCancellation) {
-      throw new ApiError(400, 'Job cannot be cancelled while processing.', { code: 'CANCEL_NOT_SUPPORTED' });
+      throw new ApiError(400, "Job cannot be cancelled while processing.", {
+        code: "CANCEL_NOT_SUPPORTED",
+      });
     }
 
     await walletService.withTransaction(async (session) => {
-      generationLifecycleService.assertTransitionAllowed({ from: job.status, to: 'cancelled' });
+      generationLifecycleService.assertTransitionAllowed({
+        from: job.status,
+        to: "cancelled",
+      });
       await VideoGenerationJobModel.updateOne(
         { _id: job._id, user: userId },
-        { $set: { status: 'cancelled' }, $push: { logs: buildJobLog({ message: 'Cancellation requested.' }) } },
+        {
+          $set: { status: "cancelled" },
+          $push: { logs: buildJobLog({ message: "Cancellation requested." }) },
+        },
         { session },
       );
 
       await generationRefundService.unlockIfLocked({
         userId,
         job,
-        reason: 'Credits unlocked due to cancellation.',
+        reason: "Credits unlocked due to cancellation.",
         requestIdempotencyKey: requestIdempotencyKey,
         session,
       });
     });
 
-    return { jobId: job._id, status: 'cancelled', refunded: false };
+    return { jobId: job._id, status: "cancelled", refunded: false };
   }
 
-  throw new ApiError(400, 'Job cannot be cancelled.', { code: 'JOB_NOT_CANCELLABLE' });
+  throw new ApiError(400, "Job cannot be cancelled.", {
+    code: "JOB_NOT_CANCELLABLE",
+  });
 };
 
-const retryJob = async ({ userId, jobId, payload = {}, idempotencyKey: requestIdempotencyKey = null }) => {
+const retryJob = async ({
+  userId,
+  jobId,
+  payload = {},
+  idempotencyKey: requestIdempotencyKey = null,
+}) => {
   const settings = await generationValidationService.getGenerationSettings();
   generationValidationService.assertGenerationEnabled(settings);
 
   const job = await getJobOrThrow({ userId, jobId });
 
-  if (job.status !== 'failed' && job.status !== 'cancelled') {
-    throw new ApiError(400, 'Only failed or cancelled jobs can be retried.', { code: 'JOB_RETRY_NOT_ALLOWED' });
+  if (job.status !== "failed" && job.status !== "cancelled") {
+    throw new ApiError(400, "Only failed or cancelled jobs can be retried.", {
+      code: "JOB_RETRY_NOT_ALLOWED",
+    });
   }
 
   const retryLimit =
-    generationValidationService.getNumericToggle(settings.featureToggles, 'generationRetryLimit') ??
-    generationValidationService.getNumericToggle(settings.featureToggles, 'generation_retry_limit');
+    generationValidationService.getNumericToggle(
+      settings.featureToggles,
+      "generationRetryLimit",
+    ) ??
+    generationValidationService.getNumericToggle(
+      settings.featureToggles,
+      "generation_retry_limit",
+    );
 
   if (retryLimit !== null && Number(job.retryCount || 0) >= retryLimit) {
-    throw new ApiError(429, 'Retry limit reached.', { code: 'GENERATION_RETRY_LIMIT' });
+    throw new ApiError(429, "Retry limit reached.", {
+      code: "GENERATION_RETRY_LIMIT",
+    });
   }
 
-  const template = job.template ? await generationProviderService.resolveTemplateById(job.template) : null;
-  if (!template || template.status !== 'active') {
-    throw new ApiError(400, 'Template is not available for retry.', { code: 'TEMPLATE_NOT_AVAILABLE' });
+  const template = job.template
+    ? await generationProviderService.resolveTemplateById(job.template)
+    : null;
+  if (!template || template.status !== "active") {
+    throw new ApiError(400, "Template is not available for retry.", {
+      code: "TEMPLATE_NOT_AVAILABLE",
+    });
   }
 
   const wallet = await generationValidationService.resolveWallet({ userId });
@@ -454,8 +586,8 @@ const retryJob = async ({ userId, jobId, payload = {}, idempotencyKey: requestId
   const strategy =
     payload.strategy ||
     job.externalResponse?.strategy ||
-    getStringToggle(settings.featureToggles, 'generationSelectionStrategy') ||
-    'priority';
+    getStringToggle(settings.featureToggles, "generationSelectionStrategy") ||
+    "priority";
 
   const executionContext = buildExecutionContext({
     template,
@@ -476,19 +608,27 @@ const retryJob = async ({ userId, jobId, payload = {}, idempotencyKey: requestId
 
   const planned = await generationProviderService.planExecution({
     template,
-    providerSlug: payload.providerSlug || job.externalResponse?.providerSlug || null,
-    providerModelSlug: payload.providerModelSlug || job.externalResponse?.providerModelSlug || null,
+    providerSlug:
+      payload.providerSlug || job.externalResponse?.providerSlug || null,
+    providerModelSlug:
+      payload.providerModelSlug ||
+      job.externalResponse?.providerModelSlug ||
+      null,
     strategy,
     executionContext,
   });
 
   const creditsToLock = planned.credits?.finalCredits ?? null;
   if (!Number.isFinite(Number(creditsToLock)) || Number(creditsToLock) <= 0) {
-    throw new ApiError(400, 'Unable to resolve credits for this retry.', { code: 'CREDITS_UNRESOLVED' });
+    throw new ApiError(400, "Unable to resolve credits for this retry.", {
+      code: "CREDITS_UNRESOLVED",
+    });
   }
 
   if (Number(wallet.currentCredits) < Number(creditsToLock)) {
-    throw new ApiError(402, 'Not enough credits.', { code: 'INSUFFICIENT_CREDITS' });
+    throw new ApiError(402, "Not enough credits.", {
+      code: "INSUFFICIENT_CREDITS",
+    });
   }
 
   const session = await mongoose.startSession();
@@ -496,12 +636,15 @@ const retryJob = async ({ userId, jobId, payload = {}, idempotencyKey: requestId
   let nextRetryCount = Number(job.retryCount || 0) + 1;
   try {
     await session.withTransaction(async () => {
-      generationLifecycleService.assertTransitionAllowed({ from: job.status, to: 'pending' });
+      generationLifecycleService.assertTransitionAllowed({
+        from: job.status,
+        to: "pending",
+      });
       await VideoGenerationJobModel.updateOne(
         { _id: job._id, user: userId },
         {
           $set: {
-            status: 'pending',
+            status: "pending",
             progress: 0,
             failureReason: null,
             outputVideo: {},
@@ -522,12 +665,14 @@ const retryJob = async ({ userId, jobId, payload = {}, idempotencyKey: requestId
             },
           },
           $inc: { retryCount: 1 },
-          $push: { logs: buildJobLog({ message: 'Retry requested.' }) },
+          $push: { logs: buildJobLog({ message: "Retry requested." }) },
         },
         { session },
       );
 
-      const updated = await VideoGenerationJobModel.findById(job._id).select({ retryCount: 1 }).lean();
+      const updated = await VideoGenerationJobModel.findById(job._id)
+        .select({ retryCount: 1 })
+        .lean();
       nextRetryCount = Number(updated?.retryCount || nextRetryCount);
 
       await generationSettlementService.lockCreditsForJob({
@@ -536,11 +681,18 @@ const retryJob = async ({ userId, jobId, payload = {}, idempotencyKey: requestId
         jobId: job._id,
         attempt: generationSettlementService.toAttemptNumber(nextRetryCount),
         credits: Number(creditsToLock),
-        requestIdempotencyKey: requestIdempotencyKey || payload?.idempotencyKey || null,
+        requestIdempotencyKey:
+          requestIdempotencyKey || payload?.idempotencyKey || null,
       });
 
-      generationLifecycleService.assertTransitionAllowed({ from: 'pending', to: 'queued' });
-      const queued = await generationQueueService.enqueueJob({ jobId: job._id, session });
+      generationLifecycleService.assertTransitionAllowed({
+        from: "pending",
+        to: "queued",
+      });
+      const queued = await generationQueueService.enqueueJob({
+        jobId: job._id,
+        session,
+      });
       queuePosition = queued.queuePosition ?? null;
     });
   } finally {
@@ -548,8 +700,8 @@ const retryJob = async ({ userId, jobId, payload = {}, idempotencyKey: requestId
   }
 
   try {
-    setRequestContextValue('generationJobId', String(job._id));
-    setRequestContextValue('provider', planned.provider.slug);
+    setRequestContextValue("generationJobId", String(job._id));
+    setRequestContextValue("provider", planned.provider.slug);
 
     const started = await generationProviderService.startExecution({
       template,
@@ -560,29 +712,51 @@ const retryJob = async ({ userId, jobId, payload = {}, idempotencyKey: requestId
       executionContext,
     });
 
-    setRequestContextValue('provider', started.plan?.provider?.slug || planned.provider.slug);
+    setRequestContextValue(
+      "provider",
+      started.plan?.provider?.slug || planned.provider.slug,
+    );
 
-    await updateJobAfterStart({ jobId: job._id, plan: started.plan, result: started.result, executionContext });
+    await updateJobAfterStart({
+      jobId: job._id,
+      plan: started.plan,
+      result: started.result,
+      executionContext,
+    });
 
     return {
       jobId: job._id,
       generationType: executionContext.generationType,
       outputType: executionContext.outputType,
-      status: started.result?.status === 'processing' ? 'processing' : 'queued',
+      status: started.result?.status === "processing" ? "processing" : "queued",
       creditsLocked: Number(creditsToLock),
       queuePosition,
     };
   } catch (error) {
     await walletService.withTransaction(async (txSession) => {
-      const current = await VideoGenerationJobModel.findById(job._id).select({ status: 1 }).lean();
-      if (current?.status && current.status !== 'failed') {
-        generationLifecycleService.assertTransitionAllowed({ from: current.status, to: 'failed' });
+      const current = await VideoGenerationJobModel.findById(job._id)
+        .select({ status: 1 })
+        .lean();
+      if (current?.status && current.status !== "failed") {
+        generationLifecycleService.assertTransitionAllowed({
+          from: current.status,
+          to: "failed",
+        });
       }
       await VideoGenerationJobModel.updateOne(
         { _id: job._id, user: userId },
         {
-          $set: { status: 'failed', failureReason: error?.message || 'Retry start failed.' },
-          $push: { logs: buildJobLog({ level: 'error', message: 'Retry provider start failed.', context: { error: error?.message } }) },
+          $set: {
+            status: "failed",
+            failureReason: error?.message || "Retry start failed.",
+          },
+          $push: {
+            logs: buildJobLog({
+              level: "error",
+              message: "Retry provider start failed.",
+              context: { error: error?.message },
+            }),
+          },
         },
         { session: txSession },
       );
@@ -590,8 +764,9 @@ const retryJob = async ({ userId, jobId, payload = {}, idempotencyKey: requestId
       await generationRefundService.unlockIfLocked({
         userId,
         job: { ...job },
-        reason: 'Credits unlocked due to retry start failure.',
-        requestIdempotencyKey: requestIdempotencyKey || payload?.idempotencyKey || null,
+        reason: "Credits unlocked due to retry start failure.",
+        requestIdempotencyKey:
+          requestIdempotencyKey || payload?.idempotencyKey || null,
         session: txSession,
       });
     });
@@ -600,9 +775,11 @@ const retryJob = async ({ userId, jobId, payload = {}, idempotencyKey: requestId
   }
 };
 
-const getStatus = async ({ userId, jobId }) => generationStatusService.getStatusResponse({ userId, jobId });
+const getStatus = async ({ userId, jobId }) =>
+  generationStatusService.getStatusResponse({ userId, jobId });
 
-const getHistory = async ({ userId, query }) => generationHistoryService.listHistory({ userId, query });
+const getHistory = async ({ userId, query }) =>
+  generationHistoryService.listHistory({ userId, query });
 
 const generationService = Object.freeze({
   startGeneration,

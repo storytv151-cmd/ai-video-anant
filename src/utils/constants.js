@@ -20,17 +20,17 @@ const HTTP_STATUS = Object.freeze({
 });
 
 const DATABASE_STATE = Object.freeze({
-  DISCONNECTED: 'disconnected',
-  CONNECTED: 'connected',
-  CONNECTING: 'connecting',
-  DISCONNECTING: 'disconnecting',
+  DISCONNECTED: "disconnected",
+  CONNECTED: "connected",
+  CONNECTING: "connecting",
+  DISCONNECTING: "disconnecting",
 });
 
 const REQUEST_SOURCES = Object.freeze({
-  BODY: 'body',
-  PARAMS: 'params',
-  QUERY: 'query',
-  HEADERS: 'headers',
+  BODY: "body",
+  PARAMS: "params",
+  QUERY: "query",
+  HEADERS: "headers",
 });
 
 export { HTTP_STATUS, DATABASE_STATE, REQUEST_SOURCES };

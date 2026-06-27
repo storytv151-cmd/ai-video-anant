@@ -7,9 +7,9 @@
  * Future usage: supports profile management, account status workflows,
  * subscription lifecycle, analytics, and cross-module ownership queries.
  */
-import mongoose from 'mongoose';
-import validator from 'validator';
-import { createBaseSchema } from './base.schema.js';
+import mongoose from "mongoose";
+import validator from "validator";
+import { createBaseSchema } from "./base.schema.js";
 
 const { Schema } = mongoose;
 
@@ -55,11 +55,11 @@ const subscriptionHistoryItemSchema = new Schema(
       trim: true,
       lowercase: true,
       maxlength: 80,
-      default: 'system',
+      default: "system",
     },
     payment: {
       type: Schema.Types.ObjectId,
-      ref: 'Payment',
+      ref: "Payment",
       default: null,
     },
     happenedAt: {
@@ -80,13 +80,26 @@ const subscriptionSchema = new Schema(
     plan: {
       type: String,
       trim: true,
-      default: 'free',
+      default: "free",
       maxlength: 50,
     },
     status: {
       type: String,
-      enum: ['inactive', 'trial', 'active', 'renewed', 'past_due', 'cancelled', 'expired', 'paused', 'grace_period', 'on_hold', 'revoked', 'pending'],
-      default: 'inactive',
+      enum: [
+        "inactive",
+        "trial",
+        "active",
+        "renewed",
+        "past_due",
+        "cancelled",
+        "expired",
+        "paused",
+        "grace_period",
+        "on_hold",
+        "revoked",
+        "pending",
+      ],
+      default: "inactive",
     },
     startDate: {
       type: Date,
@@ -104,7 +117,7 @@ const subscriptionSchema = new Schema(
       type: String,
       trim: true,
       maxlength: 100,
-      default: 'system',
+      default: "system",
     },
     platform: {
       type: String,
@@ -297,7 +310,7 @@ const subscriptionSchema = new Schema(
     },
     payment: {
       type: Schema.Types.ObjectId,
-      ref: 'Payment',
+      ref: "Payment",
       default: null,
     },
     history: {
@@ -316,26 +329,26 @@ const subscriptionSchema = new Schema(
 const userSchema = createBaseSchema({
   googleId: {
     type: String,
-    required: [true, 'Google ID is required.'],
+    required: [true, "Google ID is required."],
     trim: true,
     maxlength: 255,
   },
   name: {
     type: String,
-    required: [true, 'Name is required.'],
+    required: [true, "Name is required."],
     trim: true,
     minlength: 2,
     maxlength: 120,
   },
   email: {
     type: String,
-    required: [true, 'Email is required.'],
+    required: [true, "Email is required."],
     trim: true,
     lowercase: true,
     maxlength: 255,
     validate: {
       validator: (value) => validator.isEmail(value),
-      message: 'A valid email address is required.',
+      message: "A valid email address is required.",
     },
   },
   profileImage: {
@@ -343,8 +356,9 @@ const userSchema = createBaseSchema({
     trim: true,
     default: null,
     validate: {
-      validator: (value) => !value || validator.isURL(value, { require_protocol: true }),
-      message: 'Profile image must be a valid URL.',
+      validator: (value) =>
+        !value || validator.isURL(value, { require_protocol: true }),
+      message: "Profile image must be a valid URL.",
     },
   },
   country: {
@@ -359,11 +373,11 @@ const userSchema = createBaseSchema({
     trim: true,
     lowercase: true,
     maxlength: 10,
-    default: 'en',
+    default: "en",
   },
   wallet: {
     type: Schema.Types.ObjectId,
-    ref: 'Wallet',
+    ref: "Wallet",
     default: null,
   },
   subscription: {
@@ -386,14 +400,24 @@ const userSchema = createBaseSchema({
   },
   accountStatus: {
     type: String,
-    enum: ['pending', 'active', 'suspended', 'disabled', 'blocked'],
-    default: 'active',
+    enum: ["pending", "active", "suspended", "disabled", "blocked"],
+    default: "active",
     index: true,
   },
   role: {
     type: String,
-    enum: ['user', 'admin', 'super-admin', 'support', 'moderator', 'finance', 'analytics', 'read-only', 'custom'],
-    default: 'user',
+    enum: [
+      "user",
+      "admin",
+      "super-admin",
+      "support",
+      "moderator",
+      "finance",
+      "analytics",
+      "read-only",
+      "custom",
+    ],
+    default: "user",
     index: true,
   },
   metadata: {
@@ -408,7 +432,7 @@ userSchema.index(
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
-    name: 'uniq_user_google_id_active',
+    name: "uniq_user_google_id_active",
   },
 );
 userSchema.index(
@@ -416,7 +440,7 @@ userSchema.index(
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
-    name: 'uniq_user_email_active',
+    name: "uniq_user_email_active",
   },
 );
 userSchema.index(
@@ -425,7 +449,7 @@ userSchema.index(
     unique: true,
     sparse: true,
     partialFilterExpression: { isDeleted: false, wallet: { $exists: true } },
-    name: 'uniq_user_wallet_active',
+    name: "uniq_user_wallet_active",
   },
 );
 userSchema.index({ accountStatus: 1, role: 1, createdAt: -1 });
@@ -433,14 +457,14 @@ userSchema.index({ lastLogin: -1 });
 userSchema.index({ isEmailVerified: 1, createdAt: -1 });
 userSchema.index({ lastActiveAt: -1 });
 
-userSchema.virtual('walletDocument', {
-  ref: 'Wallet',
-  localField: '_id',
-  foreignField: 'user',
+userSchema.virtual("walletDocument", {
+  ref: "Wallet",
+  localField: "_id",
+  foreignField: "user",
   justOne: true,
 });
 
-userSchema.virtual('deviceCount').get(function deviceCountVirtual() {
+userSchema.virtual("deviceCount").get(function deviceCountVirtual() {
   if (Array.isArray(this.devices)) {
     return this.devices.length;
   }
@@ -448,42 +472,42 @@ userSchema.virtual('deviceCount').get(function deviceCountVirtual() {
   return undefined;
 });
 
-userSchema.virtual('devices', {
-  ref: 'UserDevice',
-  localField: '_id',
-  foreignField: 'user',
+userSchema.virtual("devices", {
+  ref: "UserDevice",
+  localField: "_id",
+  foreignField: "user",
 });
 
-userSchema.virtual('refreshTokens', {
-  ref: 'RefreshToken',
-  localField: '_id',
-  foreignField: 'user',
+userSchema.virtual("refreshTokens", {
+  ref: "RefreshToken",
+  localField: "_id",
+  foreignField: "user",
 });
 
-userSchema.virtual('generationJobs', {
-  ref: 'VideoGenerationJob',
-  localField: '_id',
-  foreignField: 'user',
+userSchema.virtual("generationJobs", {
+  ref: "VideoGenerationJob",
+  localField: "_id",
+  foreignField: "user",
 });
 
-userSchema.virtual('payments', {
-  ref: 'Payment',
-  localField: '_id',
-  foreignField: 'user',
+userSchema.virtual("payments", {
+  ref: "Payment",
+  localField: "_id",
+  foreignField: "user",
 });
 
-userSchema.virtual('rewardHistory', {
-  ref: 'RewardHistory',
-  localField: '_id',
-  foreignField: 'user',
+userSchema.virtual("rewardHistory", {
+  ref: "RewardHistory",
+  localField: "_id",
+  foreignField: "user",
 });
 
-userSchema.virtual('notifications', {
-  ref: 'Notification',
-  localField: '_id',
-  foreignField: 'user',
+userSchema.virtual("notifications", {
+  ref: "Notification",
+  localField: "_id",
+  foreignField: "user",
 });
 
-const UserModel = mongoose.models.User || mongoose.model('User', userSchema);
+const UserModel = mongoose.models.User || mongoose.model("User", userSchema);
 
 export default UserModel;

@@ -1,8 +1,11 @@
-import ApiError from '../../utils/ApiError.js';
-import PaymentModel from '../../models/Payment.js';
-import { buildPaginationMeta } from '../../utils/pagination.js';
-import { buildPaymentDetailDto, buildPaymentDto } from '../../utils/payment.dto.js';
-import purchaseStateService from './purchaseStateService.js';
+import ApiError from "../../utils/ApiError.js";
+import PaymentModel from "../../models/Payment.js";
+import { buildPaginationMeta } from "../../utils/pagination.js";
+import {
+  buildPaymentDetailDto,
+  buildPaymentDto,
+} from "../../utils/payment.dto.js";
+import purchaseStateService from "./purchaseStateService.js";
 
 const parsePositiveInt = (value, fallback) => {
   const parsed = Number(value);
@@ -13,15 +16,17 @@ const parsePositiveInt = (value, fallback) => {
 };
 
 const normalizeSort = (value) => {
-  const normalized = String(value || '').trim().toLowerCase();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   switch (normalized) {
-    case 'createdat':
-    case 'created_at_asc':
-    case 'oldest':
+    case "createdat":
+    case "created_at_asc":
+    case "oldest":
       return { createdAt: 1 };
-    case 'amount_desc':
+    case "amount_desc":
       return { amount: -1, createdAt: -1 };
-    case 'amount_asc':
+    case "amount_asc":
       return { amount: 1, createdAt: -1 };
     default:
       return { createdAt: -1 };
@@ -58,7 +63,9 @@ const listPaymentHistory = async ({ userId, query = {} } = {}) => {
     filter.paymentType = String(query.paymentType).trim().toLowerCase();
   }
   if (query.purchaseState) {
-    filter.purchaseState = purchaseStateService.normalizePurchaseState(query.purchaseState);
+    filter.purchaseState = purchaseStateService.normalizePurchaseState(
+      query.purchaseState,
+    );
   }
   if (query.productId) {
     filter.productId = String(query.productId).trim();
@@ -70,7 +77,11 @@ const listPaymentHistory = async ({ userId, query = {} } = {}) => {
   }
 
   const [items, total] = await Promise.all([
-    PaymentModel.find(filter).sort(normalizeSort(query.sort)).skip(skip).limit(limit).lean(),
+    PaymentModel.find(filter)
+      .sort(normalizeSort(query.sort))
+      .skip(skip)
+      .limit(limit)
+      .lean(),
     PaymentModel.countDocuments(filter),
   ]);
 
@@ -81,9 +92,14 @@ const listPaymentHistory = async ({ userId, query = {} } = {}) => {
 };
 
 const getPaymentDetail = async ({ userId, paymentId } = {}) => {
-  const payment = await PaymentModel.findOne({ _id: paymentId, user: userId }).lean();
+  const payment = await PaymentModel.findOne({
+    _id: paymentId,
+    user: userId,
+  }).lean();
   if (!payment) {
-    throw new ApiError(404, 'Payment not found.', { code: 'PAYMENT_NOT_FOUND' });
+    throw new ApiError(404, "Payment not found.", {
+      code: "PAYMENT_NOT_FOUND",
+    });
   }
   return buildPaymentDetailDto(payment);
 };

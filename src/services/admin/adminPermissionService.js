@@ -1,10 +1,10 @@
-import AppSettingModel from '../../models/AppSetting.js';
-import ApiError from '../../utils/ApiError.js';
+import AppSettingModel from "../../models/AppSetting.js";
+import ApiError from "../../utils/ApiError.js";
 import ADMIN_PERMISSIONS, {
   ADMIN_PERMISSION_DEFINITIONS,
   DEFAULT_ADMIN_ROLE_CONFIGS,
-} from '../../constants/adminPermissions.js';
-import ROLES from '../../constants/roles.js';
+} from "../../constants/adminPermissions.js";
+import ROLES from "../../constants/roles.js";
 
 const mergeByCode = ({ defaults = [], overrides = [] } = {}) => {
   const map = new Map();
@@ -24,7 +24,9 @@ const mergeByCode = ({ defaults = [], overrides = [] } = {}) => {
     map.set(item.code, {
       ...existing,
       ...item,
-      inherits: Array.isArray(item.inherits) ? item.inherits : existing.inherits || [],
+      inherits: Array.isArray(item.inherits)
+        ? item.inherits
+        : existing.inherits || [],
       permissions: Array.isArray(item.permissions)
         ? item.permissions
         : existing.permissions || [],
@@ -34,16 +36,27 @@ const mergeByCode = ({ defaults = [], overrides = [] } = {}) => {
   return Array.from(map.values());
 };
 
-const normalizePermission = (permission) => String(permission || '').trim().toLowerCase();
-const normalizeRoleCode = (roleCode) => String(roleCode || '').trim().toLowerCase();
+const normalizePermission = (permission) =>
+  String(permission || "")
+    .trim()
+    .toLowerCase();
+const normalizeRoleCode = (roleCode) =>
+  String(roleCode || "")
+    .trim()
+    .toLowerCase();
 
 const getAdminAccessConfig = async () => {
-  const setting = await AppSettingModel.findOne({ section: 'ADMIN', key: 'access' }).lean();
+  const setting = await AppSettingModel.findOne({
+    section: "ADMIN",
+    key: "access",
+  }).lean();
   const adminAccess = setting?.adminAccess || {};
 
   const permissions = mergeByCode({
     defaults: ADMIN_PERMISSION_DEFINITIONS,
-    overrides: Array.isArray(adminAccess.permissions) ? adminAccess.permissions : [],
+    overrides: Array.isArray(adminAccess.permissions)
+      ? adminAccess.permissions
+      : [],
   }).filter((item) => item.enabled !== false);
 
   const roles = mergeByCode({
@@ -54,10 +67,16 @@ const getAdminAccessConfig = async () => {
   return {
     enabled: adminAccess.enabled !== false,
     allowCustomRoles: adminAccess.allowCustomRoles !== false,
-    sensitiveActionConfirmationRequired: Boolean(adminAccess.sensitiveActionConfirmationRequired),
-    allowedIpRanges: Array.isArray(adminAccess.allowedIpRanges) ? adminAccess.allowedIpRanges : [],
+    sensitiveActionConfirmationRequired: Boolean(
+      adminAccess.sensitiveActionConfirmationRequired,
+    ),
+    allowedIpRanges: Array.isArray(adminAccess.allowedIpRanges)
+      ? adminAccess.allowedIpRanges
+      : [],
     rateLimit: adminAccess.rateLimit || { windowMs: 60000, maxRequests: 120 },
-    futureScopes: Array.isArray(adminAccess.futureScopes) ? adminAccess.futureScopes : [],
+    futureScopes: Array.isArray(adminAccess.futureScopes)
+      ? adminAccess.futureScopes
+      : [],
     permissions,
     roles,
   };
@@ -74,7 +93,11 @@ const buildRoleMap = (roles = []) => {
   return map;
 };
 
-const resolveRoleCode = ({ role = null, adminRoleCode = null, metadata = {} } = {}) => {
+const resolveRoleCode = ({
+  role = null,
+  adminRoleCode = null,
+  metadata = {},
+} = {}) => {
   const normalizedRole = normalizeRoleCode(role);
   if (normalizedRole === normalizeRoleCode(ROLES.CUSTOM)) {
     return normalizeRoleCode(adminRoleCode || metadata?.adminRoleCode || null);
@@ -82,7 +105,11 @@ const resolveRoleCode = ({ role = null, adminRoleCode = null, metadata = {} } = 
   return normalizedRole;
 };
 
-const collectPermissions = ({ roleCode, roleMap, visited = new Set() } = {}) => {
+const collectPermissions = ({
+  roleCode,
+  roleMap,
+  visited = new Set(),
+} = {}) => {
   const normalizedRoleCode = normalizeRoleCode(roleCode);
   if (!normalizedRoleCode || visited.has(normalizedRoleCode)) {
     return new Set();
@@ -95,10 +122,14 @@ const collectPermissions = ({ roleCode, roleMap, visited = new Set() } = {}) => 
   }
 
   const permissions = new Set(
-    (Array.isArray(role.permissions) ? role.permissions : []).map(normalizePermission).filter(Boolean),
+    (Array.isArray(role.permissions) ? role.permissions : [])
+      .map(normalizePermission)
+      .filter(Boolean),
   );
 
-  for (const inheritedRoleCode of Array.isArray(role.inherits) ? role.inherits : []) {
+  for (const inheritedRoleCode of Array.isArray(role.inherits)
+    ? role.inherits
+    : []) {
     const inheritedPermissions = collectPermissions({
       roleCode: inheritedRoleCode,
       roleMap,
@@ -112,7 +143,10 @@ const collectPermissions = ({ roleCode, roleMap, visited = new Set() } = {}) => 
   return permissions;
 };
 
-const resolvePermissionContext = async ({ requestUser = null, user = null } = {}) => {
+const resolvePermissionContext = async ({
+  requestUser = null,
+  user = null,
+} = {}) => {
   const subject = user || requestUser || {};
   const config = await getAdminAccessConfig();
   const roleMap = buildRoleMap(config.roles);
@@ -122,7 +156,9 @@ const resolvePermissionContext = async ({ requestUser = null, user = null } = {}
     metadata: subject.metadata || {},
   });
   const permissions = Array.from(collectPermissions({ roleCode, roleMap }));
-  const isSuperAdmin = permissions.includes('*') || roleCode === normalizeRoleCode(ROLES.SUPER_ADMIN);
+  const isSuperAdmin =
+    permissions.includes("*") ||
+    roleCode === normalizeRoleCode(ROLES.SUPER_ADMIN);
   const isAdmin =
     config.enabled &&
     Boolean(roleCode) &&
@@ -146,15 +182,15 @@ const hasPermission = ({ context, permission } = {}) => {
   }
   return (
     context.isSuperAdmin ||
-    context.permissions.includes('*') ||
+    context.permissions.includes("*") ||
     context.permissions.includes(normalizedPermission)
   );
 };
 
 const assertPermission = ({ context, permission } = {}) => {
   if (!hasPermission({ context, permission })) {
-    throw new ApiError(403, 'Admin permission denied.', {
-      code: 'ADMIN_PERMISSION_DENIED',
+    throw new ApiError(403, "Admin permission denied.", {
+      code: "ADMIN_PERMISSION_DENIED",
       details: {
         permission: normalizePermission(permission),
         role: context?.roleCode || null,

@@ -5,20 +5,20 @@
  * Future usage: supports merchandising, sorting, featured content, and
  * localized category presentation in dashboards or marketplaces.
  */
-import mongoose from 'mongoose';
-import validator from 'validator';
-import { createBaseSchema } from './base.schema.js';
+import mongoose from "mongoose";
+import validator from "validator";
+import { createBaseSchema } from "./base.schema.js";
 
 const templateCategorySchema = createBaseSchema({
   title: {
     type: String,
-    required: [true, 'Category title is required.'],
+    required: [true, "Category title is required."],
     trim: true,
     maxlength: 120,
   },
   slug: {
     type: String,
-    required: [true, 'Category slug is required.'],
+    required: [true, "Category slug is required."],
     trim: true,
     lowercase: true,
     maxlength: 140,
@@ -40,8 +40,9 @@ const templateCategorySchema = createBaseSchema({
     trim: true,
     default: null,
     validate: {
-      validator: (value) => !value || validator.isURL(value, { require_protocol: true }),
-      message: 'Banner must be a valid URL.',
+      validator: (value) =>
+        !value || validator.isURL(value, { require_protocol: true }),
+      message: "Banner must be a valid URL.",
     },
   },
   sortOrder: {
@@ -56,8 +57,8 @@ const templateCategorySchema = createBaseSchema({
   },
   status: {
     type: String,
-    enum: ['draft', 'active', 'inactive', 'archived'],
-    default: 'active',
+    enum: ["draft", "active", "inactive", "archived"],
+    default: "active",
     index: true,
   },
 });
@@ -67,20 +68,21 @@ templateCategorySchema.index(
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
-    name: 'uniq_template_category_slug_active',
+    name: "uniq_template_category_slug_active",
   },
 );
 templateCategorySchema.index({ featured: 1, status: 1, sortOrder: 1 });
 templateCategorySchema.index({ title: 1 });
 templateCategorySchema.index({ status: 1, sortOrder: 1, createdAt: -1 });
 
-templateCategorySchema.virtual('templates', {
-  ref: 'VideoTemplate',
-  localField: '_id',
-  foreignField: 'category',
+templateCategorySchema.virtual("templates", {
+  ref: "VideoTemplate",
+  localField: "_id",
+  foreignField: "category",
 });
 
 const TemplateCategoryModel =
-  mongoose.models.TemplateCategory || mongoose.model('TemplateCategory', templateCategorySchema);
+  mongoose.models.TemplateCategory ||
+  mongoose.model("TemplateCategory", templateCategorySchema);
 
 export default TemplateCategoryModel;

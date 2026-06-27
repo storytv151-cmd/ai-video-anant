@@ -6,16 +6,16 @@
  * Future usage: supports streak recovery, gamification, campaigns, and reward
  * automation.
  */
-import mongoose from 'mongoose';
-import { createBaseSchema } from './base.schema.js';
+import mongoose from "mongoose";
+import { createBaseSchema } from "./base.schema.js";
 
 const { Schema } = mongoose;
 
 const dailyCheckinSchema = createBaseSchema({
   user: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'User reference is required.'],
+    ref: "User",
+    required: [true, "User reference is required."],
     index: true,
   },
   currentStreak: {
@@ -45,12 +45,13 @@ dailyCheckinSchema.index(
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
-    name: 'uniq_daily_checkin_user_active',
+    name: "uniq_daily_checkin_user_active",
   },
 );
 dailyCheckinSchema.index({ lastCheckin: -1 });
 
 const DailyCheckinModel =
-  mongoose.models.DailyCheckin || mongoose.model('DailyCheckin', dailyCheckinSchema);
+  mongoose.models.DailyCheckin ||
+  mongoose.model("DailyCheckin", dailyCheckinSchema);
 
 export default DailyCheckinModel;

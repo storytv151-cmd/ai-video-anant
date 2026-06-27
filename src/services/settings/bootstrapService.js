@@ -20,51 +20,59 @@
  * - Add Redis caching later keyed by (section set + userId or public) and
  *   invalidated on AppSetting/provider changes.
  */
-import environment from '../../config/environment.js';
-import AppSettingModel from '../../models/AppSetting.js';
-import ProviderModel from '../../models/Provider.js';
-import ProviderModelModel from '../../models/ProviderModel.js';
-import ProviderPricingModel from '../../models/ProviderPricing.js';
-import UserModel from '../../models/User.js';
-import WalletModel from '../../models/Wallet.js';
-import membershipService from '../subscription/membershipService.js';
-import { FUTURE_MEDIA_MODULES, GENERATION_TYPES, OUTPUT_TYPES, getSupportedOutputTypes } from '../../utils/mediaGeneration.js';
-import { buildPublicProviderDto } from '../../utils/provider.dto.js';
-import { buildUserDto } from '../../utils/user.dto.js';
-import { buildWalletDto } from '../../utils/wallet.dto.js';
+import environment from "../../config/environment.js";
+import AppSettingModel from "../../models/AppSetting.js";
+import ProviderModel from "../../models/Provider.js";
+import ProviderModelModel from "../../models/ProviderModel.js";
+import ProviderPricingModel from "../../models/ProviderPricing.js";
+import UserModel from "../../models/User.js";
+import WalletModel from "../../models/Wallet.js";
+import membershipService from "../subscription/membershipService.js";
+import {
+  FUTURE_MEDIA_MODULES,
+  GENERATION_TYPES,
+  OUTPUT_TYPES,
+  getSupportedOutputTypes,
+} from "../../utils/mediaGeneration.js";
+import { buildPublicProviderDto } from "../../utils/provider.dto.js";
+import { buildUserDto } from "../../utils/user.dto.js";
+import { buildWalletDto } from "../../utils/wallet.dto.js";
 
 const normalizeSettingDoc = (doc) => doc || null;
 
 const indexSettings = (docs) => {
   const map = new Map();
   for (const doc of docs) {
-    const section = doc.section || 'GENERAL';
-    const key = doc.key || 'global';
+    const section = doc.section || "GENERAL";
+    const key = doc.key || "global";
     map.set(`${section}:${key}`, doc);
   }
   return map;
 };
 
-const getSetting = (map, section, key = 'global') => normalizeSettingDoc(map.get(`${section}:${key}`));
+const getSetting = (map, section, key = "global") =>
+  normalizeSettingDoc(map.get(`${section}:${key}`));
 
-const pick = (value, fallback = null) => (value === undefined ? fallback : value);
+const pick = (value, fallback = null) =>
+  value === undefined ? fallback : value;
 
 const buildPublicBootstrap = async () => {
   const settingsDocs = await AppSettingModel.find({}).lean();
   const settingsIndex = indexSettings(settingsDocs);
 
-  const system = getSetting(settingsIndex, 'SYSTEM') || getSetting(settingsIndex, 'GENERAL');
-  const features = getSetting(settingsIndex, 'FEATURES') || system;
-  const rewards = getSetting(settingsIndex, 'REWARDS') || system;
-  const payments = getSetting(settingsIndex, 'PAYMENTS') || system;
-  const _providersConfig = getSetting(settingsIndex, 'PROVIDERS') || system;
-  const storage = getSetting(settingsIndex, 'STORAGE') || system;
-  const limits = getSetting(settingsIndex, 'LIMITS') || system;
-  const android = getSetting(settingsIndex, 'ANDROID') || system;
-  const ios = getSetting(settingsIndex, 'IOS') || system;
-  const api = getSetting(settingsIndex, 'API') || system;
-  const notifications = getSetting(settingsIndex, 'NOTIFICATIONS') || system;
-  const membership = getSetting(settingsIndex, 'PAYMENTS') || system;
+  const system =
+    getSetting(settingsIndex, "SYSTEM") || getSetting(settingsIndex, "GENERAL");
+  const features = getSetting(settingsIndex, "FEATURES") || system;
+  const rewards = getSetting(settingsIndex, "REWARDS") || system;
+  const payments = getSetting(settingsIndex, "PAYMENTS") || system;
+  const _providersConfig = getSetting(settingsIndex, "PROVIDERS") || system;
+  const storage = getSetting(settingsIndex, "STORAGE") || system;
+  const limits = getSetting(settingsIndex, "LIMITS") || system;
+  const android = getSetting(settingsIndex, "ANDROID") || system;
+  const ios = getSetting(settingsIndex, "IOS") || system;
+  const api = getSetting(settingsIndex, "API") || system;
+  const notifications = getSetting(settingsIndex, "NOTIFICATIONS") || system;
+  const membership = getSetting(settingsIndex, "PAYMENTS") || system;
   const membershipConfig = await membershipService.getMembershipConfig();
 
   const [providers, providerModels, providerPricing] = await Promise.all([
@@ -240,7 +248,10 @@ const buildPublicBootstrap = async () => {
       publicProviderPricing.push({ providerSlug, duration, minCredits });
     }
   }
-  publicProviderPricing.sort((a, b) => (a.providerSlug > b.providerSlug ? 1 : -1) || a.duration - b.duration);
+  publicProviderPricing.sort(
+    (a, b) =>
+      (a.providerSlug > b.providerSlug ? 1 : -1) || a.duration - b.duration,
+  );
 
   return {
     application: {
@@ -269,7 +280,10 @@ const buildPublicBootstrap = async () => {
       registrationEnabled: pick(system?.registrationEnabled),
       googleLoginEnabled: pick(system?.googleLoginEnabled),
       videoGenerationEnabled: pick(system?.videoGenerationEnabled),
-      mediaGenerationEnabled: pick(system?.mediaGenerationEnabled, pick(system?.videoGenerationEnabled)),
+      mediaGenerationEnabled: pick(
+        system?.mediaGenerationEnabled,
+        pick(system?.videoGenerationEnabled),
+      ),
     },
     mediaPlatform: {
       generationTypes: GENERATION_TYPES,
@@ -317,14 +331,20 @@ const buildPublicBootstrap = async () => {
       rateLimits: pick(api?.rateLimits, pick(limits?.rateLimits, {})),
       uploadLimits: pick(limits?.uploadLimits, {}),
     },
-    creditPackages: pick(payments?.creditPackages, pick(system?.creditPackages, [])),
+    creditPackages: pick(
+      payments?.creditPackages,
+      pick(system?.creditPackages, []),
+    ),
     providers: {
       list: publicProviders,
       models: publicProviderModels,
       pricing: publicProviderPricing,
     },
     notifications: {
-      settings: pick(notifications?.notifications, pick(notifications?.metadata, {})),
+      settings: pick(
+        notifications?.notifications,
+        pick(notifications?.metadata, {}),
+      ),
     },
     serverTime: {
       iso: new Date().toISOString(),

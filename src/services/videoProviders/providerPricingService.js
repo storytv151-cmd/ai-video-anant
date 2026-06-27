@@ -1,7 +1,7 @@
-import ApiError from '../../utils/ApiError.js';
-import ProviderModel from '../../models/Provider.js';
-import ProviderModelModel from '../../models/ProviderModel.js';
-import ProviderPricingModel from '../../models/ProviderPricing.js';
+import ApiError from "../../utils/ApiError.js";
+import ProviderModel from "../../models/Provider.js";
+import ProviderModelModel from "../../models/ProviderModel.js";
+import ProviderPricingModel from "../../models/ProviderPricing.js";
 
 const safeNumber = (value) => {
   const n = Number(value);
@@ -20,7 +20,11 @@ const getProviderPricingCredits = async ({ providerId, duration }) => {
   if (!providerId || !Number.isFinite(duration) || duration <= 0) {
     return null;
   }
-  const pricingDocs = await ProviderPricingModel.find({ enabled: true, provider: providerId, duration })
+  const pricingDocs = await ProviderPricingModel.find({
+    enabled: true,
+    provider: providerId,
+    duration,
+  })
     .select({ credits: 1 })
     .lean();
   if (pricingDocs.length === 0) {
@@ -35,7 +39,10 @@ const resolveCredits = async ({
   providerModelSlug = null,
   duration = null,
 } = {}) => {
-  if (template?.creditsOverride !== null && template?.creditsOverride !== undefined) {
+  if (
+    template?.creditsOverride !== null &&
+    template?.creditsOverride !== undefined
+  ) {
     return {
       templateOverride: template.creditsOverride,
       providerModelCredits: null,
@@ -46,14 +53,21 @@ const resolveCredits = async ({
   }
 
   const provider = providerSlug
-    ? await ProviderModel.findOne({ slug: String(providerSlug).toLowerCase(), enabled: true }).lean()
+    ? await ProviderModel.findOne({
+        slug: String(providerSlug).toLowerCase(),
+        enabled: true,
+      }).lean()
     : null;
   if (providerSlug && !provider) {
-    throw new ApiError(404, 'Provider not found.', { code: 'PROVIDER_NOT_FOUND' });
+    throw new ApiError(404, "Provider not found.", {
+      code: "PROVIDER_NOT_FOUND",
+    });
   }
 
   const multiplier = provider ? extractMultiplier(provider) : 1;
-  const effectiveDuration = Number.isFinite(Number(duration)) ? Number(duration) : template?.duration ?? null;
+  const effectiveDuration = Number.isFinite(Number(duration))
+    ? Number(duration)
+    : (template?.duration ?? null);
 
   let providerModelCredits = null;
   let providerModelDoc = null;
@@ -64,14 +78,19 @@ const resolveCredits = async ({
       enabled: true,
     }).lean();
     if (!providerModelDoc) {
-      throw new ApiError(404, 'Provider model not found.', { code: 'PROVIDER_MODEL_NOT_FOUND' });
+      throw new ApiError(404, "Provider model not found.", {
+        code: "PROVIDER_MODEL_NOT_FOUND",
+      });
     }
     const c = safeNumber(providerModelDoc.credits);
     providerModelCredits = c !== null && c > 0 ? c : null;
   }
 
   const providerPricingCredits = provider
-    ? await getProviderPricingCredits({ providerId: provider._id, duration: effectiveDuration })
+    ? await getProviderPricingCredits({
+        providerId: provider._id,
+        duration: effectiveDuration,
+      })
     : null;
 
   const base = providerModelCredits ?? providerPricingCredits ?? null;
@@ -89,15 +108,38 @@ const resolveCredits = async ({
 const getPricingSummary = async () => {
   const [providers, models, pricing] = await Promise.all([
     ProviderModel.find({ enabled: true })
-      .select({ _id: 1, name: 1, slug: 1, enabled: 1, priority: 1, metadata: 1 })
+      .select({
+        _id: 1,
+        name: 1,
+        slug: 1,
+        enabled: 1,
+        priority: 1,
+        metadata: 1,
+      })
       .sort({ priority: 1, createdAt: -1 })
       .lean(),
     ProviderModelModel.find({ enabled: true })
-      .select({ _id: 1, provider: 1, name: 1, slug: 1, credits: 1, estimatedTime: 1, enabled: 1, priority: 1 })
+      .select({
+        _id: 1,
+        provider: 1,
+        name: 1,
+        slug: 1,
+        credits: 1,
+        estimatedTime: 1,
+        enabled: 1,
+        priority: 1,
+      })
       .sort({ priority: 1, createdAt: -1 })
       .lean(),
     ProviderPricingModel.find({ enabled: true })
-      .select({ _id: 1, provider: 1, quality: 1, duration: 1, credits: 1, enabled: 1 })
+      .select({
+        _id: 1,
+        provider: 1,
+        quality: 1,
+        duration: 1,
+        credits: 1,
+        enabled: 1,
+      })
       .sort({ provider: 1, duration: 1, credits: 1 })
       .lean(),
   ]);
@@ -131,7 +173,9 @@ const getPricingSummary = async () => {
 
 const getPublicPricingSummary = async () => {
   const data = await getPricingSummary();
-  const providerIdToSlug = new Map(data.providers.map((p) => [String(p.id), p.slug]));
+  const providerIdToSlug = new Map(
+    data.providers.map((p) => [String(p.id), p.slug]),
+  );
 
   return {
     providers: data.providers.map((p) => ({

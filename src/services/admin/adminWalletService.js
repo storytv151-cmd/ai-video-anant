@@ -1,12 +1,15 @@
-import CreditTransactionModel from '../../models/CreditTransaction.js';
-import UserModel from '../../models/User.js';
-import WalletModel from '../../models/Wallet.js';
-import ApiError from '../../utils/ApiError.js';
-import { buildCreditTransactionDto, buildWalletDto } from '../../utils/wallet.dto.js';
-import walletHistoryService from '../wallet/walletHistoryService.js';
-import walletService from '../wallet/walletService.js';
-import adminAuditService from './adminAuditService.js';
-import adminQueryService from './adminQueryService.js';
+import CreditTransactionModel from "../../models/CreditTransaction.js";
+import UserModel from "../../models/User.js";
+import WalletModel from "../../models/Wallet.js";
+import ApiError from "../../utils/ApiError.js";
+import {
+  buildCreditTransactionDto,
+  buildWalletDto,
+} from "../../utils/wallet.dto.js";
+import walletHistoryService from "../wallet/walletHistoryService.js";
+import walletService from "../wallet/walletService.js";
+import adminAuditService from "./adminAuditService.js";
+import adminQueryService from "./adminQueryService.js";
 
 const listWallets = async ({ query = {} } = {}) => {
   const { page, limit, skip } = adminQueryService.buildPagination({
@@ -25,7 +28,11 @@ const listWallets = async ({ query = {} } = {}) => {
   if (query.search) {
     const userSearch = adminQueryService.buildRegexSearch(query.search);
     const users = await UserModel.find({
-      $or: [{ name: userSearch }, { email: userSearch }, { googleId: userSearch }],
+      $or: [
+        { name: userSearch },
+        { email: userSearch },
+        { googleId: userSearch },
+      ],
     })
       .select({ _id: 1 })
       .lean();
@@ -33,10 +40,16 @@ const listWallets = async ({ query = {} } = {}) => {
   }
 
   const [wallets, total] = await Promise.all([
-    WalletModel.find(walletFilter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    WalletModel.find(walletFilter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
     WalletModel.countDocuments(walletFilter),
   ]);
-  const users = await UserModel.find({ _id: { $in: wallets.map((item) => item.user) } })
+  const users = await UserModel.find({
+    _id: { $in: wallets.map((item) => item.user) },
+  })
     .select({ name: 1, email: 1, role: 1, accountStatus: 1 })
     .lean();
   const userMap = new Map(users.map((user) => [String(user._id), user]));
@@ -55,9 +68,11 @@ const listWallets = async ({ query = {} } = {}) => {
 const getWallet = async ({ userId } = {}) => {
   const wallet = await WalletModel.findOne({ user: userId }).lean();
   if (!wallet) {
-    throw new ApiError(404, 'Wallet not found.', { code: 'WALLET_NOT_FOUND' });
+    throw new ApiError(404, "Wallet not found.", { code: "WALLET_NOT_FOUND" });
   }
-  const user = await UserModel.findById(userId).select({ name: 1, email: 1, role: 1, accountStatus: 1 }).lean();
+  const user = await UserModel.findById(userId)
+    .select({ name: 1, email: 1, role: 1, accountStatus: 1 })
+    .lean();
   return {
     ...buildWalletDto(wallet),
     user,
@@ -107,7 +122,11 @@ const searchTransactions = async ({ query = {} } = {}) => {
   }
 
   const [items, total] = await Promise.all([
-    CreditTransactionModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    CreditTransactionModel.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
     CreditTransactionModel.countDocuments(filter),
   ]);
   return adminQueryService.buildPaginatedResponse({
@@ -118,15 +137,21 @@ const searchTransactions = async ({ query = {} } = {}) => {
   });
 };
 
-const grantCredits = async ({ userId, credits, description = null, adminUserId = null, request = null } = {}) => {
+const grantCredits = async ({
+  userId,
+  credits,
+  description = null,
+  adminUserId = null,
+  request = null,
+} = {}) => {
   const result = await walletService.addCredits({
     userId,
     credits: Number(credits),
-    type: 'admin',
-    source: 'Admin',
-    purpose: 'admin_wallet_grant',
-    description: description || 'Admin wallet grant.',
-    referenceType: 'Wallet',
+    type: "admin",
+    source: "Admin",
+    purpose: "admin_wallet_grant",
+    description: description || "Admin wallet grant.",
+    referenceType: "Wallet",
     referenceId: null,
     idempotencyKey: request?.idempotencyKey || null,
   });
@@ -134,24 +159,33 @@ const grantCredits = async ({ userId, credits, description = null, adminUserId =
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_WALLET_CREDITS_GRANTED',
-    targetType: 'User',
+    action: "ADMIN_WALLET_CREDITS_GRANTED",
+    targetType: "User",
     targetId: userId,
-    metadata: { credits: Number(credits), transactionId: result.transaction?._id || null },
+    metadata: {
+      credits: Number(credits),
+      transactionId: result.transaction?._id || null,
+    },
   });
 
   return result;
 };
 
-const deductCredits = async ({ userId, credits, description = null, adminUserId = null, request = null } = {}) => {
+const deductCredits = async ({
+  userId,
+  credits,
+  description = null,
+  adminUserId = null,
+  request = null,
+} = {}) => {
   const result = await walletService.deductCredits({
     userId,
     credits: Number(credits),
-    type: 'admin',
-    source: 'Admin',
-    purpose: 'admin_wallet_deduct',
-    description: description || 'Admin wallet deduction.',
-    referenceType: 'Wallet',
+    type: "admin",
+    source: "Admin",
+    purpose: "admin_wallet_deduct",
+    description: description || "Admin wallet deduction.",
+    referenceType: "Wallet",
     referenceId: null,
     idempotencyKey: request?.idempotencyKey || null,
   });
@@ -159,10 +193,13 @@ const deductCredits = async ({ userId, credits, description = null, adminUserId 
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_WALLET_CREDITS_DEDUCTED',
-    targetType: 'User',
+    action: "ADMIN_WALLET_CREDITS_DEDUCTED",
+    targetType: "User",
     targetId: userId,
-    metadata: { credits: Number(credits), transactionId: result.transaction?._id || null },
+    metadata: {
+      credits: Number(credits),
+      transactionId: result.transaction?._id || null,
+    },
   });
 
   return result;
@@ -180,15 +217,15 @@ const refundCredits = async ({
     userId,
     credits: Number(credits),
     originalTransactionId,
-    description: description || 'Admin refund issued.',
+    description: description || "Admin refund issued.",
     idempotencyKey: request?.idempotencyKey || null,
   });
 
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_WALLET_REFUND_ISSUED',
-    targetType: 'User',
+    action: "ADMIN_WALLET_REFUND_ISSUED",
+    targetType: "User",
     targetId: userId,
     metadata: {
       credits: Number(credits),
@@ -200,19 +237,26 @@ const refundCredits = async ({
   return result;
 };
 
-const updateWalletStatus = async ({ userId, status, adminUserId = null, request = null } = {}) => {
+const updateWalletStatus = async ({
+  userId,
+  status,
+  adminUserId = null,
+  request = null,
+} = {}) => {
   const wallet = await WalletModel.findOne({ user: userId });
   if (!wallet) {
-    throw new ApiError(404, 'Wallet not found.', { code: 'WALLET_NOT_FOUND' });
+    throw new ApiError(404, "Wallet not found.", { code: "WALLET_NOT_FOUND" });
   }
-  wallet.status = String(status || '').trim().toLowerCase();
+  wallet.status = String(status || "")
+    .trim()
+    .toLowerCase();
   await wallet.save();
 
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_WALLET_STATUS_UPDATED',
-    targetType: 'Wallet',
+    action: "ADMIN_WALLET_STATUS_UPDATED",
+    targetType: "Wallet",
     targetId: wallet._id,
     metadata: { userId, status: wallet.status },
   });

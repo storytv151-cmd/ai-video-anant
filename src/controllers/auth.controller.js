@@ -5,27 +5,32 @@
  * - Delegate all authentication business logic to services
  * - Set and clear refresh token cookies in a secure, environment-aware way
  */
-import environment from '../config/environment.js';
-import ApiError from '../utils/ApiError.js';
-import ERROR_CODES from '../constants/errorCodes.js';
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import authService from '../services/auth/authService.js';
-import auditLogService from '../services/auditLog.service.js';
+import environment from "../config/environment.js";
+import ApiError from "../utils/ApiError.js";
+import ERROR_CODES from "../constants/errorCodes.js";
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import authService from "../services/auth/authService.js";
+import auditLogService from "../services/auditLog.service.js";
+import authMapper from "../mappers/auth.mapper.js";
 
 const buildRefreshCookieOptions = ({ expiresAt }) => ({
   httpOnly: true,
   secure: environment.runtime.isProduction,
-  sameSite: environment.runtime.isProduction ? 'strict' : 'lax',
+  sameSite: environment.runtime.isProduction ? "strict" : "lax",
   path: `${environment.app.apiBasePath}/${environment.app.apiVersion}/auth`,
   expires: expiresAt,
 });
 
 const setRefreshCookie = (response, { refreshToken, refreshExpiresAt }) => {
-  response.cookie('refreshToken', refreshToken, buildRefreshCookieOptions({ expiresAt: refreshExpiresAt }));
+  response.cookie(
+    "refreshToken",
+    refreshToken,
+    buildRefreshCookieOptions({ expiresAt: refreshExpiresAt }),
+  );
 };
 
 const clearRefreshCookie = (response) => {
-  response.clearCookie('refreshToken', {
+  response.clearCookie("refreshToken", {
     path: `${environment.app.apiBasePath}/${environment.app.apiVersion}/auth`,
   });
 };
@@ -39,27 +44,36 @@ const googleLogin = async (request, response) => {
 
   auditLogService
     .createAuditLog({
-      actorType: 'user',
+      actorType: "user",
       actorUserId: data?.user?.id || null,
-      action: 'AUTH_LOGIN',
-      targetType: 'User',
+      action: "AUTH_LOGIN",
+      targetType: "User",
       targetId: data?.user?.id || null,
       ip,
-      userAgent: request.headers['user-agent'] || null,
+      userAgent: request.headers["user-agent"] || null,
       requestId: request.requestId || null,
       path: request.originalUrl,
       method: request.method,
-      metadata: { provider: 'google', device: device || null },
+      metadata: { provider: "google", device: device || null },
     })
     .catch(() => null);
 
-  response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
+  const loginResponse = authMapper.buildLoginResponse(
+    data.user,
+    data.wallet,
+    data.tokens,
+    "Login successful.",
+  );
+  response.status(200).json(loginResponse);
 };
 
 const refresh = async (request, response) => {
-  const refreshToken = request.cookies?.refreshToken || request.body?.refreshToken;
+  const refreshToken =
+    request.cookies?.refreshToken || request.body?.refreshToken;
   if (!refreshToken) {
-    throw new ApiError(401, 'Missing refresh token.', { code: 'REFRESH_TOKEN_MISSING' });
+    throw new ApiError(401, "Missing refresh token.", {
+      code: "REFRESH_TOKEN_MISSING",
+    });
   }
 
   const ip = request.ip;
@@ -68,13 +82,13 @@ const refresh = async (request, response) => {
 
   auditLogService
     .createAuditLog({
-      actorType: request.user?.id ? 'user' : 'system',
+      actorType: request.user?.id ? "user" : "system",
       actorUserId: request.user?.id || null,
-      action: 'AUTH_REFRESH',
-      targetType: 'RefreshToken',
+      action: "AUTH_REFRESH",
+      targetType: "RefreshToken",
       targetId: null,
       ip,
-      userAgent: request.headers['user-agent'] || null,
+      userAgent: request.headers["user-agent"] || null,
       requestId: request.requestId || null,
       path: request.originalUrl,
       method: request.method,
@@ -82,14 +96,24 @@ const refresh = async (request, response) => {
     })
     .catch(() => null);
 
-  response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
+  const mappedData = {
+    tokens: authMapper.mapTokens(data.tokens),
+  };
+  response
+    .status(200)
+    .json(formatSuccessResponse({ statusCode: 200, data: mappedData }));
 };
 
 const logout = async (request, response) => {
-  const refreshToken = request.cookies?.refreshToken || request.body?.refreshToken;
+  const refreshToken =
+    request.cookies?.refreshToken || request.body?.refreshToken;
   if (!refreshToken) {
     clearRefreshCookie(response);
-    response.status(200).json(formatSuccessResponse({ statusCode: 200, data: { loggedOut: true } }));
+    response
+      .status(200)
+      .json(
+        formatSuccessResponse({ statusCode: 200, data: { loggedOut: true } }),
+      );
     return;
   }
 
@@ -98,13 +122,13 @@ const logout = async (request, response) => {
 
   auditLogService
     .createAuditLog({
-      actorType: request.user?.id ? 'user' : 'system',
+      actorType: request.user?.id ? "user" : "system",
       actorUserId: request.user?.id || null,
-      action: 'AUTH_LOGOUT',
-      targetType: 'RefreshToken',
+      action: "AUTH_LOGOUT",
+      targetType: "RefreshToken",
       targetId: null,
       ip: request.ip,
-      userAgent: request.headers['user-agent'] || null,
+      userAgent: request.headers["user-agent"] || null,
       requestId: request.requestId || null,
       path: request.originalUrl,
       method: request.method,
@@ -112,7 +136,11 @@ const logout = async (request, response) => {
     })
     .catch(() => null);
 
-  response.status(200).json(formatSuccessResponse({ statusCode: 200, data: { loggedOut: true } }));
+  response
+    .status(200)
+    .json(
+      formatSuccessResponse({ statusCode: 200, data: { loggedOut: true } }),
+    );
 };
 
 const logoutAll = async (request, response) => {
@@ -125,13 +153,13 @@ const logoutAll = async (request, response) => {
 
   auditLogService
     .createAuditLog({
-      actorType: 'user',
+      actorType: "user",
       actorUserId: request.user.id,
-      action: 'AUTH_LOGOUT_ALL',
-      targetType: 'User',
+      action: "AUTH_LOGOUT_ALL",
+      targetType: "User",
       targetId: request.user.id,
       ip: request.ip,
-      userAgent: request.headers['user-agent'] || null,
+      userAgent: request.headers["user-agent"] || null,
       requestId: request.requestId || null,
       path: request.originalUrl,
       method: request.method,
@@ -139,7 +167,11 @@ const logoutAll = async (request, response) => {
     })
     .catch(() => null);
 
-  response.status(200).json(formatSuccessResponse({ statusCode: 200, data: { loggedOutAll: true } }));
+  response
+    .status(200)
+    .json(
+      formatSuccessResponse({ statusCode: 200, data: { loggedOutAll: true } }),
+    );
 };
 
 const me = async (request, response) => {
@@ -148,7 +180,13 @@ const me = async (request, response) => {
   }
 
   const data = await authService.getMe({ userId: request.user.id });
-  response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
+  const mappedData = {
+    user: authMapper.mapUser(data.user),
+    wallet: authMapper.mapWallet(data.wallet),
+  };
+  response
+    .status(200)
+    .json(formatSuccessResponse({ statusCode: 200, data: mappedData }));
 };
 
 export { googleLogin, refresh, logout, logoutAll, me };

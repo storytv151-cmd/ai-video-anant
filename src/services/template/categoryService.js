@@ -2,9 +2,12 @@
  * Category service.
  * Provides public category browsing APIs with scalable aggregation patterns.
  */
-import TemplateCategoryModel from '../../models/TemplateCategory.js';
-import VideoTemplateModel from '../../models/VideoTemplate.js';
-import { enrichTemplatesForPublicListResponse, TEMPLATE_LIST_PROJECTION } from './templateService.js';
+import TemplateCategoryModel from "../../models/TemplateCategory.js";
+import VideoTemplateModel from "../../models/VideoTemplate.js";
+import {
+  enrichTemplatesForPublicListResponse,
+  TEMPLATE_LIST_PROJECTION,
+} from "./templateService.js";
 
 const buildPublicCategoryProjection = () => ({
   _id: 1,
@@ -20,7 +23,7 @@ const buildPublicCategoryProjection = () => ({
 });
 
 const listCategories = async () => {
-  const categories = await TemplateCategoryModel.find({ status: 'active' })
+  const categories = await TemplateCategoryModel.find({ status: "active" })
     .sort({ featured: -1, sortOrder: 1, createdAt: -1 })
     .select(buildPublicCategoryProjection())
     .lean();
@@ -36,7 +39,7 @@ const listCategories = async () => {
     VideoTemplateModel.aggregate([
       {
         $match: {
-          status: 'active',
+          status: "active",
           category: { $in: categoryIds },
           $and: [
             { $or: [{ publishAt: null }, { publishAt: { $lte: now } }] },
@@ -44,10 +47,10 @@ const listCategories = async () => {
           ],
         },
       },
-      { $group: { _id: '$category', count: { $sum: 1 } } },
+      { $group: { _id: "$category", count: { $sum: 1 } } },
     ]),
     VideoTemplateModel.find({
-      status: 'active',
+      status: "active",
       featured: true,
       category: { $in: categoryIds },
       $and: [
@@ -67,7 +70,8 @@ const listCategories = async () => {
   }
 
   const featuredTemplatesByCategory = {};
-  const enrichedFeaturedTemplates = await enrichTemplatesForPublicListResponse(featuredTemplates);
+  const enrichedFeaturedTemplates =
+    await enrichTemplatesForPublicListResponse(featuredTemplates);
   for (const template of enrichedFeaturedTemplates) {
     const key = template.category?.id ? String(template.category.id) : null;
     if (!key) {
@@ -99,7 +103,10 @@ const listCategories = async () => {
 };
 
 const getCategoryBySlug = async (slug) => {
-  const category = await TemplateCategoryModel.findOne({ slug: String(slug).toLowerCase(), status: 'active' })
+  const category = await TemplateCategoryModel.findOne({
+    slug: String(slug).toLowerCase(),
+    status: "active",
+  })
     .select(buildPublicCategoryProjection())
     .lean();
 
@@ -110,7 +117,7 @@ const getCategoryBySlug = async (slug) => {
   const now = new Date();
   const [templateCount, featuredTemplates] = await Promise.all([
     VideoTemplateModel.countDocuments({
-      status: 'active',
+      status: "active",
       category: category._id,
       $and: [
         { $or: [{ publishAt: null }, { publishAt: { $lte: now } }] },
@@ -118,7 +125,7 @@ const getCategoryBySlug = async (slug) => {
       ],
     }),
     VideoTemplateModel.find({
-      status: 'active',
+      status: "active",
       category: category._id,
       featured: true,
       $and: [
@@ -132,7 +139,8 @@ const getCategoryBySlug = async (slug) => {
       .lean(),
   ]);
 
-  const enrichedFeatured = await enrichTemplatesForPublicListResponse(featuredTemplates);
+  const enrichedFeatured =
+    await enrichTemplatesForPublicListResponse(featuredTemplates);
 
   return {
     id: category._id,

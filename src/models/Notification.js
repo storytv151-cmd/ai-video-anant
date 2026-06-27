@@ -5,34 +5,43 @@
  * Future usage: supports inbox UIs, read state, delayed delivery, broadcast
  * fanout, and external notification provider orchestration.
  */
-import mongoose from 'mongoose';
-import { createBaseSchema } from './base.schema.js';
+import mongoose from "mongoose";
+import { createBaseSchema } from "./base.schema.js";
 
 const { Schema } = mongoose;
 
 const notificationSchema = createBaseSchema({
   user: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'User reference is required.'],
+    ref: "User",
+    required: [true, "User reference is required."],
     index: true,
   },
   title: {
     type: String,
-    required: [true, 'Notification title is required.'],
+    required: [true, "Notification title is required."],
     trim: true,
     maxlength: 200,
   },
   message: {
     type: String,
-    required: [true, 'Notification message is required.'],
+    required: [true, "Notification message is required."],
     trim: true,
     maxlength: 2000,
   },
   type: {
     type: String,
-    enum: ['info', 'success', 'warning', 'error', 'system', 'payment', 'generation', 'promo'],
-    default: 'info',
+    enum: [
+      "info",
+      "success",
+      "warning",
+      "error",
+      "system",
+      "payment",
+      "generation",
+      "promo",
+    ],
+    default: "info",
     index: true,
   },
   read: {
@@ -60,6 +69,8 @@ const notificationSchema = createBaseSchema({
 notificationSchema.index({ user: 1, read: 1, createdAt: -1 });
 notificationSchema.index({ type: 1, scheduledAt: 1, createdAt: -1 });
 
-const NotificationModel = mongoose.models.Notification || mongoose.model('Notification', notificationSchema);
+const NotificationModel =
+  mongoose.models.Notification ||
+  mongoose.model("Notification", notificationSchema);
 
 export default NotificationModel;

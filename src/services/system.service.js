@@ -2,9 +2,9 @@
  * System service assembles operational metadata for health and root endpoints.
  * This keeps controllers thin and centralizes non-domain service orchestration.
  */
-import os from 'node:os';
-import environment from '../config/environment.js';
-import { getDatabaseStatus } from '../config/database.js';
+import os from "node:os";
+import environment from "../config/environment.js";
+import { getDatabaseStatus } from "../config/database.js";
 
 const buildSystemSnapshot = () => ({
   app: {
@@ -26,18 +26,18 @@ const buildSystemSnapshot = () => ({
 
 const getRootInformation = async () => ({
   ...buildSystemSnapshot(),
-  message: 'AI Video Generation Platform backend foundation is running.',
+  message: "AI Video Generation Platform backend foundation is running.",
 });
 
 const getHealthInformation = async () => ({
   ...buildSystemSnapshot(),
-  status: 'ok',
+  status: "ok",
 });
 
 const getVersionedInformation = async () => ({
   ...buildSystemSnapshot(),
-  status: 'ok',
-  message: 'Versioned API entrypoint is available.',
+  status: "ok",
+  message: "Versioned API entrypoint is available.",
 });
 
 export { getRootInformation, getHealthInformation, getVersionedInformation };

@@ -1,5 +1,5 @@
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import providerAdminService from '../services/videoProviders/providerAdminService.js';
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import providerAdminService from "../services/videoProviders/providerAdminService.js";
 
 const listProvidersAdmin = async (request, response) => {
   const data = await providerAdminService.listProvidersInternal();
@@ -7,7 +7,9 @@ const listProvidersAdmin = async (request, response) => {
 };
 
 const getProviderAdmin = async (request, response) => {
-  const data = await providerAdminService.getProviderInternal(request.params.slug);
+  const data = await providerAdminService.getProviderInternal(
+    request.params.slug,
+  );
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 

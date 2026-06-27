@@ -3,9 +3,13 @@
  * Future phases can add AI ranking, personalization, collaborative filtering,
  * and history-based recommendations without changing controller contracts.
  */
-import VideoTemplateModel from '../../models/VideoTemplate.js';
+import VideoTemplateModel from "../../models/VideoTemplate.js";
 
-const getRecommendedTemplateIds = async ({ categoryId = null, excludeTemplateId = null, limit = 10 } = {}) => {
+const getRecommendedTemplateIds = async ({
+  categoryId = null,
+  excludeTemplateId = null,
+  limit = 10,
+} = {}) => {
   if (!categoryId) {
     return [];
   }
@@ -13,7 +17,7 @@ const getRecommendedTemplateIds = async ({ categoryId = null, excludeTemplateId 
   const now = new Date();
   const items = await VideoTemplateModel.find({
     category: categoryId,
-    status: 'active',
+    status: "active",
     ...(excludeTemplateId ? { _id: { $ne: excludeTemplateId } } : {}),
     $and: [
       { $or: [{ publishAt: null }, { publishAt: { $lte: now } }] },

@@ -2,23 +2,23 @@
  * Template service.
  * Implements public template browsing endpoints with pagination, filtering, and optimized projections.
  */
-import ApiError from '../../utils/ApiError.js';
-import TemplateCategoryModel from '../../models/TemplateCategory.js';
-import ProviderModel from '../../models/Provider.js';
-import ProviderModelModel from '../../models/ProviderModel.js';
-import ProviderPricingModel from '../../models/ProviderPricing.js';
-import VideoTemplateModel from '../../models/VideoTemplate.js';
-import { buildPaginationMeta } from '../../utils/pagination.js';
-import templateProviderService from './templateProviderService.js';
-import templateRecommendationService from './templateRecommendationService.js';
-import templateSearchService from './templateSearchService.js';
-import templateValidationService from './templateValidationService.js';
+import ApiError from "../../utils/ApiError.js";
+import TemplateCategoryModel from "../../models/TemplateCategory.js";
+import ProviderModel from "../../models/Provider.js";
+import ProviderModelModel from "../../models/ProviderModel.js";
+import ProviderPricingModel from "../../models/ProviderPricing.js";
+import VideoTemplateModel from "../../models/VideoTemplate.js";
+import { buildPaginationMeta } from "../../utils/pagination.js";
+import templateProviderService from "./templateProviderService.js";
+import templateRecommendationService from "./templateRecommendationService.js";
+import templateSearchService from "./templateSearchService.js";
+import templateValidationService from "./templateValidationService.js";
 import {
   deriveTemplateGenerationType,
   deriveTemplateOutputType,
   normalizeGenerationType,
   normalizeOutputType,
-} from '../../utils/mediaGeneration.js';
+} from "../../utils/mediaGeneration.js";
 
 const buildAvailabilityWindow = () => {
   const now = new Date();
@@ -72,7 +72,10 @@ const buildCategoryMap = async (categoryIds) => {
   if (categoryIds.length === 0) {
     return new Map();
   }
-  const categories = await TemplateCategoryModel.find({ _id: { $in: categoryIds }, status: 'active' })
+  const categories = await TemplateCategoryModel.find({
+    _id: { $in: categoryIds },
+    status: "active",
+  })
     .select({ title: 1, slug: 1, description: 1, icon: 1, banner: 1 })
     .lean();
   const map = new Map();
@@ -93,12 +96,20 @@ const buildProviderMap = async (providerIds) => {
   if (providerIds.length === 0) {
     return new Map();
   }
-  const providers = await ProviderModel.find({ _id: { $in: providerIds }, enabled: true })
+  const providers = await ProviderModel.find({
+    _id: { $in: providerIds },
+    enabled: true,
+  })
     .select({ name: 1, slug: 1, enabled: 1 })
     .lean();
   const map = new Map();
   for (const p of providers) {
-    map.set(String(p._id), { id: p._id, name: p.name, slug: p.slug, enabled: p.enabled });
+    map.set(String(p._id), {
+      id: p._id,
+      name: p.name,
+      slug: p.slug,
+      enabled: p.enabled,
+    });
   }
   return map;
 };
@@ -107,12 +118,21 @@ const buildProviderModelMap = async (providerModelIds) => {
   if (providerModelIds.length === 0) {
     return new Map();
   }
-  const models = await ProviderModelModel.find({ _id: { $in: providerModelIds }, enabled: true })
+  const models = await ProviderModelModel.find({
+    _id: { $in: providerModelIds },
+    enabled: true,
+  })
     .select({ name: 1, slug: 1, enabled: 1, provider: 1 })
     .lean();
   const map = new Map();
   for (const m of models) {
-    map.set(String(m._id), { id: m._id, name: m.name, slug: m.slug, enabled: m.enabled, provider: m.provider });
+    map.set(String(m._id), {
+      id: m._id,
+      name: m.name,
+      slug: m.slug,
+      enabled: m.enabled,
+      provider: m.provider,
+    });
   }
   return map;
 };
@@ -123,7 +143,9 @@ const applyCreditsToListItems = async (templates) => {
     return templates;
   }
 
-  const pricingDocs = await templateProviderService.fetchPricingForTemplates({ templates: needsCredits });
+  const pricingDocs = await templateProviderService.fetchPricingForTemplates({
+    templates: needsCredits,
+  });
   const pricingMap = templateProviderService.buildMinCreditsMap(pricingDocs);
 
   return templates.map((t) => {
@@ -132,34 +154,49 @@ const applyCreditsToListItems = async (templates) => {
     }
     return {
       ...t,
-      creditsRequired: templateProviderService.resolveCreditsRequired({ template: t, pricingMap }),
+      creditsRequired: templateProviderService.resolveCreditsRequired({
+        template: t,
+        pricingMap,
+      }),
     };
   });
 };
 
-const normalizeTemplateListItem = ({ template, categoryMap, providerMap, providerModelMap }) => {
+const normalizeTemplateListItem = ({
+  template,
+  categoryMap,
+  providerMap,
+  providerModelMap,
+}) => {
   const categoryId =
-    template.category && typeof template.category === 'object'
+    template.category && typeof template.category === "object"
       ? String(template.category._id || template.category.id)
       : template.category
         ? String(template.category)
         : null;
 
-  const supportedProviders = (template.supportedProviders || []).map((p) => {
-    const id = p && typeof p === 'object' ? p._id || p.id : p;
-    const mapped = id ? providerMap.get(String(id)) : null;
-    return mapped || (id ? { id } : null);
-  }).filter(Boolean);
+  const supportedProviders = (template.supportedProviders || [])
+    .map((p) => {
+      const id = p && typeof p === "object" ? p._id || p.id : p;
+      const mapped = id ? providerMap.get(String(id)) : null;
+      return mapped || (id ? { id } : null);
+    })
+    .filter(Boolean);
 
-  const supportedProviderModels = (template.supportedProviderModels || []).map((m) => {
-    const id = m && typeof m === 'object' ? m._id || m.id : m;
-    const mapped = id ? providerModelMap.get(String(id)) : null;
-    return mapped || (id ? { id } : null);
-  }).filter(Boolean);
+  const supportedProviderModels = (template.supportedProviderModels || [])
+    .map((m) => {
+      const id = m && typeof m === "object" ? m._id || m.id : m;
+      const mapped = id ? providerModelMap.get(String(id)) : null;
+      return mapped || (id ? { id } : null);
+    })
+    .filter(Boolean);
 
-  const generationType = normalizeGenerationType(template.generationType || deriveTemplateGenerationType(template));
+  const generationType = normalizeGenerationType(
+    template.generationType || deriveTemplateGenerationType(template),
+  );
   const supportedOutputTypes =
-    Array.isArray(template.supportedOutputTypes) && template.supportedOutputTypes.length > 0
+    Array.isArray(template.supportedOutputTypes) &&
+    template.supportedOutputTypes.length > 0
       ? template.supportedOutputTypes.map((value) => normalizeOutputType(value))
       : [normalizeOutputType(deriveTemplateOutputType(template))];
 
@@ -171,14 +208,16 @@ const normalizeTemplateListItem = ({ template, categoryMap, providerMap, provide
     thumbnail: template.thumbnail,
     previewImage: template.previewImage,
     previewVideo: template.previewVideo,
-    category: categoryId ? categoryMap.get(categoryId) || { id: categoryId } : null,
+    category: categoryId
+      ? categoryMap.get(categoryId) || { id: categoryId }
+      : null,
     tags: template.tags || [],
     premium: Boolean(template.premium),
     featured: Boolean(template.featured),
     trending: Boolean(template.trending),
     creditsRequired: template.creditsRequired ?? null,
     requiredImages: template.requiredImages ?? 0,
-    inputType: template.inputType || 'image',
+    inputType: template.inputType || "image",
     generationType,
     minimumImages: template.minimumImages ?? template.requiredImages ?? 0,
     maximumImages: template.maximumImages ?? template.requiredImages ?? 0,
@@ -210,20 +249,23 @@ const enrichTemplatesForPublicListResponse = async (templates) => {
   const providerModelIds = new Set();
 
   for (const t of templatesWithCredits) {
-    const categoryId = t.category && typeof t.category === 'object' ? t.category._id || t.category.id : t.category;
+    const categoryId =
+      t.category && typeof t.category === "object"
+        ? t.category._id || t.category.id
+        : t.category;
     if (categoryId) {
       categoryIds.add(String(categoryId));
     }
 
     for (const p of t.supportedProviders || []) {
-      const providerId = p && typeof p === 'object' ? p._id || p.id : p;
+      const providerId = p && typeof p === "object" ? p._id || p.id : p;
       if (providerId) {
         providerIds.add(String(providerId));
       }
     }
 
     for (const m of t.supportedProviderModels || []) {
-      const modelId = m && typeof m === 'object' ? m._id || m.id : m;
+      const modelId = m && typeof m === "object" ? m._id || m.id : m;
       if (modelId) {
         providerModelIds.add(String(modelId));
       }
@@ -237,33 +279,45 @@ const enrichTemplatesForPublicListResponse = async (templates) => {
   ]);
 
   return templatesWithCredits.map((t) =>
-    normalizeTemplateListItem({ template: t, categoryMap, providerMap, providerModelMap }),
+    normalizeTemplateListItem({
+      template: t,
+      categoryMap,
+      providerMap,
+      providerModelMap,
+    }),
   );
 };
 
 const buildPricingLookupStage = () => ({
   $lookup: {
     from: ProviderPricingModel.collection.name,
-    let: { providerIds: '$supportedProviders', duration: '$duration' },
+    let: { providerIds: "$supportedProviders", duration: "$duration" },
     pipeline: [
       {
         $match: {
           $expr: {
             $and: [
-              { $eq: ['$enabled', true] },
-              { $in: ['$provider', '$$providerIds'] },
-              { $eq: ['$duration', '$$duration'] },
+              { $eq: ["$enabled", true] },
+              { $in: ["$provider", "$$providerIds"] },
+              { $eq: ["$duration", "$$duration"] },
             ],
           },
         },
       },
       { $project: { credits: 1, provider: 1, duration: 1 } },
     ],
-    as: '_pricing',
+    as: "_pricing",
   },
 });
 
-const buildCreditsAggregationPipeline = ({ baseMatch, sortKey, page, limit, minCredits, maxCredits }) => {
+const buildCreditsAggregationPipeline = ({
+  baseMatch,
+  sortKey,
+  page,
+  limit,
+  minCredits,
+  maxCredits,
+}) => {
   const sort = templateSearchService.buildSort(sortKey);
   const skip = (page - 1) * limit;
 
@@ -275,20 +329,24 @@ const buildCreditsAggregationPipeline = ({ baseMatch, sortKey, page, limit, minC
     matchCredits.$lte = maxCredits;
   }
 
-  const usesCreditsSort = ['credits', 'credits_low', 'credits_high'].includes(sortKey);
-  const creditsSortAsc = usesCreditsSort && sortKey !== 'credits_high';
+  const usesCreditsSort = ["credits", "credits_low", "credits_high"].includes(
+    sortKey,
+  );
+  const creditsSortAsc = usesCreditsSort && sortKey !== "credits_high";
 
   return [
     { $match: baseMatch },
     buildPricingLookupStage(),
     {
       $addFields: {
-        _minPricingCredits: { $min: '$_pricing.credits' },
+        _minPricingCredits: { $min: "$_pricing.credits" },
       },
     },
     {
       $addFields: {
-        creditsRequired: { $ifNull: ['$creditsOverride', '$_minPricingCredits'] },
+        creditsRequired: {
+          $ifNull: ["$creditsOverride", "$_minPricingCredits"],
+        },
       },
     },
     ...(minCredits !== null || maxCredits !== null
@@ -300,8 +358,10 @@ const buildCreditsAggregationPipeline = ({ baseMatch, sortKey, page, limit, minC
             $addFields: {
               _creditsSortKey: {
                 $ifNull: [
-                  '$creditsRequired',
-                  creditsSortAsc ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER,
+                  "$creditsRequired",
+                  creditsSortAsc
+                    ? Number.MAX_SAFE_INTEGER
+                    : Number.MIN_SAFE_INTEGER,
                 ],
               },
             },
@@ -320,7 +380,7 @@ const buildCreditsAggregationPipeline = ({ baseMatch, sortKey, page, limit, minC
           { $limit: limit },
           { $project: { ...TEMPLATE_LIST_PROJECTION, creditsRequired: 1 } },
         ],
-        meta: [{ $count: 'total' }],
+        meta: [{ $count: "total" }],
       },
     },
   ];
@@ -332,11 +392,16 @@ const listTemplates = async ({ query }) => {
   const [category, provider, providerModel] = await Promise.all([
     templateValidationService.resolveCategoryBySlug(validated.categorySlug),
     templateValidationService.resolveProviderBySlug(validated.providerSlug),
-    templateValidationService.resolveProviderModelBySlug(validated.providerModelSlug),
+    templateValidationService.resolveProviderModelBySlug(
+      validated.providerModelSlug,
+    ),
   ]);
 
   const resolvedRefs = { category, provider, providerModel };
-  const filter = templateSearchService.buildTemplateFilter({ validatedQuery: validated, resolvedRefs });
+  const filter = templateSearchService.buildTemplateFilter({
+    validatedQuery: validated,
+    resolvedRefs,
+  });
   const { page, limit, skip } = templateSearchService.buildPagination({
     page: validated.page,
     limit: validated.limit,
@@ -345,7 +410,7 @@ const listTemplates = async ({ query }) => {
   const requiresCreditsAggregation =
     validated.minCredits !== null ||
     validated.maxCredits !== null ||
-    ['credits', 'credits_low', 'credits_high'].includes(validated.sort);
+    ["credits", "credits_low", "credits_high"].includes(validated.sort);
 
   if (requiresCreditsAggregation) {
     const pipeline = buildCreditsAggregationPipeline({
@@ -360,64 +425,92 @@ const listTemplates = async ({ query }) => {
     const items = result?.items || [];
     const total = result?.meta?.[0]?.total || 0;
     const normalizedItems = await enrichTemplatesForPublicListResponse(items);
-    return { items: normalizedItems, meta: buildPaginationMeta({ page, limit, total }) };
+    return {
+      items: normalizedItems,
+      meta: buildPaginationMeta({ page, limit, total }),
+    };
   }
 
   const sort = templateSearchService.buildSort(validated.sort);
   const [items, total] = await Promise.all([
-    VideoTemplateModel.find(filter).sort(sort).skip(skip).limit(limit).select(TEMPLATE_LIST_PROJECTION).lean(),
+    VideoTemplateModel.find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .select(TEMPLATE_LIST_PROJECTION)
+      .lean(),
     VideoTemplateModel.countDocuments(filter),
   ]);
 
   const normalizedItems = await enrichTemplatesForPublicListResponse(items);
 
-  return { items: normalizedItems, meta: buildPaginationMeta({ page, limit, total }) };
+  return {
+    items: normalizedItems,
+    meta: buildPaginationMeta({ page, limit, total }),
+  };
 };
 
 const getTemplateBySlug = async ({ slug }) => {
   const template = await VideoTemplateModel.findOne({
     slug: String(slug).toLowerCase(),
-    status: 'active',
+    status: "active",
     ...buildAvailabilityWindow(),
   })
-    .populate({ path: 'category', model: TemplateCategoryModel, select: { title: 1, slug: 1, description: 1, icon: 1, banner: 1 } })
-    .populate({ path: 'supportedProviders', model: ProviderModel, select: { name: 1, slug: 1, enabled: 1 } })
     .populate({
-      path: 'supportedProviderModels',
+      path: "category",
+      model: TemplateCategoryModel,
+      select: { title: 1, slug: 1, description: 1, icon: 1, banner: 1 },
+    })
+    .populate({
+      path: "supportedProviders",
+      model: ProviderModel,
+      select: { name: 1, slug: 1, enabled: 1 },
+    })
+    .populate({
+      path: "supportedProviderModels",
       model: ProviderModelModel,
       select: { name: 1, slug: 1, enabled: 1, provider: 1 },
     })
     .lean();
 
   if (!template) {
-    throw new ApiError(404, 'Template not found.', { code: 'TEMPLATE_NOT_FOUND' });
+    throw new ApiError(404, "Template not found.", {
+      code: "TEMPLATE_NOT_FOUND",
+    });
   }
 
-  const pricingDocs = await templateProviderService.fetchPricingForTemplates({ templates: [template] });
-  const pricingMap = templateProviderService.buildMinCreditsMap(pricingDocs);
-  const creditsRequired = templateProviderService.resolveCreditsRequired({ template, pricingMap });
-
-  const recommendedTemplateIds = await templateRecommendationService.getRecommendedTemplateIds({
-    categoryId: template.category?._id || template.category,
-    excludeTemplateId: template._id,
-    limit: 12,
+  const pricingDocs = await templateProviderService.fetchPricingForTemplates({
+    templates: [template],
   });
+  const pricingMap = templateProviderService.buildMinCreditsMap(pricingDocs);
+  const creditsRequired = templateProviderService.resolveCreditsRequired({
+    template,
+    pricingMap,
+  });
+
+  const recommendedTemplateIds =
+    await templateRecommendationService.getRecommendedTemplateIds({
+      categoryId: template.category?._id || template.category,
+      excludeTemplateId: template._id,
+      limit: 12,
+    });
 
   const recommendationsRaw =
     recommendedTemplateIds.length === 0
       ? []
       : await VideoTemplateModel.find({
           _id: { $in: recommendedTemplateIds },
-          status: 'active',
+          status: "active",
           ...buildAvailabilityWindow(),
         })
           .select(TEMPLATE_LIST_PROJECTION)
           .lean();
 
-  const recommendations = await enrichTemplatesForPublicListResponse(recommendationsRaw);
+  const recommendations =
+    await enrichTemplatesForPublicListResponse(recommendationsRaw);
 
   const category =
-    template.category && typeof template.category === 'object'
+    template.category && typeof template.category === "object"
       ? {
           id: template.category._id,
           title: template.category.title,
@@ -435,13 +528,15 @@ const getTemplateBySlug = async ({ slug }) => {
     enabled: p.enabled,
   }));
 
-  const supportedProviderModels = (template.supportedProviderModels || []).map((m) => ({
-    id: m._id,
-    name: m.name,
-    slug: m.slug,
-    enabled: m.enabled,
-    provider: m.provider,
-  }));
+  const supportedProviderModels = (template.supportedProviderModels || []).map(
+    (m) => ({
+      id: m._id,
+      name: m.name,
+      slug: m.slug,
+      enabled: m.enabled,
+      provider: m.provider,
+    }),
+  );
 
   return {
     id: template._id,
@@ -462,8 +557,10 @@ const getTemplateBySlug = async ({ slug }) => {
     prompt: template.prompt,
     negativePrompt: template.negativePrompt,
     requiredImages: template.requiredImages ?? 0,
-    inputType: template.inputType || 'image',
-    generationType: normalizeGenerationType(template.generationType || deriveTemplateGenerationType(template)),
+    inputType: template.inputType || "image",
+    generationType: normalizeGenerationType(
+      template.generationType || deriveTemplateGenerationType(template),
+    ),
     minimumImages: template.minimumImages ?? template.requiredImages ?? 0,
     maximumImages: template.maximumImages ?? template.requiredImages ?? 0,
     allowPrompt: Boolean(template.allowPrompt),
@@ -475,8 +572,11 @@ const getTemplateBySlug = async ({ slug }) => {
     allowMultipleOutputs: Boolean(template.allowMultipleOutputs),
     defaultAspectRatio: template.defaultAspectRatio || template.aspectRatio,
     supportedOutputTypes:
-      Array.isArray(template.supportedOutputTypes) && template.supportedOutputTypes.length > 0
-        ? template.supportedOutputTypes.map((value) => normalizeOutputType(value))
+      Array.isArray(template.supportedOutputTypes) &&
+      template.supportedOutputTypes.length > 0
+        ? template.supportedOutputTypes.map((value) =>
+            normalizeOutputType(value),
+          )
         : [normalizeOutputType(deriveTemplateOutputType(template))],
     supportedProviders,
     supportedProviderModels,
@@ -492,7 +592,11 @@ const getTemplateBySlug = async ({ slug }) => {
 
 const listTrending = async ({ limit = 20 } = {}) => {
   const safeLimit = Math.min(Number(limit) || 20, 100);
-  const items = await VideoTemplateModel.find({ trending: true, status: 'active', ...buildAvailabilityWindow() })
+  const items = await VideoTemplateModel.find({
+    trending: true,
+    status: "active",
+    ...buildAvailabilityWindow(),
+  })
     .sort({ usageCount: -1, createdAt: -1 })
     .limit(safeLimit)
     .select(TEMPLATE_LIST_PROJECTION)
@@ -503,7 +607,11 @@ const listTrending = async ({ limit = 20 } = {}) => {
 
 const listFeatured = async ({ limit = 20 } = {}) => {
   const safeLimit = Math.min(Number(limit) || 20, 100);
-  const items = await VideoTemplateModel.find({ featured: true, status: 'active', ...buildAvailabilityWindow() })
+  const items = await VideoTemplateModel.find({
+    featured: true,
+    status: "active",
+    ...buildAvailabilityWindow(),
+  })
     .sort({ sortOrder: 1, trending: -1, createdAt: -1 })
     .limit(safeLimit)
     .select(TEMPLATE_LIST_PROJECTION)
@@ -521,11 +629,16 @@ const searchTemplates = async ({ query }) => {
   const [category, provider, providerModel] = await Promise.all([
     templateValidationService.resolveCategoryBySlug(validated.categorySlug),
     templateValidationService.resolveProviderBySlug(validated.providerSlug),
-    templateValidationService.resolveProviderModelBySlug(validated.providerModelSlug),
+    templateValidationService.resolveProviderModelBySlug(
+      validated.providerModelSlug,
+    ),
   ]);
 
   const resolvedRefs = { category, provider, providerModel };
-  const filter = templateSearchService.buildTemplateFilter({ validatedQuery: validated, resolvedRefs });
+  const filter = templateSearchService.buildTemplateFilter({
+    validatedQuery: validated,
+    resolvedRefs,
+  });
 
   const { limit, skip, page } = templateSearchService.buildPagination({
     page: validated.page,
@@ -538,7 +651,7 @@ const searchTemplates = async ({ query }) => {
   if (requiresCreditsAggregation) {
     const pipeline = buildCreditsAggregationPipeline({
       baseMatch: filter,
-      sortKey: 'newest',
+      sortKey: "newest",
       page,
       limit,
       minCredits: validated.minCredits,
@@ -548,17 +661,28 @@ const searchTemplates = async ({ query }) => {
     const items = result?.items || [];
     const total = result?.meta?.[0]?.total || 0;
     const normalizedItems = await enrichTemplatesForPublicListResponse(items);
-    return { items: normalizedItems, meta: buildPaginationMeta({ page, limit, total }) };
+    return {
+      items: normalizedItems,
+      meta: buildPaginationMeta({ page, limit, total }),
+    };
   }
 
-  const sort = templateSearchService.buildSort('newest');
+  const sort = templateSearchService.buildSort("newest");
   const [items, total] = await Promise.all([
-    VideoTemplateModel.find(filter).sort(sort).skip(skip).limit(limit).select(TEMPLATE_LIST_PROJECTION).lean(),
+    VideoTemplateModel.find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .select(TEMPLATE_LIST_PROJECTION)
+      .lean(),
     VideoTemplateModel.countDocuments(filter),
   ]);
 
   const normalizedItems = await enrichTemplatesForPublicListResponse(items);
-  return { items: normalizedItems, meta: buildPaginationMeta({ page, limit, total }) };
+  return {
+    items: normalizedItems,
+    meta: buildPaginationMeta({ page, limit, total }),
+  };
 };
 
 const templateService = Object.freeze({

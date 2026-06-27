@@ -11,4 +11,3 @@ const templateCacheService = Object.freeze({
 });
 
 export default templateCacheService;
-

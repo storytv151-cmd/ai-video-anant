@@ -7,31 +7,32 @@
  * Future usage: supports template discovery, premium content, provider
  * compatibility, curated experiences, and pricing overrides.
  */
-import mongoose from 'mongoose';
-import validator from 'validator';
-import { createBaseSchema } from './base.schema.js';
-import { GENERATION_TYPES, OUTPUT_TYPES } from '../utils/mediaGeneration.js';
+import mongoose from "mongoose";
+import validator from "validator";
+import { createBaseSchema } from "./base.schema.js";
+import { GENERATION_TYPES, OUTPUT_TYPES } from "../utils/mediaGeneration.js";
 
 const { Schema } = mongoose;
 
-const metadataUrlValidator = (value) => !value || validator.isURL(value, { require_protocol: true });
+const metadataUrlValidator = (value) =>
+  !value || validator.isURL(value, { require_protocol: true });
 
 const videoTemplateSchema = createBaseSchema({
   category: {
     type: Schema.Types.ObjectId,
-    ref: 'TemplateCategory',
-    required: [true, 'Template category reference is required.'],
+    ref: "TemplateCategory",
+    required: [true, "Template category reference is required."],
     index: true,
   },
   title: {
     type: String,
-    required: [true, 'Template title is required.'],
+    required: [true, "Template title is required."],
     trim: true,
     maxlength: 160,
   },
   slug: {
     type: String,
-    required: [true, 'Template slug is required.'],
+    required: [true, "Template slug is required."],
     trim: true,
     lowercase: true,
     maxlength: 180,
@@ -48,7 +49,7 @@ const videoTemplateSchema = createBaseSchema({
     default: null,
     validate: {
       validator: metadataUrlValidator,
-      message: 'Preview image must be a valid URL.',
+      message: "Preview image must be a valid URL.",
     },
   },
   previewImages: [
@@ -57,7 +58,7 @@ const videoTemplateSchema = createBaseSchema({
       trim: true,
       validate: {
         validator: metadataUrlValidator,
-        message: 'Preview image must be a valid URL.',
+        message: "Preview image must be a valid URL.",
       },
     },
   ],
@@ -67,7 +68,7 @@ const videoTemplateSchema = createBaseSchema({
     default: null,
     validate: {
       validator: metadataUrlValidator,
-      message: 'Preview video must be a valid URL.',
+      message: "Preview video must be a valid URL.",
     },
   },
   previewVideos: [
@@ -76,7 +77,7 @@ const videoTemplateSchema = createBaseSchema({
       trim: true,
       validate: {
         validator: metadataUrlValidator,
-        message: 'Preview video must be a valid URL.',
+        message: "Preview video must be a valid URL.",
       },
     },
   ],
@@ -86,12 +87,12 @@ const videoTemplateSchema = createBaseSchema({
     default: null,
     validate: {
       validator: metadataUrlValidator,
-      message: 'Thumbnail must be a valid URL.',
+      message: "Thumbnail must be a valid URL.",
     },
   },
   prompt: {
     type: String,
-    required: [true, 'Template prompt is required.'],
+    required: [true, "Template prompt is required."],
     trim: true,
     maxlength: 10000,
   },
@@ -104,13 +105,13 @@ const videoTemplateSchema = createBaseSchema({
   supportedProviders: [
     {
       type: Schema.Types.ObjectId,
-      ref: 'Provider',
+      ref: "Provider",
     },
   ],
   supportedProviderModels: [
     {
       type: Schema.Types.ObjectId,
-      ref: 'ProviderModel',
+      ref: "ProviderModel",
     },
   ],
   requiredImages: {
@@ -121,14 +122,14 @@ const videoTemplateSchema = createBaseSchema({
   },
   inputType: {
     type: String,
-    enum: ['text', 'image', 'video', 'audio', 'mixed'],
-    default: 'image',
+    enum: ["text", "image", "video", "audio", "mixed"],
+    default: "image",
     index: true,
   },
   generationType: {
     type: String,
     enum: GENERATION_TYPES,
-    default: 'image_to_video',
+    default: "image_to_video",
     index: true,
   },
   minimumImages: {
@@ -175,7 +176,7 @@ const videoTemplateSchema = createBaseSchema({
     type: String,
     trim: true,
     maxlength: 20,
-    default: '16:9',
+    default: "16:9",
   },
   supportedOutputTypes: {
     type: [
@@ -184,18 +185,18 @@ const videoTemplateSchema = createBaseSchema({
         enum: OUTPUT_TYPES,
       },
     ],
-    default: ['video'],
+    default: ["video"],
   },
   aspectRatio: {
     type: String,
     trim: true,
     maxlength: 20,
-    default: '16:9',
+    default: "16:9",
     index: true,
   },
   duration: {
     type: Number,
-    required: [true, 'Template duration is required.'],
+    required: [true, "Template duration is required."],
     min: 1,
   },
   tags: [
@@ -258,8 +259,8 @@ const videoTemplateSchema = createBaseSchema({
   },
   status: {
     type: String,
-    enum: ['draft', 'active', 'inactive', 'archived'],
-    default: 'active',
+    enum: ["draft", "active", "inactive", "archived"],
+    default: "active",
     index: true,
   },
   metadata: {
@@ -274,7 +275,7 @@ videoTemplateSchema.index(
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
-    name: 'uniq_video_template_slug_active',
+    name: "uniq_video_template_slug_active",
   },
 );
 videoTemplateSchema.index({ category: 1, status: 1, sortOrder: 1 });
@@ -283,7 +284,12 @@ videoTemplateSchema.index({ inputType: 1, status: 1, createdAt: -1 });
 videoTemplateSchema.index({ supportedProviders: 1, status: 1 });
 videoTemplateSchema.index({ supportedProviderModels: 1, status: 1 });
 videoTemplateSchema.index({ tags: 1 });
-videoTemplateSchema.index({ trending: 1, featured: 1, premium: 1, createdAt: -1 });
+videoTemplateSchema.index({
+  trending: 1,
+  featured: 1,
+  premium: 1,
+  createdAt: -1,
+});
 videoTemplateSchema.index({ status: 1, createdAt: -1 });
 videoTemplateSchema.index({ status: 1, category: 1, createdAt: -1 });
 videoTemplateSchema.index({ status: 1, usageCount: -1, createdAt: -1 });
@@ -291,21 +297,22 @@ videoTemplateSchema.index({ status: 1, favoriteCount: -1, createdAt: -1 });
 videoTemplateSchema.index({ status: 1, publishAt: 1, expiresAt: 1 });
 
 videoTemplateSchema.index(
-  { title: 'text', description: 'text', tags: 'text', slug: 'text' },
+  { title: "text", description: "text", tags: "text", slug: "text" },
   {
     weights: { title: 10, slug: 8, tags: 6, description: 2 },
-    name: 'idx_video_template_text',
-    partialFilterExpression: { isDeleted: false, status: 'active' },
+    name: "idx_video_template_text",
+    partialFilterExpression: { isDeleted: false, status: "active" },
   },
 );
 
-videoTemplateSchema.virtual('generationJobs', {
-  ref: 'VideoGenerationJob',
-  localField: '_id',
-  foreignField: 'template',
+videoTemplateSchema.virtual("generationJobs", {
+  ref: "VideoGenerationJob",
+  localField: "_id",
+  foreignField: "template",
 });
 
 const VideoTemplateModel =
-  mongoose.models.VideoTemplate || mongoose.model('VideoTemplate', videoTemplateSchema);
+  mongoose.models.VideoTemplate ||
+  mongoose.model("VideoTemplate", videoTemplateSchema);
 
 export default VideoTemplateModel;

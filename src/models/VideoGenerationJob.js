@@ -7,10 +7,10 @@
  * Future usage: supports queues, retries, monitoring, refunds, audit trails,
  * output storage, provider debugging, and cost attribution.
  */
-import mongoose from 'mongoose';
-import validator from 'validator';
-import { createBaseSchema } from './base.schema.js';
-import { GENERATION_TYPES, OUTPUT_TYPES } from '../utils/mediaGeneration.js';
+import mongoose from "mongoose";
+import validator from "validator";
+import { createBaseSchema } from "./base.schema.js";
+import { GENERATION_TYPES, OUTPUT_TYPES } from "../utils/mediaGeneration.js";
 
 const { Schema } = mongoose;
 
@@ -18,11 +18,12 @@ const imageAssetSchema = new Schema(
   {
     url: {
       type: String,
-      required: [true, 'Input image URL is required.'],
+      required: [true, "Input image URL is required."],
       trim: true,
       validate: {
-        validator: (value) => validator.isURL(value, { require_protocol: true }),
-        message: 'Input image URL must be valid.',
+        validator: (value) =>
+          validator.isURL(value, { require_protocol: true }),
+        message: "Input image URL must be valid.",
       },
     },
     storageKey: {
@@ -68,11 +69,12 @@ const mediaAssetSchema = new Schema(
   {
     url: {
       type: String,
-      required: [true, 'Asset URL is required.'],
+      required: [true, "Asset URL is required."],
       trim: true,
       validate: {
-        validator: (value) => validator.isURL(value, { require_protocol: true }),
-        message: 'Asset URL must be valid.',
+        validator: (value) =>
+          validator.isURL(value, { require_protocol: true }),
+        message: "Asset URL must be valid.",
       },
     },
     storageKey: {
@@ -118,8 +120,9 @@ const outputVideoSchema = new Schema(
       trim: true,
       default: null,
       validate: {
-        validator: (value) => !value || validator.isURL(value, { require_protocol: true }),
-        message: 'Output video URL must be valid.',
+        validator: (value) =>
+          !value || validator.isURL(value, { require_protocol: true }),
+        message: "Output video URL must be valid.",
       },
     },
     thumbnailUrl: {
@@ -127,8 +130,9 @@ const outputVideoSchema = new Schema(
       trim: true,
       default: null,
       validate: {
-        validator: (value) => !value || validator.isURL(value, { require_protocol: true }),
-        message: 'Output thumbnail URL must be valid.',
+        validator: (value) =>
+          !value || validator.isURL(value, { require_protocol: true }),
+        message: "Output thumbnail URL must be valid.",
       },
     },
     duration: {
@@ -161,8 +165,8 @@ const logSchema = new Schema(
   {
     level: {
       type: String,
-      enum: ['info', 'warn', 'error', 'debug'],
-      default: 'info',
+      enum: ["info", "warn", "error", "debug"],
+      default: "info",
     },
     message: {
       type: String,
@@ -186,44 +190,59 @@ const logSchema = new Schema(
 const videoGenerationJobSchema = createBaseSchema({
   user: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'User reference is required.'],
+    ref: "User",
+    required: [true, "User reference is required."],
     index: true,
   },
   wallet: {
     type: Schema.Types.ObjectId,
-    ref: 'Wallet',
-    required: [true, 'Wallet reference is required.'],
+    ref: "Wallet",
+    required: [true, "Wallet reference is required."],
     index: true,
   },
   provider: {
     type: Schema.Types.ObjectId,
-    ref: 'Provider',
-    required: [true, 'Provider reference is required.'],
+    ref: "Provider",
+    required: [true, "Provider reference is required."],
     index: true,
   },
   template: {
     type: Schema.Types.ObjectId,
-    ref: 'VideoTemplate',
+    ref: "VideoTemplate",
     default: null,
     index: true,
   },
   generationType: {
     type: String,
-    enum: [...GENERATION_TYPES, 'image_and_prompt', 'multi_image', 'video_extend'],
-    default: 'image_to_video',
+    enum: [
+      ...GENERATION_TYPES,
+      "image_and_prompt",
+      "multi_image",
+      "video_extend",
+    ],
+    default: "image_to_video",
     index: true,
   },
   outputType: {
     type: String,
     enum: OUTPUT_TYPES,
-    default: 'video',
+    default: "video",
     index: true,
   },
   status: {
     type: String,
-    enum: ['pending', 'queued', 'processing', 'completed', 'failed', 'cancelled', 'refunded', 'timeout', 'expired'],
-    default: 'pending',
+    enum: [
+      "pending",
+      "queued",
+      "processing",
+      "completed",
+      "failed",
+      "cancelled",
+      "refunded",
+      "timeout",
+      "expired",
+    ],
+    default: "pending",
     index: true,
   },
   clientRequestKey: {
@@ -349,25 +368,25 @@ const videoGenerationJobSchema = createBaseSchema({
   },
   refundTransaction: {
     type: Schema.Types.ObjectId,
-    ref: 'CreditTransaction',
+    ref: "CreditTransaction",
     default: null,
     index: true,
   },
   lockTransaction: {
     type: Schema.Types.ObjectId,
-    ref: 'CreditTransaction',
+    ref: "CreditTransaction",
     default: null,
     index: true,
   },
   consumeTransaction: {
     type: Schema.Types.ObjectId,
-    ref: 'CreditTransaction',
+    ref: "CreditTransaction",
     default: null,
     index: true,
   },
   unlockTransaction: {
     type: Schema.Types.ObjectId,
-    ref: 'CreditTransaction',
+    ref: "CreditTransaction",
     default: null,
     index: true,
   },
@@ -388,7 +407,11 @@ videoGenerationJobSchema.index({ wallet: 1, createdAt: -1 });
 videoGenerationJobSchema.index({ provider: 1, status: 1, createdAt: -1 });
 videoGenerationJobSchema.index({ provider: 1, createdAt: -1 });
 videoGenerationJobSchema.index({ template: 1, status: 1, createdAt: -1 });
-videoGenerationJobSchema.index({ generationType: 1, outputType: 1, createdAt: -1 });
+videoGenerationJobSchema.index({
+  generationType: 1,
+  outputType: 1,
+  createdAt: -1,
+});
 videoGenerationJobSchema.index({ generationType: 1, status: 1, createdAt: -1 });
 videoGenerationJobSchema.index({ status: 1, progress: 1, createdAt: -1 });
 videoGenerationJobSchema.index({ status: 1, queuePosition: 1, createdAt: -1 });
@@ -399,20 +422,20 @@ videoGenerationJobSchema.index(
     unique: true,
     sparse: true,
     partialFilterExpression: { isDeleted: false },
-    name: 'uniq_generation_job_user_client_request_key_active',
+    name: "uniq_generation_job_user_client_request_key_active",
   },
 );
 videoGenerationJobSchema.index(
   { externalJobId: 1 },
   {
     sparse: true,
-    name: 'idx_generation_job_external_job_id',
+    name: "idx_generation_job_external_job_id",
   },
 );
 videoGenerationJobSchema.index({ completedAt: -1 });
 
 const VideoGenerationJobModel =
   mongoose.models.VideoGenerationJob ||
-  mongoose.model('VideoGenerationJob', videoGenerationJobSchema);
+  mongoose.model("VideoGenerationJob", videoGenerationJobSchema);
 
 export default VideoGenerationJobModel;

@@ -1,10 +1,13 @@
-import PaymentModel from '../../models/Payment.js';
-import UserModel from '../../models/User.js';
-import ApiError from '../../utils/ApiError.js';
-import { buildPaymentDetailDto, buildPaymentDto } from '../../utils/payment.dto.js';
-import walletService from '../wallet/walletService.js';
-import adminAuditService from './adminAuditService.js';
-import adminQueryService from './adminQueryService.js';
+import PaymentModel from "../../models/Payment.js";
+import UserModel from "../../models/User.js";
+import ApiError from "../../utils/ApiError.js";
+import {
+  buildPaymentDetailDto,
+  buildPaymentDto,
+} from "../../utils/payment.dto.js";
+import walletService from "../wallet/walletService.js";
+import adminAuditService from "./adminAuditService.js";
+import adminQueryService from "./adminQueryService.js";
 
 const listPayments = async ({ query = {} } = {}) => {
   const { page, limit, skip } = adminQueryService.buildPagination({
@@ -21,7 +24,9 @@ const listPayments = async ({ query = {} } = {}) => {
     filter.paymentType = String(query.paymentType).trim().toLowerCase();
   }
   if (query.verificationStatus) {
-    filter.verificationStatus = String(query.verificationStatus).trim().toLowerCase();
+    filter.verificationStatus = String(query.verificationStatus)
+      .trim()
+      .toLowerCase();
   }
   if (query.purchaseState) {
     filter.purchaseState = String(query.purchaseState).trim().toLowerCase();
@@ -58,7 +63,11 @@ const listPayments = async ({ query = {} } = {}) => {
   }
 
   const [items, total] = await Promise.all([
-    PaymentModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    PaymentModel.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
     PaymentModel.countDocuments(filter),
   ]);
 
@@ -77,7 +86,9 @@ const listPayments = async ({ query = {} } = {}) => {
 const getPaymentDetail = async ({ paymentId } = {}) => {
   const payment = await PaymentModel.findById(paymentId).lean();
   if (!payment) {
-    throw new ApiError(404, 'Payment not found.', { code: 'PAYMENT_NOT_FOUND' });
+    throw new ApiError(404, "Payment not found.", {
+      code: "PAYMENT_NOT_FOUND",
+    });
   }
   return {
     ...buildPaymentDetailDto(payment),
@@ -96,33 +107,39 @@ const refundPayment = async ({
 } = {}) => {
   const payment = await PaymentModel.findById(paymentId);
   if (!payment) {
-    throw new ApiError(404, 'Payment not found.', { code: 'PAYMENT_NOT_FOUND' });
+    throw new ApiError(404, "Payment not found.", {
+      code: "PAYMENT_NOT_FOUND",
+    });
   }
-  if (payment.status === 'refunded') {
+  if (payment.status === "refunded") {
     return getPaymentDetail({ paymentId });
   }
 
-  if (payment.paymentType === 'credit_purchase' && Number(payment.creditsPurchased || 0) > 0) {
+  if (
+    payment.paymentType === "credit_purchase" &&
+    Number(payment.creditsPurchased || 0) > 0
+  ) {
     await walletService.refundCredits({
       userId: payment.user,
       credits: Number(payment.creditsPurchased || 0),
       originalTransactionId: payment.creditTransaction || null,
-      description: reason || 'Admin payment refund.',
+      description: reason || "Admin payment refund.",
       idempotencyKey: request?.idempotencyKey || null,
     });
   }
 
-  payment.status = 'refunded';
+  payment.status = "refunded";
   payment.refundedAt = new Date();
-  payment.verificationMessage = reason || payment.verificationMessage || 'Refunded by admin.';
+  payment.verificationMessage =
+    reason || payment.verificationMessage || "Refunded by admin.";
   payment.processedBy = adminUserId || null;
   await payment.save();
 
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_PAYMENT_REFUNDED',
-    targetType: 'Payment',
+    action: "ADMIN_PAYMENT_REFUNDED",
+    targetType: "Payment",
     targetId: payment._id,
     metadata: {
       userId: payment.user,
@@ -137,7 +154,7 @@ const refundPayment = async ({
 
 const getRevenueSummary = async ({ query = {} } = {}) => {
   const match = {
-    status: { $in: ['success', 'refunded'] },
+    status: { $in: ["success", "refunded"] },
   };
   const createdAt = adminQueryService.buildDateRange({
     from: query.dateFrom || query.from,
@@ -154,23 +171,23 @@ const getRevenueSummary = async ({ query = {} } = {}) => {
         _id: null,
         grossRevenue: {
           $sum: {
-            $cond: [{ $eq: ['$status', 'success'] }, '$amount', 0],
+            $cond: [{ $eq: ["$status", "success"] }, "$amount", 0],
           },
         },
         refundedRevenue: {
           $sum: {
-            $cond: [{ $eq: ['$status', 'refunded'] }, '$amount', 0],
+            $cond: [{ $eq: ["$status", "refunded"] }, "$amount", 0],
           },
         },
         paymentCount: { $sum: 1 },
         subscriptionRevenue: {
           $sum: {
-            $cond: [{ $eq: ['$paymentType', 'subscription'] }, '$amount', 0],
+            $cond: [{ $eq: ["$paymentType", "subscription"] }, "$amount", 0],
           },
         },
         creditRevenue: {
           $sum: {
-            $cond: [{ $eq: ['$paymentType', 'credit_purchase'] }, '$amount', 0],
+            $cond: [{ $eq: ["$paymentType", "credit_purchase"] }, "$amount", 0],
           },
         },
       },

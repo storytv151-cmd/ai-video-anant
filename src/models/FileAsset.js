@@ -1,12 +1,12 @@
-import mongoose from 'mongoose';
-import { createBaseSchema } from './base.schema.js';
+import mongoose from "mongoose";
+import { createBaseSchema } from "./base.schema.js";
 
 const { Schema } = mongoose;
 
 const fileAssetSchema = createBaseSchema({
   owner: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     default: null,
     index: true,
   },
@@ -14,7 +14,7 @@ const fileAssetSchema = createBaseSchema({
     type: String,
     trim: true,
     maxlength: 50,
-    default: 'User',
+    default: "User",
     index: true,
   },
   storageKey: {
@@ -55,7 +55,7 @@ const fileAssetSchema = createBaseSchema({
     type: String,
     trim: true,
     maxlength: 30,
-    default: 'other',
+    default: "other",
     index: true,
   },
   extension: {
@@ -94,8 +94,16 @@ const fileAssetSchema = createBaseSchema({
   },
   status: {
     type: String,
-    enum: ['Temporary', 'Uploaded', 'Processing', 'Ready', 'Deleted', 'Failed', 'Archived'],
-    default: 'Uploaded',
+    enum: [
+      "Temporary",
+      "Uploaded",
+      "Processing",
+      "Ready",
+      "Deleted",
+      "Failed",
+      "Archived",
+    ],
+    default: "Uploaded",
     index: true,
   },
   metadata: {
@@ -105,13 +113,13 @@ const fileAssetSchema = createBaseSchema({
   },
   createdBy: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     default: null,
     index: true,
   },
   deletedBy: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     default: null,
     index: true,
   },
@@ -120,9 +128,12 @@ const fileAssetSchema = createBaseSchema({
 fileAssetSchema.index({ owner: 1, status: 1, createdAt: -1 });
 fileAssetSchema.index({ bucket: 1, folder: 1, createdAt: -1 });
 fileAssetSchema.index({ status: 1, createdAt: -1 });
-fileAssetSchema.index({ storageKey: 1 }, { unique: true, name: 'uniq_file_asset_storage_key' });
+fileAssetSchema.index(
+  { storageKey: 1 },
+  { unique: true, name: "uniq_file_asset_storage_key" },
+);
 
-const FileAssetModel = mongoose.models.FileAsset || mongoose.model('FileAsset', fileAssetSchema);
+const FileAssetModel =
+  mongoose.models.FileAsset || mongoose.model("FileAsset", fileAssetSchema);
 
 export default FileAssetModel;
-

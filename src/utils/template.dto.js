@@ -25,7 +25,9 @@ const buildTemplateDto = (template) => {
     allowInputAudio: Boolean(template.allowInputAudio),
     allowMultipleOutputs: Boolean(template.allowMultipleOutputs),
     defaultAspectRatio: template.defaultAspectRatio || null,
-    supportedOutputTypes: Array.isArray(template.supportedOutputTypes) ? template.supportedOutputTypes : [],
+    supportedOutputTypes: Array.isArray(template.supportedOutputTypes)
+      ? template.supportedOutputTypes
+      : [],
     creditsOverride: template.creditsOverride ?? null,
     provider: template.provider || null,
     providerModel: template.providerModel || null,

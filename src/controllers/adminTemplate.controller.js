@@ -1,13 +1,17 @@
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import adminTemplateService from '../services/admin/adminTemplateService.js';
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import adminTemplateService from "../services/admin/adminTemplateService.js";
 
 const listAdminTemplates = async (request, response) => {
-  const data = await adminTemplateService.listTemplates({ query: request.query });
+  const data = await adminTemplateService.listTemplates({
+    query: request.query,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
 const getAdminTemplate = async (request, response) => {
-  const data = await adminTemplateService.getTemplate({ templateId: request.params.templateId });
+  const data = await adminTemplateService.getTemplate({
+    templateId: request.params.templateId,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
@@ -40,12 +44,16 @@ const deleteAdminTemplate = async (request, response) => {
 };
 
 const listAdminCategories = async (request, response) => {
-  const data = await adminTemplateService.listCategories({ query: request.query });
+  const data = await adminTemplateService.listCategories({
+    query: request.query,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
 const getAdminCategory = async (request, response) => {
-  const data = await adminTemplateService.getCategory({ categoryId: request.params.categoryId });
+  const data = await adminTemplateService.getCategory({
+    categoryId: request.params.categoryId,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 

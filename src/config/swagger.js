@@ -4,7 +4,7 @@
  */
 const swaggerConfig = Object.freeze({
   enabled: false,
-  status: 'not-implemented',
+  status: "not-implemented",
 });
 
 export default swaggerConfig;

@@ -49,4 +49,3 @@ const buildCreditTransactionDto = (tx) => {
 };
 
 export { buildWalletDto, buildCreditTransactionDto };
-

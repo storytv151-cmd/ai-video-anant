@@ -2,9 +2,9 @@
  * Multer upload middleware configuration for future media ingestion endpoints.
  * Files are currently kept in memory so later phases can pass them to storage services.
  */
-import multer from 'multer';
-import environment from '../config/environment.js';
-import ApiError from '../utils/ApiError.js';
+import multer from "multer";
+import environment from "../config/environment.js";
+import ApiError from "../utils/ApiError.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -18,7 +18,7 @@ const upload = multer({
     ) {
       callback(
         new ApiError(400, `Unsupported file type: ${file.mimetype}`, {
-          code: 'UPLOAD_UNSUPPORTED_TYPE',
+          code: "UPLOAD_UNSUPPORTED_TYPE",
         }),
       );
       return;

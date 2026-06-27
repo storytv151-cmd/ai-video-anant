@@ -1,6 +1,8 @@
-import paymentSettingsService, { getPaymentSettings } from './paymentSettingsService.js';
-import purchaseHistoryService from './purchaseHistoryService.js';
-import purchaseVerificationService from './purchaseVerificationService.js';
+import paymentSettingsService, {
+  getPaymentSettings,
+} from "./paymentSettingsService.js";
+import purchaseHistoryService from "./purchaseHistoryService.js";
+import purchaseVerificationService from "./purchaseVerificationService.js";
 
 const listCreditPackages = async () => {
   const settings = await paymentSettingsService.getPaymentSettings();
@@ -11,17 +13,26 @@ const listCreditPackages = async () => {
     config: {
       paymentEnabled: Boolean(settings.paymentEnabled),
       googlePlayEnabled: Boolean(settings.googlePlay?.enabled),
-      defaultCurrency: settings.payments?.payments?.defaultCurrency || 'USD',
+      defaultCurrency: settings.payments?.payments?.defaultCurrency || "USD",
       taxPercentage: Number(settings.payments?.payments?.taxPercentage || 0),
-      countryPricing: Array.isArray(settings.countryPricing) ? settings.countryPricing : [],
-      futurePricing: Array.isArray(settings.futurePricing) ? settings.futurePricing : [],
+      countryPricing: Array.isArray(settings.countryPricing)
+        ? settings.countryPricing
+        : [],
+      futurePricing: Array.isArray(settings.futurePricing)
+        ? settings.futurePricing
+        : [],
       packageName: settings.googlePlay?.packageName || null,
       appId: settings.googlePlay?.appId || null,
     },
   };
 };
 
-const verifyGooglePurchase = async ({ userId, payload = {}, request = null, idempotencyKey = null } = {}) =>
+const verifyGooglePurchase = async ({
+  userId,
+  payload = {},
+  request = null,
+  idempotencyKey = null,
+} = {}) =>
   purchaseVerificationService.verifyAndSettleCreditPurchase({
     userId,
     payload,
@@ -30,7 +41,12 @@ const verifyGooglePurchase = async ({ userId, payload = {}, request = null, idem
     isRestore: false,
   });
 
-const restorePurchases = async ({ userId, payload = {}, request = null, idempotencyKey = null } = {}) =>
+const restorePurchases = async ({
+  userId,
+  payload = {},
+  request = null,
+  idempotencyKey = null,
+} = {}) =>
   purchaseVerificationService.restoreCreditPurchases({
     userId,
     payload,

@@ -1,8 +1,8 @@
-import CouponModel from '../../models/Coupon.js';
-import RewardHistoryModel from '../../models/RewardHistory.js';
-import ApiError from '../../utils/ApiError.js';
-import adminAuditService from './adminAuditService.js';
-import adminQueryService from './adminQueryService.js';
+import CouponModel from "../../models/Coupon.js";
+import RewardHistoryModel from "../../models/RewardHistory.js";
+import ApiError from "../../utils/ApiError.js";
+import adminAuditService from "./adminAuditService.js";
+import adminQueryService from "./adminQueryService.js";
 
 const listCoupons = async ({ query = {} } = {}) => {
   const { page, limit, skip } = adminQueryService.buildPagination({
@@ -19,59 +19,86 @@ const listCoupons = async ({ query = {} } = {}) => {
   }
   const searchRegex = adminQueryService.buildRegexSearch(query.search);
   if (searchRegex) {
-    filter.$or = [{ code: searchRegex }, { title: searchRegex }, { description: searchRegex }];
+    filter.$or = [
+      { code: searchRegex },
+      { title: searchRegex },
+      { description: searchRegex },
+    ];
   }
 
   const [items, total] = await Promise.all([
-    CouponModel.find(filter).withDeleted().sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    CouponModel.find(filter)
+      .withDeleted()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
     CouponModel.countDocuments(filter).setOptions({ withDeleted: true }),
   ]);
 
-  return adminQueryService.buildPaginatedResponse({ items, page, limit, total });
+  return adminQueryService.buildPaginatedResponse({
+    items,
+    page,
+    limit,
+    total,
+  });
 };
 
-const createCoupon = async ({ payload = {}, adminUserId = null, request = null } = {}) => {
+const createCoupon = async ({
+  payload = {},
+  adminUserId = null,
+  request = null,
+} = {}) => {
   const coupon = await CouponModel.create(payload);
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_COUPON_CREATED',
-    targetType: 'Coupon',
+    action: "ADMIN_COUPON_CREATED",
+    targetType: "Coupon",
     targetId: coupon._id,
     metadata: { code: coupon.code, type: coupon.type },
   });
   return coupon.toObject();
 };
 
-const updateCoupon = async ({ couponId, payload = {}, adminUserId = null, request = null } = {}) => {
+const updateCoupon = async ({
+  couponId,
+  payload = {},
+  adminUserId = null,
+  request = null,
+} = {}) => {
   const coupon = await CouponModel.findById(couponId).withDeleted();
   if (!coupon) {
-    throw new ApiError(404, 'Coupon not found.', { code: 'COUPON_NOT_FOUND' });
+    throw new ApiError(404, "Coupon not found.", { code: "COUPON_NOT_FOUND" });
   }
   Object.assign(coupon, payload);
   await coupon.save();
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_COUPON_UPDATED',
-    targetType: 'Coupon',
+    action: "ADMIN_COUPON_UPDATED",
+    targetType: "Coupon",
     targetId: coupon._id,
     metadata: { code: coupon.code, type: coupon.type },
   });
   return coupon.toObject();
 };
 
-const deleteCoupon = async ({ couponId, adminUserId = null, request = null } = {}) => {
+const deleteCoupon = async ({
+  couponId,
+  adminUserId = null,
+  request = null,
+} = {}) => {
   const coupon = await CouponModel.findById(couponId).withDeleted();
   if (!coupon) {
-    throw new ApiError(404, 'Coupon not found.', { code: 'COUPON_NOT_FOUND' });
+    throw new ApiError(404, "Coupon not found.", { code: "COUPON_NOT_FOUND" });
   }
   await coupon.softDelete();
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_COUPON_DELETED',
-    targetType: 'Coupon',
+    action: "ADMIN_COUPON_DELETED",
+    targetType: "Coupon",
     targetId: coupon._id,
     metadata: { code: coupon.code },
   });
@@ -96,10 +123,19 @@ const listRewards = async ({ query = {} } = {}) => {
   }
 
   const [items, total] = await Promise.all([
-    RewardHistoryModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    RewardHistoryModel.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
     RewardHistoryModel.countDocuments(filter),
   ]);
-  return adminQueryService.buildPaginatedResponse({ items, page, limit, total });
+  return adminQueryService.buildPaginatedResponse({
+    items,
+    page,
+    limit,
+    total,
+  });
 };
 
 const adminCouponService = Object.freeze({

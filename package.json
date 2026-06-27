@@ -11,7 +11,10 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "seed": "node seeders/index.js",
+    "reseed": "node seeders/index.js --reseed",
+    "seed:admin": "node seeders/index.js --admin"
   },
   "keywords": [
     "nodejs",

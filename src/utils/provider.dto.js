@@ -1,4 +1,7 @@
-import { getEntityCapabilityMatrix, getSupportedOutputTypes } from './mediaGeneration.js';
+import {
+  getEntityCapabilityMatrix,
+  getSupportedOutputTypes,
+} from "./mediaGeneration.js";
 
 const safeNumber = (value) => {
   const n = Number(value);
@@ -49,14 +52,20 @@ const buildPublicProviderModelDto = (model) => {
   };
 };
 
-const buildPublicProviderDto = ({ provider, models = [], pricingSummary = [] }) => {
+const buildPublicProviderDto = ({
+  provider,
+  models = [],
+  pricingSummary = [],
+}) => {
   const capabilities = getEntityCapabilityMatrix(provider);
   const estimatedTimeMsCandidates = models
     .map((m) => safeNumber(m.estimatedTime))
     .filter((v) => v !== null && v > 0);
 
   const estimatedTimeMs =
-    estimatedTimeMsCandidates.length > 0 ? Math.min(...estimatedTimeMsCandidates) : null;
+    estimatedTimeMsCandidates.length > 0
+      ? Math.min(...estimatedTimeMsCandidates)
+      : null;
 
   return {
     name: provider.name,

@@ -1,5 +1,5 @@
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import adminDashboardService from '../services/admin/adminDashboardService.js';
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import adminDashboardService from "../services/admin/adminDashboardService.js";
 
 const getAdminDashboard = async (request, response) => {
   const data = await adminDashboardService.getDashboard();

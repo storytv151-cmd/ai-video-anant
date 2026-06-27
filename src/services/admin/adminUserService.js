@@ -1,18 +1,18 @@
-import PaymentModel from '../../models/Payment.js';
-import RefreshTokenModel from '../../models/RefreshToken.js';
-import UserDeviceModel from '../../models/UserDevice.js';
-import UserModel from '../../models/User.js';
-import VideoGenerationJobModel from '../../models/VideoGenerationJob.js';
-import WalletModel from '../../models/Wallet.js';
-import ApiError from '../../utils/ApiError.js';
-import { buildPaymentDto } from '../../utils/payment.dto.js';
-import { buildUserDto } from '../../utils/user.dto.js';
-import { buildWalletDto } from '../../utils/wallet.dto.js';
-import subscriptionService from '../subscription/subscriptionService.js';
-import walletService from '../wallet/walletService.js';
-import adminAuditService from './adminAuditService.js';
-import adminQueryService from './adminQueryService.js';
-import adminRoleService from './adminRoleService.js';
+import PaymentModel from "../../models/Payment.js";
+import RefreshTokenModel from "../../models/RefreshToken.js";
+import UserDeviceModel from "../../models/UserDevice.js";
+import UserModel from "../../models/User.js";
+import VideoGenerationJobModel from "../../models/VideoGenerationJob.js";
+import WalletModel from "../../models/Wallet.js";
+import ApiError from "../../utils/ApiError.js";
+import { buildPaymentDto } from "../../utils/payment.dto.js";
+import { buildUserDto } from "../../utils/user.dto.js";
+import { buildWalletDto } from "../../utils/wallet.dto.js";
+import subscriptionService from "../subscription/subscriptionService.js";
+import walletService from "../wallet/walletService.js";
+import adminAuditService from "./adminAuditService.js";
+import adminQueryService from "./adminQueryService.js";
+import adminRoleService from "./adminRoleService.js";
 
 const USER_PROJECTION = Object.freeze({
   name: 1,
@@ -58,7 +58,7 @@ const findUserById = async ({ userId, withDeleted = true } = {}) => {
   }
   const user = await query;
   if (!user) {
-    throw new ApiError(404, 'User not found.', { code: 'USER_NOT_FOUND' });
+    throw new ApiError(404, "User not found.", { code: "USER_NOT_FOUND" });
   }
   return user;
 };
@@ -101,7 +101,11 @@ const listUsers = async ({ query = {} } = {}) => {
 
   const searchRegex = adminQueryService.buildRegexSearch(query.search);
   if (searchRegex) {
-    filter.$or = [{ name: searchRegex }, { email: searchRegex }, { googleId: searchRegex }];
+    filter.$or = [
+      { name: searchRegex },
+      { email: searchRegex },
+      { googleId: searchRegex },
+    ];
   }
 
   let userQuery = UserModel.find(filter)
@@ -111,14 +115,23 @@ const listUsers = async ({ query = {} } = {}) => {
     .limit(limit);
   let countQuery = UserModel.countDocuments(filter);
 
-  if (adminQueryService.parseBoolean(query.includeDeleted, false) || filter.isDeleted === true) {
+  if (
+    adminQueryService.parseBoolean(query.includeDeleted, false) ||
+    filter.isDeleted === true
+  ) {
     userQuery = userQuery.withDeleted();
-    countQuery = UserModel.countDocuments(filter).setOptions({ withDeleted: true });
+    countQuery = UserModel.countDocuments(filter).setOptions({
+      withDeleted: true,
+    });
   }
 
   const [users, total] = await Promise.all([userQuery.lean(), countQuery]);
-  const wallets = await WalletModel.find({ user: { $in: users.map((item) => item._id) } }).lean();
-  const walletMap = new Map(wallets.map((wallet) => [String(wallet.user), wallet]));
+  const wallets = await WalletModel.find({
+    user: { $in: users.map((item) => item._id) },
+  }).lean();
+  const walletMap = new Map(
+    wallets.map((wallet) => [String(wallet.user), wallet]),
+  );
 
   return adminQueryService.buildPaginatedResponse({
     items: users.map((user) =>
@@ -139,16 +152,24 @@ const getUserDetail = async ({ userId } = {}) => {
   return mapAdminUserSummary({ user, wallet });
 };
 
-const updateUserStatus = async ({ userId, status, reason = null, adminUserId = null, request = null } = {}) => {
+const updateUserStatus = async ({
+  userId,
+  status,
+  reason = null,
+  adminUserId = null,
+  request = null,
+} = {}) => {
   const user = await findUserById({ userId, withDeleted: true });
-  user.accountStatus = String(status || '').trim().toLowerCase();
+  user.accountStatus = String(status || "")
+    .trim()
+    .toLowerCase();
   await user.save();
 
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_USER_STATUS_UPDATED',
-    targetType: 'User',
+    action: "ADMIN_USER_STATUS_UPDATED",
+    targetType: "User",
     targetId: user._id,
     metadata: { status: user.accountStatus, reason },
   });
@@ -165,11 +186,16 @@ const assignRole = async ({
   request = null,
 } = {}) => {
   const user = await findUserById({ userId, withDeleted: true });
-  const resolved = await adminRoleService.resolveUserRoleAssignment({ role, adminRoleCode });
+  const resolved = await adminRoleService.resolveUserRoleAssignment({
+    role,
+    adminRoleCode,
+  });
 
   user.role = resolved.role;
   const metadata =
-    user.metadata instanceof Map ? Object.fromEntries(user.metadata.entries()) : user.metadata || {};
+    user.metadata instanceof Map
+      ? Object.fromEntries(user.metadata.entries())
+      : user.metadata || {};
   if (resolved.adminRoleCode) {
     metadata.adminRoleCode = resolved.adminRoleCode;
   } else {
@@ -181,8 +207,8 @@ const assignRole = async ({
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_USER_ROLE_ASSIGNED',
-    targetType: 'User',
+    action: "ADMIN_USER_ROLE_ASSIGNED",
+    targetType: "User",
     targetId: user._id,
     metadata: {
       role: resolved.role,
@@ -196,7 +222,9 @@ const assignRole = async ({
 
 const listUserDevices = async ({ userId } = {}) => {
   await findUserById({ userId, withDeleted: true });
-  const items = await UserDeviceModel.find({ user: userId }).sort({ lastLogin: -1, createdAt: -1 }).lean();
+  const items = await UserDeviceModel.find({ user: userId })
+    .sort({ lastLogin: -1, createdAt: -1 })
+    .lean();
   return { items };
 };
 
@@ -211,7 +239,17 @@ const listUserLoginHistory = async ({ userId, query = {} } = {}) => {
   const filter = { user: userId };
   const [items, total] = await Promise.all([
     RefreshTokenModel.find(filter)
-      .populate({ path: 'device', model: 'UserDevice', select: { deviceId: 1, platform: 1, model: 1, osVersion: 1, lastLogin: 1 } })
+      .populate({
+        path: "device",
+        model: "UserDevice",
+        select: {
+          deviceId: 1,
+          platform: 1,
+          model: 1,
+          osVersion: 1,
+          lastLogin: 1,
+        },
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -219,7 +257,12 @@ const listUserLoginHistory = async ({ userId, query = {} } = {}) => {
     RefreshTokenModel.countDocuments(filter),
   ]);
 
-  return adminQueryService.buildPaginatedResponse({ items, page, limit, total });
+  return adminQueryService.buildPaginatedResponse({
+    items,
+    page,
+    limit,
+    total,
+  });
 };
 
 const listUserGenerationHistory = async ({ userId, query = {} } = {}) => {
@@ -243,7 +286,12 @@ const listUserGenerationHistory = async ({ userId, query = {} } = {}) => {
     VideoGenerationJobModel.countDocuments(filter),
   ]);
 
-  return adminQueryService.buildPaginatedResponse({ items, page, limit, total });
+  return adminQueryService.buildPaginatedResponse({
+    items,
+    page,
+    limit,
+    total,
+  });
 };
 
 const listUserPayments = async ({ userId, query = {} } = {}) => {
@@ -259,7 +307,11 @@ const listUserPayments = async ({ userId, query = {} } = {}) => {
   }
 
   const [items, total] = await Promise.all([
-    PaymentModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    PaymentModel.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
     PaymentModel.countDocuments(filter),
   ]);
 
@@ -291,11 +343,11 @@ const grantCredits = async ({
   const result = await walletService.addCredits({
     userId,
     credits: Number(credits),
-    type: 'admin',
-    source: 'Admin',
-    purpose: 'admin_grant',
-    description: description || 'Admin credit grant.',
-    referenceType: 'User',
+    type: "admin",
+    source: "Admin",
+    purpose: "admin_grant",
+    description: description || "Admin credit grant.",
+    referenceType: "User",
     referenceId: userId,
     idempotencyKey: request?.idempotencyKey || null,
   });
@@ -303,10 +355,13 @@ const grantCredits = async ({
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_USER_CREDITS_GRANTED',
-    targetType: 'User',
+    action: "ADMIN_USER_CREDITS_GRANTED",
+    targetType: "User",
     targetId: userId,
-    metadata: { credits: Number(credits), transactionId: result.transaction?._id || null },
+    metadata: {
+      credits: Number(credits),
+      transactionId: result.transaction?._id || null,
+    },
   });
 
   return result;
@@ -323,11 +378,11 @@ const deductCredits = async ({
   const result = await walletService.deductCredits({
     userId,
     credits: Number(credits),
-    type: 'admin',
-    source: 'Admin',
-    purpose: 'admin_deduct',
-    description: description || 'Admin credit deduction.',
-    referenceType: 'User',
+    type: "admin",
+    source: "Admin",
+    purpose: "admin_deduct",
+    description: description || "Admin credit deduction.",
+    referenceType: "User",
     referenceId: userId,
     idempotencyKey: request?.idempotencyKey || null,
   });
@@ -335,24 +390,36 @@ const deductCredits = async ({
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_USER_CREDITS_DEDUCTED',
-    targetType: 'User',
+    action: "ADMIN_USER_CREDITS_DEDUCTED",
+    targetType: "User",
     targetId: userId,
-    metadata: { credits: Number(credits), transactionId: result.transaction?._id || null },
+    metadata: {
+      credits: Number(credits),
+      transactionId: result.transaction?._id || null,
+    },
   });
 
   return result;
 };
 
-const resetWallet = async ({ userId, reason = null, adminUserId = null, request = null } = {}) => {
+const resetWallet = async ({
+  userId,
+  reason = null,
+  adminUserId = null,
+  request = null,
+} = {}) => {
   const wallet = await WalletModel.findOne({ user: userId });
   if (!wallet) {
-    throw new ApiError(404, 'Wallet not found.', { code: 'WALLET_NOT_FOUND' });
+    throw new ApiError(404, "Wallet not found.", { code: "WALLET_NOT_FOUND" });
   }
   if (wallet.pendingCredits > 0 || wallet.lockedCredits > 0) {
-    throw new ApiError(409, 'Wallet reset requires zero pending and locked credits.', {
-      code: 'ADMIN_WALLET_RESET_BLOCKED',
-    });
+    throw new ApiError(
+      409,
+      "Wallet reset requires zero pending and locked credits.",
+      {
+        code: "ADMIN_WALLET_RESET_BLOCKED",
+      },
+    );
   }
   if (wallet.currentCredits <= 0) {
     return { wallet: buildWalletDto(wallet), transaction: null };
@@ -361,7 +428,7 @@ const resetWallet = async ({ userId, reason = null, adminUserId = null, request 
   const result = await deductCredits({
     userId,
     credits: wallet.currentCredits,
-    description: reason || 'Admin wallet reset.',
+    description: reason || "Admin wallet reset.",
     adminUserId,
     request,
   });
@@ -369,8 +436,8 @@ const resetWallet = async ({ userId, reason = null, adminUserId = null, request 
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_USER_WALLET_RESET',
-    targetType: 'Wallet',
+    action: "ADMIN_USER_WALLET_RESET",
+    targetType: "Wallet",
     targetId: wallet._id,
     metadata: { userId, reason },
   });

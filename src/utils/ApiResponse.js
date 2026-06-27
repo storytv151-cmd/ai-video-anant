@@ -3,7 +3,12 @@
  * This keeps API responses uniform across controllers and future modules.
  */
 class ApiResponse {
-  constructor({ statusCode = 200, success = true, message = 'Request successful.', data = null }) {
+  constructor({
+    statusCode = 200,
+    success = true,
+    message = "Request successful.",
+    data = null,
+  }) {
     this.statusCode = statusCode;
     this.success = success;
     this.message = message;

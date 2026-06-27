@@ -6,33 +6,33 @@
  * Future usage: supports dynamic credit costing, plan-based overrides, and
  * provider pricing experiments without code changes.
  */
-import mongoose from 'mongoose';
-import { createBaseSchema } from './base.schema.js';
+import mongoose from "mongoose";
+import { createBaseSchema } from "./base.schema.js";
 
 const { Schema } = mongoose;
 
 const providerPricingSchema = createBaseSchema({
   provider: {
     type: Schema.Types.ObjectId,
-    ref: 'Provider',
-    required: [true, 'Provider reference is required.'],
+    ref: "Provider",
+    required: [true, "Provider reference is required."],
     index: true,
   },
   quality: {
     type: String,
-    required: [true, 'Quality identifier is required.'],
+    required: [true, "Quality identifier is required."],
     trim: true,
     lowercase: true,
     maxlength: 100,
   },
   duration: {
     type: Number,
-    required: [true, 'Duration is required.'],
+    required: [true, "Duration is required."],
     min: 1,
   },
   credits: {
     type: Number,
-    required: [true, 'Credits value is required.'],
+    required: [true, "Credits value is required."],
     min: 0,
   },
   currency: {
@@ -40,7 +40,7 @@ const providerPricingSchema = createBaseSchema({
     trim: true,
     uppercase: true,
     maxlength: 10,
-    default: 'CREDITS',
+    default: "CREDITS",
   },
   enabled: {
     type: Boolean,
@@ -54,13 +54,14 @@ providerPricingSchema.index(
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
-    name: 'uniq_provider_pricing_active',
+    name: "uniq_provider_pricing_active",
   },
 );
 providerPricingSchema.index({ provider: 1, enabled: 1, createdAt: -1 });
 providerPricingSchema.index({ credits: 1 });
 
 const ProviderPricingModel =
-  mongoose.models.ProviderPricing || mongoose.model('ProviderPricing', providerPricingSchema);
+  mongoose.models.ProviderPricing ||
+  mongoose.model("ProviderPricing", providerPricingSchema);
 
 export default ProviderPricingModel;

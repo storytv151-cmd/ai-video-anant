@@ -1,79 +1,79 @@
-import ProviderModelModel from '../../models/ProviderModel.js';
-import ProviderPricingModel from '../../models/ProviderPricing.js';
-import ProviderModel from '../../models/Provider.js';
-import ApiError from '../../utils/ApiError.js';
-import providerHealthService from '../videoProviders/providerHealthService.js';
-import providerPricingService from '../videoProviders/providerPricingService.js';
-import adminAuditService from './adminAuditService.js';
-import adminQueryService from './adminQueryService.js';
+import ProviderModelModel from "../../models/ProviderModel.js";
+import ProviderPricingModel from "../../models/ProviderPricing.js";
+import ProviderModel from "../../models/Provider.js";
+import ApiError from "../../utils/ApiError.js";
+import providerHealthService from "../videoProviders/providerHealthService.js";
+import providerPricingService from "../videoProviders/providerPricingService.js";
+import adminAuditService from "./adminAuditService.js";
+import adminQueryService from "./adminQueryService.js";
 
 const PROVIDER_FIELDS = Object.freeze([
-  'name',
-  'slug',
-  'enabled',
-  'priority',
-  'healthStatus',
-  'supportsImage',
-  'supportsVideo',
-  'supportsMultipleImages',
-  'supportsAudio',
-  'supportsTextToImage',
-  'supportsImageToImage',
-  'supportsTextToVideo',
-  'supportsImageToVideo',
-  'supportsVideoToVideo',
-  'supportsImageUpscale',
-  'supportsVideoUpscale',
-  'supportsImageEditing',
-  'supportsVideoEditing',
-  'supportsBackgroundRemoval',
-  'supportsFaceSwap',
-  'supportsAudioGeneration',
-  'supportsReferenceImages',
-  'supportsNegativePrompt',
-  'supportsMaskImage',
-  'maximumImages',
-  'maximumDuration',
-  'maximumResolution',
-  'dailyLimit',
-  'timeout',
-  'retryCount',
-  'creditsPerGeneration',
-  'maximumOutputCount',
-  'metadata',
+  "name",
+  "slug",
+  "enabled",
+  "priority",
+  "healthStatus",
+  "supportsImage",
+  "supportsVideo",
+  "supportsMultipleImages",
+  "supportsAudio",
+  "supportsTextToImage",
+  "supportsImageToImage",
+  "supportsTextToVideo",
+  "supportsImageToVideo",
+  "supportsVideoToVideo",
+  "supportsImageUpscale",
+  "supportsVideoUpscale",
+  "supportsImageEditing",
+  "supportsVideoEditing",
+  "supportsBackgroundRemoval",
+  "supportsFaceSwap",
+  "supportsAudioGeneration",
+  "supportsReferenceImages",
+  "supportsNegativePrompt",
+  "supportsMaskImage",
+  "maximumImages",
+  "maximumDuration",
+  "maximumResolution",
+  "dailyLimit",
+  "timeout",
+  "retryCount",
+  "creditsPerGeneration",
+  "maximumOutputCount",
+  "metadata",
 ]);
 
 const PROVIDER_MODEL_FIELDS = Object.freeze([
-  'name',
-  'slug',
-  'enabled',
-  'priority',
-  'credits',
-  'estimatedTime',
-  'supportsImage',
-  'supportsVideo',
-  'supportsAudio',
-  'supportsTextToImage',
-  'supportsImageToImage',
-  'supportsTextToVideo',
-  'supportsImageToVideo',
-  'supportsVideoToVideo',
-  'supportsImageUpscale',
-  'supportsVideoUpscale',
-  'supportsImageEditing',
-  'supportsVideoEditing',
-  'supportsBackgroundRemoval',
-  'supportsFaceSwap',
-  'supportsAudioGeneration',
-  'supportsMultipleImages',
-  'supportsReferenceImages',
-  'supportsNegativePrompt',
-  'supportsMaskImage',
-  'maximumImages',
-  'maximumDuration',
-  'maximumResolution',
-  'maximumOutputCount',
-  'metadata',
+  "name",
+  "slug",
+  "enabled",
+  "priority",
+  "credits",
+  "estimatedTime",
+  "supportsImage",
+  "supportsVideo",
+  "supportsAudio",
+  "supportsTextToImage",
+  "supportsImageToImage",
+  "supportsTextToVideo",
+  "supportsImageToVideo",
+  "supportsVideoToVideo",
+  "supportsImageUpscale",
+  "supportsVideoUpscale",
+  "supportsImageEditing",
+  "supportsVideoEditing",
+  "supportsBackgroundRemoval",
+  "supportsFaceSwap",
+  "supportsAudioGeneration",
+  "supportsMultipleImages",
+  "supportsReferenceImages",
+  "supportsNegativePrompt",
+  "supportsMaskImage",
+  "maximumImages",
+  "maximumDuration",
+  "maximumResolution",
+  "maximumOutputCount",
+  "metadata",
 ]);
 
 const pickFields = ({ payload = {}, fields = [] } = {}) =>
@@ -103,28 +103,50 @@ const listProviders = async ({ query = {} } = {}) => {
   }
 
   const [items, total] = await Promise.all([
-    ProviderModel.find(filter).sort({ priority: 1, createdAt: -1 }).skip(skip).limit(limit).lean(),
+    ProviderModel.find(filter)
+      .sort({ priority: 1, createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
     ProviderModel.countDocuments(filter),
   ]);
-  return adminQueryService.buildPaginatedResponse({ items, page, limit, total });
+  return adminQueryService.buildPaginatedResponse({
+    items,
+    page,
+    limit,
+    total,
+  });
 };
 
 const getProvider = async ({ providerId } = {}) => {
   const provider = await ProviderModel.findById(providerId).lean();
   if (!provider) {
-    throw new ApiError(404, 'Provider not found.', { code: 'PROVIDER_NOT_FOUND' });
+    throw new ApiError(404, "Provider not found.", {
+      code: "PROVIDER_NOT_FOUND",
+    });
   }
   const [models, pricing] = await Promise.all([
-    ProviderModelModel.find({ provider: provider._id }).sort({ priority: 1 }).lean(),
-    ProviderPricingModel.find({ provider: provider._id }).sort({ duration: 1, credits: 1 }).lean(),
+    ProviderModelModel.find({ provider: provider._id })
+      .sort({ priority: 1 })
+      .lean(),
+    ProviderPricingModel.find({ provider: provider._id })
+      .sort({ duration: 1, credits: 1 })
+      .lean(),
   ]);
   return { provider, models, pricing };
 };
 
-const updateProvider = async ({ providerId, payload = {}, adminUserId = null, request = null } = {}) => {
+const updateProvider = async ({
+  providerId,
+  payload = {},
+  adminUserId = null,
+  request = null,
+} = {}) => {
   const provider = await ProviderModel.findById(providerId);
   if (!provider) {
-    throw new ApiError(404, 'Provider not found.', { code: 'PROVIDER_NOT_FOUND' });
+    throw new ApiError(404, "Provider not found.", {
+      code: "PROVIDER_NOT_FOUND",
+    });
   }
   Object.assign(provider, pickFields({ payload, fields: PROVIDER_FIELDS }));
   await provider.save();
@@ -132,10 +154,14 @@ const updateProvider = async ({ providerId, payload = {}, adminUserId = null, re
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_PROVIDER_UPDATED',
-    targetType: 'Provider',
+    action: "ADMIN_PROVIDER_UPDATED",
+    targetType: "Provider",
     targetId: provider._id,
-    metadata: { slug: provider.slug, enabled: provider.enabled, priority: provider.priority },
+    metadata: {
+      slug: provider.slug,
+      enabled: provider.enabled,
+      priority: provider.priority,
+    },
   });
 
   return getProvider({ providerId: provider._id });
@@ -160,16 +186,32 @@ const listProviderModels = async ({ query = {} } = {}) => {
   }
 
   const [items, total] = await Promise.all([
-    ProviderModelModel.find(filter).sort({ priority: 1, createdAt: -1 }).skip(skip).limit(limit).lean(),
+    ProviderModelModel.find(filter)
+      .sort({ priority: 1, createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
     ProviderModelModel.countDocuments(filter),
   ]);
-  return adminQueryService.buildPaginatedResponse({ items, page, limit, total });
+  return adminQueryService.buildPaginatedResponse({
+    items,
+    page,
+    limit,
+    total,
+  });
 };
 
-const updateProviderModel = async ({ modelId, payload = {}, adminUserId = null, request = null } = {}) => {
+const updateProviderModel = async ({
+  modelId,
+  payload = {},
+  adminUserId = null,
+  request = null,
+} = {}) => {
   const model = await ProviderModelModel.findById(modelId);
   if (!model) {
-    throw new ApiError(404, 'Provider model not found.', { code: 'PROVIDER_MODEL_NOT_FOUND' });
+    throw new ApiError(404, "Provider model not found.", {
+      code: "PROVIDER_MODEL_NOT_FOUND",
+    });
   }
   Object.assign(model, pickFields({ payload, fields: PROVIDER_MODEL_FIELDS }));
   await model.save();
@@ -177,10 +219,14 @@ const updateProviderModel = async ({ modelId, payload = {}, adminUserId = null, 
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_PROVIDER_MODEL_UPDATED',
-    targetType: 'ProviderModel',
+    action: "ADMIN_PROVIDER_MODEL_UPDATED",
+    targetType: "ProviderModel",
     targetId: model._id,
-    metadata: { slug: model.slug, enabled: model.enabled, priority: model.priority },
+    metadata: {
+      slug: model.slug,
+      enabled: model.enabled,
+      priority: model.priority,
+    },
   });
 
   return model.toObject();
@@ -191,14 +237,20 @@ const listPricing = async ({ query = {} } = {}) => {
   if (query.providerId) {
     filter.provider = query.providerId;
   }
-  const items = await ProviderPricingModel.find(filter).sort({ provider: 1, duration: 1, credits: 1 }).lean();
+  const items = await ProviderPricingModel.find(filter)
+    .sort({ provider: 1, duration: 1, credits: 1 })
+    .lean();
   return { items };
 };
 
-const upsertPricing = async ({ payload = {}, adminUserId = null, request = null } = {}) => {
+const upsertPricing = async ({
+  payload = {},
+  adminUserId = null,
+  request = null,
+} = {}) => {
   if (!payload.provider || !payload.quality || payload.duration === undefined) {
-    throw new ApiError(400, 'provider, quality, and duration are required.', {
-      code: 'ADMIN_PROVIDER_PRICING_INPUT_REQUIRED',
+    throw new ApiError(400, "provider, quality, and duration are required.", {
+      code: "ADMIN_PROVIDER_PRICING_INPUT_REQUIRED",
     });
   }
 
@@ -211,7 +263,7 @@ const upsertPricing = async ({ payload = {}, adminUserId = null, request = null 
     {
       $set: {
         credits: Number(payload.credits || 0),
-        currency: payload.currency || 'CREDITS',
+        currency: payload.currency || "CREDITS",
         enabled: payload.enabled !== false,
       },
     },
@@ -221,8 +273,8 @@ const upsertPricing = async ({ payload = {}, adminUserId = null, request = null 
   await adminAuditService.logAdminAction({
     request,
     adminUserId,
-    action: 'ADMIN_PROVIDER_PRICING_UPDATED',
-    targetType: 'ProviderPricing',
+    action: "ADMIN_PROVIDER_PRICING_UPDATED",
+    targetType: "ProviderPricing",
     targetId: pricing._id,
     metadata: {
       provider: payload.provider,
@@ -236,7 +288,8 @@ const upsertPricing = async ({ payload = {}, adminUserId = null, request = null 
 };
 
 const getHealthSummary = async () => providerHealthService.getHealthSummary();
-const getPricingSummary = async () => providerPricingService.getPricingSummary();
+const getPricingSummary = async () =>
+  providerPricingService.getPricingSummary();
 
 const adminProviderService = Object.freeze({
   listProviders,

@@ -1,19 +1,21 @@
-import environment from '../../config/environment.js';
-import AppSettingModel from '../../models/AppSetting.js';
-import ApiError from '../../utils/ApiError.js';
+import environment from "../../config/environment.js";
+import AppSettingModel from "../../models/AppSetting.js";
+import ApiError from "../../utils/ApiError.js";
 
 const indexSettings = (docs) => {
   const map = new Map();
   for (const doc of docs) {
-    const section = doc.section || 'GENERAL';
-    const key = doc.key || 'global';
+    const section = doc.section || "GENERAL";
+    const key = doc.key || "global";
     map.set(`${section}:${key}`, doc);
   }
   return map;
 };
 
-const getSetting = (map, section, key = 'global') => map.get(`${section}:${key}`) || null;
-const pick = (value, fallback = null) => (value === undefined ? fallback : value);
+const getSetting = (map, section, key = "global") =>
+  map.get(`${section}:${key}`) || null;
+const pick = (value, fallback = null) =>
+  value === undefined ? fallback : value;
 
 const mapCreditPackage = (pkg = {}) => ({
   name: pkg.name || null,
@@ -22,11 +24,11 @@ const mapCreditPackage = (pkg = {}) => ({
   bonusCredits: Number(pkg.bonusCredits || 0),
   totalCredits: Number(pkg.credits || 0) + Number(pkg.bonusCredits || 0),
   price: Number(pkg.price || 0),
-  currency: pkg.currency || 'USD',
+  currency: pkg.currency || "USD",
   enabled: Boolean(pkg.enabled),
   externalId: pkg.externalId || null,
   googlePlayProductId: pkg.googlePlayProductId || pkg.externalId || null,
-  productType: pkg.productType || 'inapp',
+  productType: pkg.productType || "inapp",
   offerToken: pkg.offerToken || null,
   countries: Array.isArray(pkg.countries) ? pkg.countries : [],
   metadata: pkg.metadata || {},
@@ -39,17 +41,19 @@ const mapSubscriptionPlan = (plan = {}) => ({
   googlePlayProductId: plan.googlePlayProductId || null,
   basePlanId: plan.basePlanId || null,
   offerId: plan.offerId || null,
-  billingCycle: plan.billingCycle || 'custom',
+  billingCycle: plan.billingCycle || "custom",
   durationDays: Number(plan.durationDays || 0),
   price: Number(plan.price || 0),
-  currency: plan.currency || 'USD',
+  currency: plan.currency || "USD",
   enabled: Boolean(plan.enabled),
   isDefault: Boolean(plan.isDefault),
   isPremium: Boolean(plan.isPremium),
   autoRenew: Boolean(plan.autoRenew),
   trialDays: Number(plan.trialDays || 0),
   countries: Array.isArray(plan.countries) ? plan.countries : [],
-  premiumFeatures: Array.isArray(plan.premiumFeatures) ? plan.premiumFeatures : [],
+  premiumFeatures: Array.isArray(plan.premiumFeatures)
+    ? plan.premiumFeatures
+    : [],
   featureFlags: plan.featureFlags || {},
   limits: plan.limits || {},
   transitions: plan.transitions || {},
@@ -59,8 +63,14 @@ const mapSubscriptionPlan = (plan = {}) => ({
 const getPaymentSettings = async () => {
   const docs = await AppSettingModel.find({}).lean();
   const settingsIndex = indexSettings(docs);
-  const payments = getSetting(settingsIndex, 'PAYMENTS') || getSetting(settingsIndex, 'GENERAL') || null;
-  const system = getSetting(settingsIndex, 'SYSTEM') || getSetting(settingsIndex, 'GENERAL') || null;
+  const payments =
+    getSetting(settingsIndex, "PAYMENTS") ||
+    getSetting(settingsIndex, "GENERAL") ||
+    null;
+  const system =
+    getSetting(settingsIndex, "SYSTEM") ||
+    getSetting(settingsIndex, "GENERAL") ||
+    null;
 
   return {
     payments,
@@ -89,7 +99,10 @@ const getPaymentSettings = async () => {
         environment.integrations.googlePlay.rtdnVerificationToken ||
         null,
     },
-    creditPackages: pick(payments?.creditPackages, pick(system?.creditPackages, [])),
+    creditPackages: pick(
+      payments?.creditPackages,
+      pick(system?.creditPackages, []),
+    ),
     subscriptionPlans: pick(payments?.subscriptionPlans, []),
     membershipSettings: pick(payments?.membershipSettings, {}),
     trialSettings: pick(payments?.trialSettings, {}),
@@ -101,13 +114,17 @@ const getPaymentSettings = async () => {
 
 const assertPaymentsEnabled = (settings) => {
   if (!settings?.paymentEnabled) {
-    throw new ApiError(403, 'Payments are disabled.', { code: 'PAYMENTS_DISABLED' });
+    throw new ApiError(403, "Payments are disabled.", {
+      code: "PAYMENTS_DISABLED",
+    });
   }
 };
 
 const assertGooglePlayEnabled = (settings) => {
   if (!settings?.googlePlay?.enabled) {
-    throw new ApiError(403, 'Google Play billing is disabled.', { code: 'PAYMENT_GATEWAY_DISABLED' });
+    throw new ApiError(403, "Google Play billing is disabled.", {
+      code: "PAYMENT_GATEWAY_DISABLED",
+    });
   }
 };
 
@@ -122,7 +139,7 @@ const getMappedSubscriptionPlans = (settings) =>
     .map(mapSubscriptionPlan);
 
 const findCreditPackageByProductId = ({ settings, productId }) => {
-  const normalized = String(productId || '').trim();
+  const normalized = String(productId || "").trim();
   if (!normalized) {
     return null;
   }
@@ -138,13 +155,21 @@ const findCreditPackageByProductId = ({ settings, productId }) => {
 };
 
 const resolveAllowedPackageNames = (settings) =>
-  [settings?.googlePlay?.packageName, settings?.googlePlay?.linkedPackageName, environment.integrations.googlePlay.packageName]
-    .map((value) => String(value || '').trim())
+  [
+    settings?.googlePlay?.packageName,
+    settings?.googlePlay?.linkedPackageName,
+    environment.integrations.googlePlay.packageName,
+  ]
+    .map((value) => String(value || "").trim())
     .filter(Boolean);
 
-const findSubscriptionPlanByProductId = ({ settings, productId, basePlanId = null } = {}) => {
-  const normalizedProductId = String(productId || '').trim();
-  const normalizedBasePlanId = String(basePlanId || '').trim();
+const findSubscriptionPlanByProductId = ({
+  settings,
+  productId,
+  basePlanId = null,
+} = {}) => {
+  const normalizedProductId = String(productId || "").trim();
+  const normalizedBasePlanId = String(basePlanId || "").trim();
   if (!normalizedProductId) {
     return null;
   }
@@ -153,7 +178,9 @@ const findSubscriptionPlanByProductId = ({ settings, productId, basePlanId = nul
     getMappedSubscriptionPlans(settings).find(
       (plan) =>
         plan.googlePlayProductId === normalizedProductId &&
-        (!normalizedBasePlanId || !plan.basePlanId || plan.basePlanId === normalizedBasePlanId),
+        (!normalizedBasePlanId ||
+          !plan.basePlanId ||
+          plan.basePlanId === normalizedBasePlanId),
     ) || null
   );
 };

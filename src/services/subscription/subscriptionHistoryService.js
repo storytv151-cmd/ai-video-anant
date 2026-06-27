@@ -1,6 +1,6 @@
-import UserModel from '../../models/User.js';
-import ApiError from '../../utils/ApiError.js';
-import { buildPaginationMeta } from '../../utils/pagination.js';
+import UserModel from "../../models/User.js";
+import ApiError from "../../utils/ApiError.js";
+import { buildPaginationMeta } from "../../utils/pagination.js";
 
 const parsePositiveInt = (value, fallback) => {
   const parsed = Number(value);
@@ -11,20 +11,26 @@ const parsePositiveInt = (value, fallback) => {
 };
 
 const normalizeSortDirection = (value) => {
-  const normalized = String(value || '').trim().toLowerCase();
-  return normalized === 'asc' || normalized === 'oldest' ? 1 : -1;
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  return normalized === "asc" || normalized === "oldest" ? 1 : -1;
 };
 
 const listSubscriptionHistory = async ({ userId, query = {} } = {}) => {
-  const user = await UserModel.findById(userId).select({ subscription: 1 }).lean();
+  const user = await UserModel.findById(userId)
+    .select({ subscription: 1 })
+    .lean();
   if (!user) {
-    throw new ApiError(404, 'User not found.', { code: 'USER_NOT_FOUND' });
+    throw new ApiError(404, "User not found.", { code: "USER_NOT_FOUND" });
   }
 
   const direction = normalizeSortDirection(query.sort);
   const page = parsePositiveInt(query.page, 1);
   const limit = Math.min(parsePositiveInt(query.limit, 20), 100);
-  const history = Array.isArray(user.subscription?.history) ? [...user.subscription.history] : [];
+  const history = Array.isArray(user.subscription?.history)
+    ? [...user.subscription.history]
+    : [];
   const sorted = history.sort((a, b) => {
     const aTime = new Date(a?.happenedAt || 0).getTime();
     const bTime = new Date(b?.happenedAt || 0).getTime();
@@ -32,7 +38,12 @@ const listSubscriptionHistory = async ({ userId, query = {} } = {}) => {
   });
 
   const filtered = query.event
-    ? sorted.filter((item) => String(item?.event || '').trim().toLowerCase() === String(query.event).trim().toLowerCase())
+    ? sorted.filter(
+        (item) =>
+          String(item?.event || "")
+            .trim()
+            .toLowerCase() === String(query.event).trim().toLowerCase(),
+      )
     : sorted;
 
   const total = filtered.length;

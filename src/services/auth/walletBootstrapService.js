@@ -3,13 +3,13 @@
  * It keeps credit mutations consistent with the wallet rule:
  * CreditTransaction -> Wallet update -> commit.
  */
-import mongoose from 'mongoose';
-import AppSettingModel from '../../models/AppSetting.js';
-import CreditTransactionModel from '../../models/CreditTransaction.js';
-import WalletModel from '../../models/Wallet.js';
+import mongoose from "mongoose";
+import AppSettingModel from "../../models/AppSetting.js";
+import CreditTransactionModel from "../../models/CreditTransaction.js";
+import WalletModel from "../../models/Wallet.js";
 
 const getRewardSettings = async ({ session } = {}) => {
-  const query = AppSettingModel.findOne({ section: 'REWARDS', key: 'global' });
+  const query = AppSettingModel.findOne({ section: "REWARDS", key: "global" });
   if (session) {
     query.session(session);
   }
@@ -40,7 +40,12 @@ const ensureWalletForUser = async ({ user, session }) => {
   return wallet;
 };
 
-const applyWelcomeBonusIfEligible = async ({ user, wallet, createdBy = null, session }) => {
+const applyWelcomeBonusIfEligible = async ({
+  user,
+  wallet,
+  createdBy = null,
+  session,
+}) => {
   const settings = await getRewardSettings({ session });
   const enabled = Boolean(settings?.welcomeBonus?.enabled);
   const credits = Number(settings?.welcomeBonus?.credits || 0);
@@ -54,8 +59,13 @@ const applyWelcomeBonusIfEligible = async ({ user, wallet, createdBy = null, ses
   }
 
   const idempotencyKey = `auth_welcome_bonus:${String(user._id)}`;
-  const existing = await CreditTransactionModel.findOne({ user: user._id, idempotencyKey }).session(session).lean();
-  if (existing && existing.status === 'success') {
+  const existing = await CreditTransactionModel.findOne({
+    user: user._id,
+    idempotencyKey,
+  })
+    .session(session)
+    .lean();
+  if (existing && existing.status === "success") {
     return { applied: true, creditsGranted: Number(existing.credits || 0) };
   }
 
@@ -68,16 +78,16 @@ const applyWelcomeBonusIfEligible = async ({ user, wallet, createdBy = null, ses
         {
           wallet: wallet._id,
           user: user._id,
-          type: 'welcome_bonus',
-          status: 'success',
-          source: 'WelcomeBonus',
-          purpose: 'welcome_bonus',
+          type: "welcome_bonus",
+          status: "success",
+          source: "WelcomeBonus",
+          purpose: "welcome_bonus",
           credits,
           balanceBefore,
           balanceAfter,
-          referenceType: 'system',
+          referenceType: "system",
           referenceId: null,
-          description: 'Welcome bonus credits granted.',
+          description: "Welcome bonus credits granted.",
           createdBy,
           idempotencyKey,
         },
@@ -86,8 +96,13 @@ const applyWelcomeBonusIfEligible = async ({ user, wallet, createdBy = null, ses
     );
   } catch (error) {
     if (error?.code === 11000) {
-      const dup = await CreditTransactionModel.findOne({ user: user._id, idempotencyKey }).session(session).lean();
-      if (dup && dup.status === 'success') {
+      const dup = await CreditTransactionModel.findOne({
+        user: user._id,
+        idempotencyKey,
+      })
+        .session(session)
+        .lean();
+      if (dup && dup.status === "success") {
         return { applied: true, creditsGranted: Number(dup.credits || 0) };
       }
     }

@@ -1,13 +1,17 @@
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import adminProviderService from '../services/admin/adminProviderService.js';
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import adminProviderService from "../services/admin/adminProviderService.js";
 
 const listAdminProviders = async (request, response) => {
-  const data = await adminProviderService.listProviders({ query: request.query });
+  const data = await adminProviderService.listProviders({
+    query: request.query,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
 const getAdminProvider = async (request, response) => {
-  const data = await adminProviderService.getProvider({ providerId: request.params.providerId });
+  const data = await adminProviderService.getProvider({
+    providerId: request.params.providerId,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
@@ -22,7 +26,9 @@ const updateAdminProvider = async (request, response) => {
 };
 
 const listAdminProviderModels = async (request, response) => {
-  const data = await adminProviderService.listProviderModels({ query: request.query });
+  const data = await adminProviderService.listProviderModels({
+    query: request.query,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 

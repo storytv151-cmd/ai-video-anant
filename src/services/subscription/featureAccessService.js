@@ -1,25 +1,25 @@
-import UserModel from '../../models/User.js';
-import membershipService from './membershipService.js';
-import subscriptionValidationService from './subscriptionValidationService.js';
+import UserModel from "../../models/User.js";
+import membershipService from "./membershipService.js";
+import subscriptionValidationService from "./subscriptionValidationService.js";
 
 const buildReason = ({ allowed, status, featureName, planCode }) => {
   if (allowed) {
-    return 'Feature access granted.';
+    return "Feature access granted.";
   }
-  if (status === 'expired') {
-    return 'Subscription has expired.';
+  if (status === "expired") {
+    return "Subscription has expired.";
   }
-  if (status === 'cancelled') {
-    return 'Subscription is cancelled.';
+  if (status === "cancelled") {
+    return "Subscription is cancelled.";
   }
-  if (status === 'paused') {
-    return 'Subscription is paused.';
+  if (status === "paused") {
+    return "Subscription is paused.";
   }
-  if (status === 'on_hold') {
-    return 'Subscription is on hold.';
+  if (status === "on_hold") {
+    return "Subscription is on hold.";
   }
-  if (status === 'revoked') {
-    return 'Subscription is revoked.';
+  if (status === "revoked") {
+    return "Subscription is revoked.";
   }
   return `Feature "${featureName}" is not enabled for plan "${planCode}".`;
 };
@@ -28,16 +28,23 @@ const hasUnexpiredEntitlement = ({ status, expiresAt }) => {
   if (subscriptionValidationService.isActiveStatus(status)) {
     return true;
   }
-  if (status === 'cancelled' && expiresAt) {
+  if (status === "cancelled" && expiresAt) {
     const expiry = new Date(expiresAt);
     return !Number.isNaN(expiry.getTime()) && expiry.getTime() > Date.now();
   }
   return false;
 };
 
-const resolveSubscriptionContext = async ({ user = null, userId = null } = {}) => {
+const resolveSubscriptionContext = async ({
+  user = null,
+  userId = null,
+} = {}) => {
   const config = await membershipService.getMembershipConfig();
-  const resolvedUser = user || (userId ? await UserModel.findById(userId).select({ subscription: 1 }).lean() : null);
+  const resolvedUser =
+    user ||
+    (userId
+      ? await UserModel.findById(userId).select({ subscription: 1 }).lean()
+      : null);
   const subscription = resolvedUser?.subscription || {};
   const currentPlan = membershipService.resolvePlan({
     plans: config.plans,
@@ -48,14 +55,23 @@ const resolveSubscriptionContext = async ({ user = null, userId = null } = {}) =
     new Set([
       ...(config.membershipSettings.featureCatalog || []),
       ...Object.keys(subscription.featureSnapshot || {}),
-      ...Object.keys(membershipService.safeMapToObject(currentPlan?.featureFlags)),
+      ...Object.keys(
+        membershipService.safeMapToObject(currentPlan?.featureFlags),
+      ),
     ]),
   );
 
-  const status = membershipService.normalizeStatus(subscription.status || (currentPlan?.code === config.defaultPlan.code ? 'inactive' : 'active'));
-  const featureSnapshot = Object.keys(subscription.featureSnapshot || {}).length > 0
-    ? membershipService.safeMapToObject(subscription.featureSnapshot)
-    : membershipService.buildFeatureSnapshot({ plan: currentPlan, featureCatalog });
+  const status = membershipService.normalizeStatus(
+    subscription.status ||
+      (currentPlan?.code === config.defaultPlan.code ? "inactive" : "active"),
+  );
+  const featureSnapshot =
+    Object.keys(subscription.featureSnapshot || {}).length > 0
+      ? membershipService.safeMapToObject(subscription.featureSnapshot)
+      : membershipService.buildFeatureSnapshot({
+          plan: currentPlan,
+          featureCatalog,
+        });
 
   return {
     config,
@@ -70,7 +86,7 @@ const resolveSubscriptionContext = async ({ user = null, userId = null } = {}) =
 
 const canUseFeature = async (userOrId, featureName) => {
   const context =
-    typeof userOrId === 'object' && userOrId !== null
+    typeof userOrId === "object" && userOrId !== null
       ? await resolveSubscriptionContext({ user: userOrId })
       : await resolveSubscriptionContext({ userId: userOrId });
 
@@ -85,8 +101,10 @@ const canUseFeature = async (userOrId, featureName) => {
   );
 
   const activeStatus =
-    hasUnexpiredEntitlement({ status, expiresAt: context.subscription?.expiresAt }) ||
-    context.currentPlan?.code === context.config.defaultPlan.code;
+    hasUnexpiredEntitlement({
+      status,
+      expiresAt: context.subscription?.expiresAt,
+    }) || context.currentPlan?.code === context.config.defaultPlan.code;
   const featureValue = context.featureSnapshot[normalizedFeature];
   const allowed = Boolean(activeStatus && featureValue);
 
@@ -107,14 +125,19 @@ const canUseFeature = async (userOrId, featureName) => {
 
 const getEnabledFeatures = async (userOrId) => {
   const context =
-    typeof userOrId === 'object' && userOrId !== null
+    typeof userOrId === "object" && userOrId !== null
       ? await resolveSubscriptionContext({ user: userOrId })
       : await resolveSubscriptionContext({ userId: userOrId });
 
   const features = {};
   for (const featureName of context.featureCatalog) {
-    const access = await canUseFeature(context.user || { subscription: context.subscription }, featureName);
-    features[featureName] = access.allowed ? context.featureSnapshot[featureName] : false;
+    const access = await canUseFeature(
+      context.user || { subscription: context.subscription },
+      featureName,
+    );
+    features[featureName] = access.allowed
+      ? context.featureSnapshot[featureName]
+      : false;
   }
 
   return {

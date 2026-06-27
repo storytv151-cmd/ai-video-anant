@@ -1,8 +1,10 @@
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import adminFutureReadyService from '../services/admin/adminFutureReadyService.js';
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import adminFutureReadyService from "../services/admin/adminFutureReadyService.js";
 
 const getOrganizations = async (request, response) => {
-  const data = await adminFutureReadyService.getOrganizations({ query: request.query });
+  const data = await adminFutureReadyService.getOrganizations({
+    query: request.query,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
@@ -30,7 +32,9 @@ const createTeam = async (request, response) => {
 };
 
 const getRegionalAdmins = async (request, response) => {
-  const data = await adminFutureReadyService.getRegionalAdmins({ query: request.query });
+  const data = await adminFutureReadyService.getRegionalAdmins({
+    query: request.query,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
@@ -44,12 +48,16 @@ const updateWhiteLabelConfig = async (request, response) => {
 };
 
 const getTenants = async (request, response) => {
-  const data = await adminFutureReadyService.getTenants({ query: request.query });
+  const data = await adminFutureReadyService.getTenants({
+    query: request.query,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
 const getSupportTickets = async (request, response) => {
-  const data = await adminFutureReadyService.getSupportTickets({ query: request.query });
+  const data = await adminFutureReadyService.getSupportTickets({
+    query: request.query,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
@@ -88,7 +96,7 @@ const executeBulkOperation = async (request, response) => {
 
 const exportCsv = async (request, response) => {
   const data = await adminFutureReadyService.exportCsv({
-    resource: request.query.resource || 'users',
+    resource: request.query.resource || "users",
     query: request.query,
     adminUserId: request.user.id,
     request,

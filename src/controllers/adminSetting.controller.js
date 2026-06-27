@@ -1,5 +1,5 @@
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import adminSettingService from '../services/admin/adminSettingService.js';
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import adminSettingService from "../services/admin/adminSettingService.js";
 
 const listAdminSettings = async (request, response) => {
   const data = await adminSettingService.listSettings({ query: request.query });
@@ -26,8 +26,15 @@ const updateAdminSetting = async (request, response) => {
 };
 
 const getAdminStorageOverview = async (request, response) => {
-  const data = await adminSettingService.getStorageOverview({ query: request.query });
+  const data = await adminSettingService.getStorageOverview({
+    query: request.query,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
-export { listAdminSettings, getAdminSetting, updateAdminSetting, getAdminStorageOverview };
+export {
+  listAdminSettings,
+  getAdminSetting,
+  updateAdminSetting,
+  getAdminStorageOverview,
+};

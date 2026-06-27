@@ -1,23 +1,28 @@
-import { GoogleAuth } from 'google-auth-library';
-import environment from '../../config/environment.js';
-import { applicationLogger } from '../../config/logger.js';
-import ApiError from '../../utils/ApiError.js';
-import purchaseStateService from './purchaseStateService.js';
+import { GoogleAuth } from "google-auth-library";
+import environment from "../../config/environment.js";
+import { applicationLogger } from "../../config/logger.js";
+import ApiError from "../../utils/ApiError.js";
+import purchaseStateService from "./purchaseStateService.js";
 
-const GOOGLE_PLAY_SCOPE = 'https://www.googleapis.com/auth/androidpublisher';
-const GOOGLE_PLAY_BASE_URL = 'https://androidpublisher.googleapis.com/androidpublisher/v3';
+const GOOGLE_PLAY_SCOPE = "https://www.googleapis.com/auth/androidpublisher";
+const GOOGLE_PLAY_BASE_URL =
+  "https://androidpublisher.googleapis.com/androidpublisher/v3";
 
 let authClientPromise = null;
 
 const parseServiceAccountJson = () => {
-  const raw = String(environment.integrations.googlePlay.serviceAccountJson || '').trim();
+  const raw = String(
+    environment.integrations.googlePlay.serviceAccountJson || "",
+  ).trim();
   if (!raw) {
-    throw new ApiError(500, 'GOOGLE_SERVICE_ACCOUNT_JSON is not configured.', { code: 'GOOGLE_PLAY_CREDENTIALS_MISSING' });
+    throw new ApiError(500, "GOOGLE_SERVICE_ACCOUNT_JSON is not configured.", {
+      code: "GOOGLE_PLAY_CREDENTIALS_MISSING",
+    });
   }
 
   const candidates = [raw];
   try {
-    candidates.push(Buffer.from(raw, 'base64').toString('utf8'));
+    candidates.push(Buffer.from(raw, "base64").toString("utf8"));
   } catch {
     // Ignore invalid base64 input and continue using the raw string.
   }
@@ -33,7 +38,9 @@ const parseServiceAccountJson = () => {
     }
   }
 
-  throw new ApiError(500, 'GOOGLE_SERVICE_ACCOUNT_JSON is invalid.', { code: 'GOOGLE_PLAY_CREDENTIALS_INVALID' });
+  throw new ApiError(500, "GOOGLE_SERVICE_ACCOUNT_JSON is invalid.", {
+    code: "GOOGLE_PLAY_CREDENTIALS_INVALID",
+  });
 };
 
 const getAuthClient = async () => {
@@ -53,9 +60,12 @@ const getAuthClient = async () => {
 const getAccessToken = async () => {
   const client = await getAuthClient();
   const tokenResult = await client.getAccessToken();
-  const token = typeof tokenResult === 'string' ? tokenResult : tokenResult?.token || null;
+  const token =
+    typeof tokenResult === "string" ? tokenResult : tokenResult?.token || null;
   if (!token) {
-    throw new ApiError(500, 'Unable to obtain Google Play access token.', { code: 'GOOGLE_PLAY_TOKEN_UNAVAILABLE' });
+    throw new ApiError(500, "Unable to obtain Google Play access token.", {
+      code: "GOOGLE_PLAY_TOKEN_UNAVAILABLE",
+    });
   }
   return token;
 };
@@ -73,46 +83,74 @@ const parseResponse = async (response) => {
 };
 
 const buildApiError = ({ status, data, packageName, productId }) => {
-  const apiMessage = data?.error?.message || data?.raw || 'Google Play API request failed.';
+  const apiMessage =
+    data?.error?.message || data?.raw || "Google Play API request failed.";
   if (status === 400) {
     return new ApiError(400, apiMessage, {
-      code: 'GOOGLE_PLAY_INVALID_REQUEST',
-      details: { packageName, productId, googleError: data?.error || data || null },
+      code: "GOOGLE_PLAY_INVALID_REQUEST",
+      details: {
+        packageName,
+        productId,
+        googleError: data?.error || data || null,
+      },
     });
   }
   if (status === 401 || status === 403) {
-    return new ApiError(502, 'Google Play authentication failed.', {
-      code: 'GOOGLE_PLAY_AUTH_FAILED',
-      details: { packageName, productId, googleError: data?.error || data || null },
+    return new ApiError(502, "Google Play authentication failed.", {
+      code: "GOOGLE_PLAY_AUTH_FAILED",
+      details: {
+        packageName,
+        productId,
+        googleError: data?.error || data || null,
+      },
     });
   }
   if (status === 404) {
-    return new ApiError(404, 'Google Play purchase was not found.', {
-      code: 'GOOGLE_PLAY_PURCHASE_NOT_FOUND',
-      details: { packageName, productId, googleError: data?.error || data || null },
+    return new ApiError(404, "Google Play purchase was not found.", {
+      code: "GOOGLE_PLAY_PURCHASE_NOT_FOUND",
+      details: {
+        packageName,
+        productId,
+        googleError: data?.error || data || null,
+      },
     });
   }
   return new ApiError(502, apiMessage, {
-    code: 'GOOGLE_PLAY_API_ERROR',
-    details: { packageName, productId, googleError: data?.error || data || null },
+    code: "GOOGLE_PLAY_API_ERROR",
+    details: {
+      packageName,
+      productId,
+      googleError: data?.error || data || null,
+    },
   });
 };
 
-const authorizedRequest = async ({ method = 'GET', path, body = null, packageName = null, productId = null }) => {
+const authorizedRequest = async ({
+  method = "GET",
+  path,
+  body = null,
+  packageName = null,
+  productId = null,
+}) => {
   const accessToken = await getAccessToken();
   const response = await fetch(`${GOOGLE_PLAY_BASE_URL}${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      Accept: 'application/json',
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      Accept: "application/json",
+      ...(body ? { "Content-Type": "application/json" } : {}),
     },
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await parseResponse(response);
 
   if (!response.ok) {
-    throw buildApiError({ status: response.status, data, packageName, productId });
+    throw buildApiError({
+      status: response.status,
+      data,
+      packageName,
+      productId,
+    });
   }
 
   return data || {};
@@ -126,20 +164,24 @@ const safeDateFromMillis = (value) => {
   return new Date(parsed);
 };
 
-const derivePurchaseState = ({ purchaseStateCode, acknowledgementStateCode, consumptionStateCode }) => {
+const derivePurchaseState = ({
+  purchaseStateCode,
+  acknowledgementStateCode,
+  consumptionStateCode,
+}) => {
   if (purchaseStateCode === 1) {
-    return 'cancelled';
+    return "cancelled";
   }
   if (purchaseStateCode === 2) {
-    return 'pending';
+    return "pending";
   }
   if (consumptionStateCode === 1) {
-    return 'consumed';
+    return "consumed";
   }
   if (acknowledgementStateCode === 1) {
-    return 'acknowledged';
+    return "acknowledged";
   }
-  return 'purchased';
+  return "purchased";
 };
 
 const normalizeProductPurchaseResponse = ({
@@ -149,19 +191,38 @@ const normalizeProductPurchaseResponse = ({
   response,
   verificationTimeMs,
 }) => {
-  const purchaseStateCode = Number.isFinite(Number(response?.purchaseState)) ? Number(response.purchaseState) : null;
-  const acknowledgementStateCode = Number.isFinite(Number(response?.acknowledgementState))
+  const purchaseStateCode = Number.isFinite(Number(response?.purchaseState))
+    ? Number(response.purchaseState)
+    : null;
+  const acknowledgementStateCode = Number.isFinite(
+    Number(response?.acknowledgementState),
+  )
     ? Number(response.acknowledgementState)
     : null;
-  const consumptionStateCode = Number.isFinite(Number(response?.consumptionState)) ? Number(response.consumptionState) : null;
-  const quantity = Number.isFinite(Number(response?.quantity)) && Number(response.quantity) > 0 ? Number(response.quantity) : 1;
-  const refundableQuantity = Number.isFinite(Number(response?.refundableQuantity)) ? Number(response.refundableQuantity) : null;
-  const derivedState = derivePurchaseState({ purchaseStateCode, acknowledgementStateCode, consumptionStateCode });
+  const consumptionStateCode = Number.isFinite(
+    Number(response?.consumptionState),
+  )
+    ? Number(response.consumptionState)
+    : null;
+  const quantity =
+    Number.isFinite(Number(response?.quantity)) && Number(response.quantity) > 0
+      ? Number(response.quantity)
+      : 1;
+  const refundableQuantity = Number.isFinite(
+    Number(response?.refundableQuantity),
+  )
+    ? Number(response.refundableQuantity)
+    : null;
+  const derivedState = derivePurchaseState({
+    purchaseStateCode,
+    acknowledgementStateCode,
+    consumptionStateCode,
+  });
 
   return {
-    provider: 'google_play',
+    provider: "google_play",
     verified: true,
-    verificationStatus: 'verified',
+    verificationStatus: "verified",
     packageName,
     productId: response?.productId || productId,
     purchaseToken: response?.purchaseToken || purchaseToken,
@@ -178,7 +239,9 @@ const normalizeProductPurchaseResponse = ({
     regionCode: response?.regionCode || null,
     quantity,
     refundableQuantity,
-    purchaseType: Number.isFinite(Number(response?.purchaseType)) ? Number(response.purchaseType) : null,
+    purchaseType: Number.isFinite(Number(response?.purchaseType))
+      ? Number(response.purchaseType)
+      : null,
     obfuscatedExternalAccountId: response?.obfuscatedExternalAccountId || null,
     obfuscatedExternalProfileId: response?.obfuscatedExternalProfileId || null,
     rawResponse: response,
@@ -186,14 +249,22 @@ const normalizeProductPurchaseResponse = ({
   };
 };
 
-const verifyInAppPurchase = async ({ packageName, productId, purchaseToken } = {}) => {
+const verifyInAppPurchase = async ({
+  packageName,
+  productId,
+  purchaseToken,
+} = {}) => {
   if (!packageName || !productId || !purchaseToken) {
-    throw new ApiError(400, 'packageName, productId, and purchaseToken are required.', { code: 'GOOGLE_PLAY_VERIFY_INPUT_REQUIRED' });
+    throw new ApiError(
+      400,
+      "packageName, productId, and purchaseToken are required.",
+      { code: "GOOGLE_PLAY_VERIFY_INPUT_REQUIRED" },
+    );
   }
 
   const startedAt = Date.now();
   const response = await authorizedRequest({
-    method: 'GET',
+    method: "GET",
     path: `/applications/${encodeURIComponent(packageName)}/purchases/products/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}`,
     packageName,
     productId,
@@ -209,17 +280,22 @@ const verifyInAppPurchase = async ({ packageName, productId, purchaseToken } = {
   });
 };
 
-const acknowledgeInAppPurchase = async ({ packageName, productId, purchaseToken, developerPayload = null } = {}) => {
+const acknowledgeInAppPurchase = async ({
+  packageName,
+  productId,
+  purchaseToken,
+  developerPayload = null,
+} = {}) => {
   await authorizedRequest({
-    method: 'POST',
+    method: "POST",
     path: `/applications/${encodeURIComponent(packageName)}/purchases/products/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}:acknowledge`,
     body: developerPayload ? { developerPayload } : {},
     packageName,
     productId,
   });
 
-  applicationLogger.info('Google Play purchase acknowledged.', {
-    provider: 'google_play',
+  applicationLogger.info("Google Play purchase acknowledged.", {
+    provider: "google_play",
     packageName,
     productId,
   });
@@ -227,17 +303,21 @@ const acknowledgeInAppPurchase = async ({ packageName, productId, purchaseToken,
   return { acknowledged: true };
 };
 
-const consumeInAppPurchase = async ({ packageName, productId, purchaseToken } = {}) => {
+const consumeInAppPurchase = async ({
+  packageName,
+  productId,
+  purchaseToken,
+} = {}) => {
   await authorizedRequest({
-    method: 'POST',
+    method: "POST",
     path: `/applications/${encodeURIComponent(packageName)}/purchases/products/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}:consume`,
     body: {},
     packageName,
     productId,
   });
 
-  applicationLogger.info('Google Play purchase consumed.', {
-    provider: 'google_play',
+  applicationLogger.info("Google Play purchase consumed.", {
+    provider: "google_play",
     packageName,
     productId,
   });

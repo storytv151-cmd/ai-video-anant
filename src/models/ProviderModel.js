@@ -7,8 +7,8 @@
  * Future usage: enables adding new provider models without schema changes,
  * supports per-model pricing, capability matrices, and dynamic routing.
  */
-import mongoose from 'mongoose';
-import { createBaseSchema } from './base.schema.js';
+import mongoose from "mongoose";
+import { createBaseSchema } from "./base.schema.js";
 
 const { Schema } = mongoose;
 
@@ -24,19 +24,19 @@ const resolutionSchema = new Schema(
 const providerModelSchema = createBaseSchema({
   provider: {
     type: Schema.Types.ObjectId,
-    ref: 'Provider',
-    required: [true, 'Provider reference is required.'],
+    ref: "Provider",
+    required: [true, "Provider reference is required."],
     index: true,
   },
   name: {
     type: String,
-    required: [true, 'Model name is required.'],
+    required: [true, "Model name is required."],
     trim: true,
     maxlength: 120,
   },
   slug: {
     type: String,
-    required: [true, 'Model slug is required.'],
+    required: [true, "Model slug is required."],
     trim: true,
     lowercase: true,
     maxlength: 120,
@@ -168,13 +168,14 @@ providerModelSchema.index(
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
-    name: 'uniq_provider_model_provider_slug_active',
+    name: "uniq_provider_model_provider_slug_active",
   },
 );
 providerModelSchema.index({ provider: 1, enabled: 1, priority: 1 });
 providerModelSchema.index({ slug: 1, enabled: 1 });
 
 const ProviderModelModel =
-  mongoose.models.ProviderModel || mongoose.model('ProviderModel', providerModelSchema);
+  mongoose.models.ProviderModel ||
+  mongoose.model("ProviderModel", providerModelSchema);
 
 export default ProviderModelModel;

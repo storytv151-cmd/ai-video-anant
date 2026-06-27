@@ -11,81 +11,81 @@
  * retries, cancellations). The `source` field helps classify origin for
  * reporting and fraud analysis.
  */
-import mongoose from 'mongoose';
-import { createBaseSchema } from './base.schema.js';
+import mongoose from "mongoose";
+import { createBaseSchema } from "./base.schema.js";
 
 const { Schema } = mongoose;
 
 const creditTransactionSchema = createBaseSchema({
   wallet: {
     type: Schema.Types.ObjectId,
-    ref: 'Wallet',
-    required: [true, 'Wallet reference is required.'],
+    ref: "Wallet",
+    required: [true, "Wallet reference is required."],
     index: true,
   },
   user: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'User reference is required.'],
+    ref: "User",
+    required: [true, "User reference is required."],
     index: true,
   },
   type: {
     type: String,
-    required: [true, 'Transaction type is required.'],
+    required: [true, "Transaction type is required."],
     enum: [
-      'purchase',
-      'reward',
-      'welcome_bonus',
-      'daily_bonus',
-      'referral',
-      'generation',
-      'refund',
-      'admin',
-      'promo',
-      'adjustment',
+      "purchase",
+      "reward",
+      "welcome_bonus",
+      "daily_bonus",
+      "referral",
+      "generation",
+      "refund",
+      "admin",
+      "promo",
+      "adjustment",
     ],
     index: true,
   },
   status: {
     type: String,
-    enum: ['pending', 'success', 'failed', 'cancelled'],
-    default: 'success',
+    enum: ["pending", "success", "failed", "cancelled"],
+    default: "success",
     index: true,
   },
   source: {
     type: String,
     trim: true,
     maxlength: 100,
-    default: 'system',
+    default: "system",
     index: true,
   },
   purpose: {
     type: String,
-    required: [true, 'Transaction purpose is required.'],
+    required: [true, "Transaction purpose is required."],
     trim: true,
     maxlength: 120,
     index: true,
   },
   credits: {
     type: Number,
-    required: [true, 'Transaction credits are required.'],
+    required: [true, "Transaction credits are required."],
     min: 0,
   },
   balanceBefore: {
     type: Number,
-    required: [true, 'Balance before is required.'],
+    required: [true, "Balance before is required."],
     min: 0,
   },
   balanceAfter: {
     type: Number,
-    required: [true, 'Balance after is required.'],
+    required: [true, "Balance after is required."],
     min: 0,
   },
   referenceType: {
     type: String,
     trim: true,
     maxlength: 100,
-    default: 'system',
+    default: "system",
     index: true,
   },
   referenceId: {
@@ -107,7 +107,7 @@ const creditTransactionSchema = createBaseSchema({
   },
   createdBy: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     default: null,
   },
 });
@@ -126,12 +126,12 @@ creditTransactionSchema.index(
     unique: true,
     sparse: true,
     partialFilterExpression: { isDeleted: false },
-    name: 'uniq_credit_tx_user_idempotency_active',
+    name: "uniq_credit_tx_user_idempotency_active",
   },
 );
 
 const CreditTransactionModel =
   mongoose.models.CreditTransaction ||
-  mongoose.model('CreditTransaction', creditTransactionSchema);
+  mongoose.model("CreditTransaction", creditTransactionSchema);
 
 export default CreditTransactionModel;

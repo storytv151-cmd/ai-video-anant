@@ -9,4 +9,4 @@ export {
   consoleLogger,
   fileLogger,
   morganStream,
-} from '../config/logger.js';
+} from "../config/logger.js";

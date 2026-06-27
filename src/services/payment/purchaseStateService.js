@@ -1,35 +1,35 @@
 const PURCHASE_STATES = Object.freeze([
-  'pending',
-  'purchased',
-  'acknowledged',
-  'consumed',
-  'cancelled',
-  'expired',
-  'refunded',
-  'revoked',
-  'paused',
-  'grace_period',
-  'on_hold',
-  'failed',
+  "pending",
+  "purchased",
+  "acknowledged",
+  "consumed",
+  "cancelled",
+  "expired",
+  "refunded",
+  "revoked",
+  "paused",
+  "grace_period",
+  "on_hold",
+  "failed",
 ]);
 
-const normalizePurchaseState = (value, fallback = 'pending') => {
-  const normalized = String(value || '')
+const normalizePurchaseState = (value, fallback = "pending") => {
+  const normalized = String(value || "")
     .trim()
     .toLowerCase()
-    .replace(/\s+/g, '_');
+    .replace(/\s+/g, "_");
 
   if (!normalized) {
     return fallback;
   }
 
   const aliases = {
-    purchase_pending: 'pending',
-    purchase_completed: 'purchased',
-    error: 'failed',
-    graceperiod: 'grace_period',
-    grace: 'grace_period',
-    hold: 'on_hold',
+    purchase_pending: "pending",
+    purchase_completed: "purchased",
+    error: "failed",
+    graceperiod: "grace_period",
+    grace: "grace_period",
+    hold: "on_hold",
   };
 
   const resolved = aliases[normalized] || normalized;
@@ -37,13 +37,25 @@ const normalizePurchaseState = (value, fallback = 'pending') => {
 };
 
 const isTerminalPurchaseState = (value) =>
-  ['consumed', 'cancelled', 'expired', 'refunded', 'revoked', 'failed'].includes(normalizePurchaseState(value));
+  [
+    "consumed",
+    "cancelled",
+    "expired",
+    "refunded",
+    "revoked",
+    "failed",
+  ].includes(normalizePurchaseState(value));
 
-const canAcknowledgePurchase = (value) => ['purchased'].includes(normalizePurchaseState(value));
+const canAcknowledgePurchase = (value) =>
+  ["purchased"].includes(normalizePurchaseState(value));
 
-const canConsumePurchase = (value) => ['purchased', 'acknowledged'].includes(normalizePurchaseState(value));
+const canConsumePurchase = (value) =>
+  ["purchased", "acknowledged"].includes(normalizePurchaseState(value));
 
-const canRestorePurchase = (value) => ['purchased', 'acknowledged', 'grace_period', 'on_hold', 'paused'].includes(normalizePurchaseState(value));
+const canRestorePurchase = (value) =>
+  ["purchased", "acknowledged", "grace_period", "on_hold", "paused"].includes(
+    normalizePurchaseState(value),
+  );
 
 const purchaseStateService = Object.freeze({
   PURCHASE_STATES,

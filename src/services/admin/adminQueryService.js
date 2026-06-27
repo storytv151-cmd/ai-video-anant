@@ -1,4 +1,4 @@
-import { buildPaginationMeta } from '../../utils/pagination.js';
+import { buildPaginationMeta } from "../../utils/pagination.js";
 
 const parsePositiveInt = (value, fallback) => {
   const parsed = Number(value);
@@ -9,14 +9,14 @@ const parsePositiveInt = (value, fallback) => {
 };
 
 const parseBoolean = (value, fallback = null) => {
-  if (value === undefined || value === null || value === '') {
+  if (value === undefined || value === null || value === "") {
     return fallback;
   }
   const normalized = String(value).trim().toLowerCase();
-  if (['true', '1', 'yes'].includes(normalized)) {
+  if (["true", "1", "yes"].includes(normalized)) {
     return true;
   }
-  if (['false', '0', 'no'].includes(normalized)) {
+  if (["false", "0", "no"].includes(normalized)) {
     return false;
   }
   return fallback;
@@ -31,8 +31,10 @@ const normalizeString = (value) => {
 };
 
 const normalizeSortDirection = (value) => {
-  const normalized = String(value || '').trim().toLowerCase();
-  return ['asc', 'ascending', '1', 'oldest'].includes(normalized) ? 1 : -1;
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  return ["asc", "ascending", "1", "oldest"].includes(normalized) ? 1 : -1;
 };
 
 const buildPagination = ({ page = 1, limit = 20, maxLimit = 100 } = {}) => {
@@ -64,10 +66,17 @@ const buildDateRange = ({ from = null, to = null } = {}) => {
 
 const buildRegexSearch = (value) => {
   const normalized = normalizeString(value);
-  return normalized ? new RegExp(normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : null;
+  return normalized
+    ? new RegExp(normalized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
+    : null;
 };
 
-const buildPaginatedResponse = ({ items = [], page = 1, limit = 20, total = 0 } = {}) => ({
+const buildPaginatedResponse = ({
+  items = [],
+  page = 1,
+  limit = 20,
+  total = 0,
+} = {}) => ({
   items,
   meta: buildPaginationMeta({ page, limit, total }),
 });

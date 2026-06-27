@@ -2,11 +2,11 @@
  * Application entrypoint.
  * This module initializes configuration, database connectivity, HTTP startup, and graceful shutdown.
  */
-import http from 'node:http';
-import app from './src/app.js';
-import { connectDatabase, disconnectDatabase } from './src/config/database.js';
-import environment from './src/config/environment.js';
-import { applicationLogger, errorLogger } from './src/config/logger.js';
+import http from "node:http";
+import app from "./src/app.js";
+import { connectDatabase, disconnectDatabase } from "./src/config/database.js";
+import environment from "./src/config/environment.js";
+import { applicationLogger, errorLogger } from "./src/config/logger.js";
 
 let server;
 
@@ -28,10 +28,10 @@ const gracefulShutdown = async (signal) => {
     }
 
     await disconnectDatabase();
-    applicationLogger.info('Graceful shutdown completed.');
+    applicationLogger.info("Graceful shutdown completed.");
     process.exit(0);
   } catch (error) {
-    errorLogger.error('Graceful shutdown failed.', {
+    errorLogger.error("Graceful shutdown failed.", {
       message: error.message,
       stack: error.stack,
     });
@@ -39,28 +39,28 @@ const gracefulShutdown = async (signal) => {
   }
 };
 
-process.on('unhandledRejection', async (reason) => {
-  errorLogger.error('Unhandled promise rejection detected.', {
+process.on("unhandledRejection", async (reason) => {
+  errorLogger.error("Unhandled promise rejection detected.", {
     reason: reason instanceof Error ? reason.message : reason,
     stack: reason instanceof Error ? reason.stack : undefined,
   });
-  await gracefulShutdown('unhandledRejection');
+  await gracefulShutdown("unhandledRejection");
 });
 
-process.on('uncaughtException', async (error) => {
-  errorLogger.error('Uncaught exception detected.', {
+process.on("uncaughtException", async (error) => {
+  errorLogger.error("Uncaught exception detected.", {
     message: error.message,
     stack: error.stack,
   });
-  await gracefulShutdown('uncaughtException');
+  await gracefulShutdown("uncaughtException");
 });
 
-process.on('SIGINT', async () => {
-  await gracefulShutdown('SIGINT');
+process.on("SIGINT", async () => {
+  await gracefulShutdown("SIGINT");
 });
 
-process.on('SIGTERM', async () => {
-  await gracefulShutdown('SIGTERM');
+process.on("SIGTERM", async () => {
+  await gracefulShutdown("SIGTERM");
 });
 
 const startServer = async () => {
@@ -79,9 +79,9 @@ const startServer = async () => {
 };
 
 startServer().catch(async (error) => {
-  errorLogger.error('Server startup failed.', {
+  errorLogger.error("Server startup failed.", {
     message: error.message,
     stack: error.stack,
   });
-  await gracefulShutdown('startupFailure');
+  await gracefulShutdown("startupFailure");
 });

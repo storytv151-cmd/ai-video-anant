@@ -1,15 +1,19 @@
-import { formatSuccessResponse } from '../utils/responseFormatter.js';
-import providerHealthService from '../services/videoProviders/providerHealthService.js';
-import providerPricingService from '../services/videoProviders/providerPricingService.js';
-import providerSelectionService from '../services/videoProviders/providerSelectionService.js';
+import { formatSuccessResponse } from "../utils/responseFormatter.js";
+import providerHealthService from "../services/videoProviders/providerHealthService.js";
+import providerPricingService from "../services/videoProviders/providerPricingService.js";
+import providerSelectionService from "../services/videoProviders/providerSelectionService.js";
 
 const listProviders = async (request, response) => {
-  const data = await providerSelectionService.listProviders({ query: request.query });
+  const data = await providerSelectionService.listProviders({
+    query: request.query,
+  });
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 
 const getProviderBySlug = async (request, response) => {
-  const data = await providerSelectionService.getProviderDetails(request.params.slug);
+  const data = await providerSelectionService.getProviderDetails(
+    request.params.slug,
+  );
   response.status(200).json(formatSuccessResponse({ statusCode: 200, data }));
 };
 

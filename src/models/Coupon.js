@@ -6,20 +6,20 @@
  * Future usage: supports campaigns, limited offers, referral incentives, and
  * dynamic growth experiments.
  */
-import mongoose from 'mongoose';
-import { createBaseSchema } from './base.schema.js';
+import mongoose from "mongoose";
+import { createBaseSchema } from "./base.schema.js";
 
 const couponSchema = createBaseSchema({
   code: {
     type: String,
-    required: [true, 'Coupon code is required.'],
+    required: [true, "Coupon code is required."],
     trim: true,
     uppercase: true,
     maxlength: 50,
   },
   title: {
     type: String,
-    required: [true, 'Coupon title is required.'],
+    required: [true, "Coupon title is required."],
     trim: true,
     maxlength: 160,
   },
@@ -41,8 +41,8 @@ const couponSchema = createBaseSchema({
   },
   type: {
     type: String,
-    enum: ['credits', 'percentage', 'fixed'],
-    required: [true, 'Coupon type is required.'],
+    enum: ["credits", "percentage", "fixed"],
+    required: [true, "Coupon type is required."],
     index: true,
   },
   expiry: {
@@ -77,12 +77,13 @@ couponSchema.index(
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
-    name: 'uniq_coupon_code_active',
+    name: "uniq_coupon_code_active",
   },
 );
 couponSchema.index({ enabled: 1, expiry: 1, createdAt: -1 });
 couponSchema.index({ type: 1, createdAt: -1 });
 
-const CouponModel = mongoose.models.Coupon || mongoose.model('Coupon', couponSchema);
+const CouponModel =
+  mongoose.models.Coupon || mongoose.model("Coupon", couponSchema);
 
 export default CouponModel;

@@ -9,7 +9,7 @@
  *   Model.find().withDeleted()
  * or by adding an explicit isDeleted filter.
  */
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const { Schema } = mongoose;
 
@@ -37,7 +37,7 @@ const shouldBypassSoftDeleteFilter = (mongooseQuery) => {
   }
 
   const filter = mongooseQuery.getFilter?.() || {};
-  if (Object.prototype.hasOwnProperty.call(filter, 'isDeleted')) {
+  if (Object.prototype.hasOwnProperty.call(filter, "isDeleted")) {
     return true;
   }
 
@@ -91,7 +91,7 @@ const createBaseSchema = (definition, options = {}) => {
     },
   );
 
-  schema.pre('aggregate', function applySoftDeleteFilterToAggregate(next) {
+  schema.pre("aggregate", function applySoftDeleteFilterToAggregate(next) {
     if (this.options?.withDeleted === true) {
       next();
       return;
@@ -99,7 +99,9 @@ const createBaseSchema = (definition, options = {}) => {
 
     const pipeline = this.pipeline();
     const alreadyFiltersIsDeleted = pipeline.some(
-      (stage) => stage?.$match && Object.prototype.hasOwnProperty.call(stage.$match, 'isDeleted'),
+      (stage) =>
+        stage?.$match &&
+        Object.prototype.hasOwnProperty.call(stage.$match, "isDeleted"),
     );
 
     if (!alreadyFiltersIsDeleted) {
